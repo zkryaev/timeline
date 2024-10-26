@@ -1,0 +1,17 @@
+app:
+  env: local # окружение в котором запускаем
+  http_server:
+    host: localhost
+    port: 8080
+    timeout: 4s # время на получение запроса/ответ на запрос
+    iddle_timeout: 5m # время жизни соединения с клиентом
+
+db:
+  host: localhost
+  port: 5432
+  name: timelinedb
+  user: postgres
+
+token: 
+  access_time: 5m
+  refresh_time: 5m
