@@ -1,7 +1,8 @@
 # Описание
 
 ### Схема БД
-![БД](https://github.com/user-attachments/assets/10e5ffc4-6c6c-4736-bf53-ae2ae5b9225d)
+![image](https://github.com/user-attachments/assets/b7dcb64f-bd9a-4378-868f-8d3baf48519b)
+
 
 ### Архитектура кода
 - [Evrone Template](https://github.com/evrone/go-clean-template)
