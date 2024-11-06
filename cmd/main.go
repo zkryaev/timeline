@@ -1,14 +1,12 @@
 package main
 
 import (
-	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
+	"timeline/internal/app"
 	"timeline/internal/config"
-	"timeline/internal/controller"
-	"timeline/internal/custom"
+	"timeline/pkg/logger"
 
 	"go.uber.org/zap"
 )
@@ -16,40 +14,23 @@ import (
 func main() {
 	cfg := config.MustLoad()
 
-	// Инициализация логгера
-	custom.SetupLogger(cfg.App.Env)
-	custom.Logger.Info("Configuration loaded successfully")
+	//Инициализация логгера
+	Logr := logger.New(cfg.App.Env)
 
-	// подключение к БД
+	// TODO: подключение к БД
 
-	// Инициализация запуск сервера
-	srv := &http.Server{
-		Addr:         cfg.App.Host + cfg.App.Port,
-		Handler:      controller.InitRouter(), //,
-		ReadTimeout:  cfg.App.Timeout,
-		WriteTimeout: cfg.App.Timeout,
-		IdleTimeout:  cfg.App.IdleTimeout,
-	}
+	// TODO: подключение к Redis
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := srv.ListenAndServe(); err != nil {
-			custom.Logger.Error(
-				"failed to start server",
-				zap.Error(err),
-			)
-		}
-	}()
-	wg.Wait()
+	Application := app.New(cfg.App, Logr)
+	Application.SetupControllers()
+	go Application.Run()
 
-	// gracefull shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	sig := <-quit
-	custom.Logger.Info(
-		"Received shutdown signal",
+	Application.Stop()
+	Logr.Info(
+		"Gracefully stopped",
 		zap.String("signal", sig.String()),
 	)
 

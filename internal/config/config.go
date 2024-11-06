@@ -15,7 +15,7 @@ type Config struct {
 }
 
 type Application struct {
-	Env         string        `yaml:"env" env-default:"local"`
+	Env         string        `yaml:"env" env-required:"true"`
 	Host        string        `yaml:"host" env:"HOST" env-default:"localhost"`
 	Port        string        `yaml:"port" env:"PORT" env-default:"5432"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
@@ -31,6 +31,8 @@ type Database struct {
 }
 
 type Token struct {
+	AccessTTL  time.Duration `yaml:"access_ttl" env-default:"1m"`
+	RefreshTTL time.Duration `yaml:"refresh_ttl" env-default:"5m"`
 }
 
 func MustLoad() Config {
@@ -40,7 +42,7 @@ func MustLoad() Config {
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("config file doesnt exist: %s", configPath)
+		log.Fatalf("config file doesn't exist: %s", configPath)
 	}
 
 	var cfg Config

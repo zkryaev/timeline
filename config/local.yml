@@ -1,9 +1,9 @@
 app:
-  env: local # окружение в котором запускаем
+  env: LOCAL # окружение в котором запускаем
   http_server:
     host: localhost
     port: 8080
-    timeout: 4s # время на получение запроса/ответ на запрос
+    timeout: 10s # время на получение запроса/ответ на запрос
     iddle_timeout: 5m # время жизни соединения с клиентом
 
 db:
@@ -13,5 +13,5 @@ db:
   user: postgres
 
 token: 
-  access_time: 5m
-  refresh_time: 5m
+  access_ttl: 1m
+  refresh_ttl: 5m
