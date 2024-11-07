@@ -8,7 +8,6 @@ import (
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
 	"timeline/internal/libs/secret"
-	"timeline/internal/repository/database/postgres"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
 
@@ -49,7 +48,7 @@ func (a *App) Stop() {
 	a.log.Info("App stopped")
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, db *postgres.PostgresRepo /*redis*/) {
+func (a *App) SetupControllers(tokenCfg config.Token, storage auth.Repository /*redis*/) {
 	// usecase ->
 	// controller
 	// TODO: добавить логирование
@@ -57,7 +56,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, db *postgres.PostgresRepo 
 	if err != nil {
 		panic(err) // TODO: а как иначе елки палки
 	}
-	usecaseAuth := auth.New(privateKey, db, tokenCfg, a.log)
+	usecaseAuth := auth.New(privateKey, storage, tokenCfg, a.log)
 	authAPI := authctrl.New(
 		usecaseAuth,
 		middleware.New(privateKey),
