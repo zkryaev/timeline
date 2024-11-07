@@ -17,10 +17,14 @@ type PostgresRepo struct {
 }
 
 // TODO: что передавать в БД?
-func (p *PostgresRepo) SaveUser(ctx context.Context, user *model.User) (uint64, error) {}
+func (p *PostgresRepo) SaveUser(ctx context.Context, user *model.User) (uint64, error) { return 0, nil }
 
-func (p *PostgresRepo) User(ctx context.Context) (*model.User, error) {}
+func (p *PostgresRepo) User(ctx context.Context) (*model.User, error) { return nil, nil }
 
-func (p *PostgresRepo) SaveOrg(ctx context.Context, org *model.Organization) (uint64, error) {}
+func (p *PostgresRepo) SaveOrg(ctx context.Context, org *model.Organization) (uint64, error) {
+	return 0, nil
+}
 
-func (p *PostgresRepo) Organization(ctx context.Context) (*model.Organization, error) {}
+func (p *PostgresRepo) Organization(ctx context.Context) (*model.Organization, error) {
+	return nil, nil
+}

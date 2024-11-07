@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"timeline/internal/app"
 	"timeline/internal/config"
-	"timeline/internal/repository"
+	"timeline/internal/repository/database/postgres"
 	"timeline/pkg/logger"
 
 	"go.uber.org/zap"
@@ -19,7 +19,7 @@ func main() {
 	Logr := logger.New(cfg.App.Env)
 
 	// TODO: подключение к БД
-	stubRepo := repository.StubRepo{}
+	stubRepo := &postgres.PostgresRepo{}
 	// TODO: подключение к Redis
 
 	Application := app.New(cfg.App, Logr)
