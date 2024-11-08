@@ -8,6 +8,7 @@ import (
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
 	"timeline/internal/libs/secret"
+	"timeline/internal/repository/mail/notify"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
 
@@ -24,7 +25,7 @@ type App struct {
 func New(cfgApp config.Application, logger *zap.Logger) *App {
 	app := &App{
 		httpServer: http.Server{
-			Addr:         cfgApp.Host + cfgApp.Port,
+			Addr:         cfgApp.Host + ":" + cfgApp.Port,
 			ReadTimeout:  cfgApp.Timeout,
 			WriteTimeout: cfgApp.Timeout,
 			IdleTimeout:  cfgApp.IdleTimeout,
@@ -36,7 +37,6 @@ func New(cfgApp config.Application, logger *zap.Logger) *App {
 
 func (a *App) Run() error {
 	if err := a.httpServer.ListenAndServe(); err != nil {
-		a.log.Fatal("failed to run server")
 		return fmt.Errorf("failed to run server, %w", err)
 	}
 	return nil
@@ -45,16 +45,12 @@ func (a *App) Run() error {
 func (a *App) Stop() {
 	a.log.Info("Shutdown application...")
 	a.httpServer.Shutdown(context.Background())
-	a.log.Info("App stopped")
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage auth.Repository /*redis*/) {
-	// usecase ->
-	// controller
-	// TODO: добавить логирование
-	privateKey, err := secret.LoadPrivateKey("TODO")
+func (a *App) SetupControllers(tokenCfg config.Token, storage auth.Repository, mailService notify.Mail /*redis*/) error {
+	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
-		panic(err) // TODO: а как иначе елки палки
+		return err
 	}
 	usecaseAuth := auth.New(privateKey, storage, tokenCfg, a.log)
 	authAPI := authctrl.New(
@@ -70,4 +66,5 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage auth.Repository /*
 	}
 
 	a.httpServer.Handler = controller.InitRouter(controllerSet)
+	return nil
 }

@@ -8,19 +8,17 @@ linters-settings:
       - style
       - experimental
 
-run:
+issues:
   timeout: 5m
-  skip-dirs:
+  exclude-dirs:
     - "vendor"        # Пропускаем папку vendor для ускорения анализа
     - "third_party"   # Пропускаем папку с зависимостями от третьих лиц
-  
-issues:
   exclude:
     # False positive for table tests
     # https://github.com/kyoh86/scopelint/issues/4
-    - Using the variable on range scope `tt` in function literal
+    - Using the variable on range scope tt in function literal
   
 output:
-  format: colored-line-number  # Вывод результатов в цветном виде с номерами строк
+  formats: colored-line-number  # Вывод результатов в цветном виде с номерами строк
   # Лимит на количество одинаковых сообщений
   max-same-issues: 5

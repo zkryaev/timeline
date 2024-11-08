@@ -1,0 +1,22 @@
+# example
+app:
+  env: STAGE
+  http_server:
+    host: localhost
+    port: 8080
+    timeout: 10s
+    iddle_timeout: 5m # connection ttl with client
+
+db:
+  host: localhost
+  port: 5432
+  name: timelinedb
+  user: postgres
+
+mail:
+  host: example.com
+  port: 587 # SMTP port
+
+token: 
+  access_ttl: 1m
+  refresh_ttl: 5m
