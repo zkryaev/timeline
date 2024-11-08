@@ -9,12 +9,20 @@ import (
 )
 
 func LoadPrivateKey() (*rsa.PrivateKey, error) {
-	key := os.Getenv("SECRET")
-	if key == "" {
-		return nil, fmt.Errorf("empty secret-env: %s", key)
+	pathToSecret := os.Getenv("SECRET_PATH")
+	if pathToSecret == "" {
+		return nil, fmt.Errorf("empty secret-path-env: %s", pathToSecret)
 	}
-	// TODO: Как ключ генерить то?
-	block, _ := pem.Decode([]byte(key))
+	if _, err := os.Stat(pathToSecret); os.IsNotExist(err) {
+		return nil, fmt.Errorf("file with secret does not exist: %w", err)
+	}
+	key, err := os.ReadFile(pathToSecret)
+	if err != nil {
+		fmt.Println(key)
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	block, _ := pem.Decode(key)
 	if block == nil {
 		return nil, fmt.Errorf("failed to parse PEM block from the key")
 	}
