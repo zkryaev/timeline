@@ -9,7 +9,7 @@ type Credentials struct {
 
 type LoginReq struct {
 	Credentials
-	IsOrg bool `json:"is_org" validate:"required"` // является ли авторизируемый - организацией
+	IsOrg bool `json:"is_org" validate:"required"`
 }
 
 type UserRegisterReq struct {
