@@ -1,0 +1,47 @@
+version: '3'
+
+vars:
+  ENTRYPOINT: cmd/main.go
+  OUTPUT_BINARY: bin/timeline
+  LINTER_LOG: linter_logs
+  DOCKERFILE: docker-compose.yml
+  SWAGGER_DOCS: docs/swagger.yml
+
+tasks:
+  generate_swagger:
+    desc: "Generate Swagger docs"
+    cmds:
+      - echo "NOT IMPLEMENTED" > {{.SWAGGER_DOCS}}
+
+  lint:
+    desc: "Run GolangCI-Lint and save output to file"
+    cmds:
+      - golangci-lint run > {{.LINTER_LOG}}.txt
+
+  docker_up:
+    desc: "Start Docker containers using docker-compose"
+    cmds:
+      - docker-compose -f {{.DOCKERFILE}} up
+
+  build:
+    desc: "Compile the application binary"
+    cmds:
+      - go build -v -o {{.OUTPUT_BINARY}} {{.ENTRYPOINT}}
+
+  clean:
+    desc: "Remove generated Swagger docs, binary, and linter log"
+    cmds:
+      - rm {{.SWAGGER_DOCS}}
+      - rm {{.OUTPUT_BINARY}}
+      - rm {{.LINTER_LOG}}
+
+  run:
+    desc: "Run the compiled application"
+    deps: [build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
+  default:
+    desc: "Default task - runs Swagger generation"
+    cmds:
+      - task: generate_swagger
