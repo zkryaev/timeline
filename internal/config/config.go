@@ -24,16 +24,17 @@ type Application struct {
 }
 
 type Database struct {
-	Host     string `yaml:"host" env-default:"localhost"`
-	Port     string `yaml:"port" env-default:"5432"`
-	Name     string `yaml:"name" env-required:"true"`
+	Protocol string `env:"DB" env-required:"true"`
+	Host     string `env:"DB_HOST" env-required:"true"`
+	Port     string `env:"DB_PORT" env-required:"true"`
+	Name     string `env:"DB_NAME" env-required:"true"`
 	User     string `env:"DB_USER" env-required:"true"`
 	Password string `env:"DB_PASSWD" env-required:"true"`
 }
 
 type Mail struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
+	Host     string `env:"MAIL_HOST" env-required:"true"`
+	Port     int    `env:"MAIL_PORT" env-required:"true"`
 	User     string `env:"MAIL_USER" env-required:"true"`
 	Password string `env:"MAIL_PASSWD" env-required:"true"`
 }

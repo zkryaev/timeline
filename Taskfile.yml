@@ -1,13 +1,32 @@
 version: '3'
 
+dotenv: ['.env']
+
+silent: true
+
 vars:
   ENTRYPOINT: cmd/main.go
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
   DOCKERFILE: docker-compose.yml
   SWAGGER_DOCS: docs/swagger.yml
+  MIGRATION_PATH: migrations
+  # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
+  DSN: "{{.DB}}://{{.DB_USER}}:{{.DBPASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+
 
 tasks:
+  env_setup_check:
+    desc: "Checks that all required environment variables are set and non-empty"
+    cmds:
+      - for: [CONFIG_PATH, DB, DB_USER, DB_PASSWD, DB_HOST, DB_PORT, DB_NAME, DB_SSLMODE, MAIL_USER, MAIL_PASSWD, SECRET_PATH]
+        cmd: |
+          if [ -z "${{ .ITEM }}" ]; then
+            echo "Error: env {{ .ITEM }} isn't set." >&2
+            exit 1
+          fi
+      - echo "All required environment variables are set."
+
   generate_swagger:
     desc: "Generate Swagger docs"
     cmds:
@@ -18,10 +37,26 @@ tasks:
     cmds:
       - golangci-lint run > {{.LINTER_LOG}}.txt
 
+  migrate-up:
+    desc: "Run database migrations -up-"
+    cmds:
+      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRESS_DSN}} up
+    
+  migrate-down:
+    desc: "Run database migrations -down-"
+    cmds:
+      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRESS_DSN}} up
+
+  migrate-reset:
+    desc: "Reset database (migrate down and then up)"
+    cmds:
+      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRES_DSN}} down
+      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRES_DSN}} up
+
   docker_up:
     desc: "Start Docker containers using docker-compose"
     cmds:
-      - docker-compose -f {{.DOCKERFILE}} up
+      - docker-compose -f {{.DOCKERFILE}} up -d
 
   build:
     desc: "Compile the application binary"
@@ -37,7 +72,7 @@ tasks:
 
   run:
     desc: "Run the compiled application"
-    deps: [build]
+    deps: [env_setup_check, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
