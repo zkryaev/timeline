@@ -1,10 +1,12 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"errors"
-	"timeline/internal/model"
+	"fmt"
+	"timeline/internal/config"
+
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -13,18 +15,36 @@ var (
 )
 
 type PostgresRepo struct {
-	DB *sql.DB // Указатель на соединение с базой данных
+	cfg config.Database
+	db  *sql.DB
 }
 
-// TODO: что передавать в БД?
-func (p *PostgresRepo) SaveUser(ctx context.Context, user *model.User) (uint64, error) { return 0, nil }
-
-func (p *PostgresRepo) User(ctx context.Context) (*model.User, error) { return nil, nil }
-
-func (p *PostgresRepo) SaveOrg(ctx context.Context, org *model.Organization) (uint64, error) {
-	return 0, nil
+func New(cfg config.Database) *PostgresRepo {
+	return &PostgresRepo{
+		cfg: cfg,
+	}
 }
 
-func (p *PostgresRepo) Organization(ctx context.Context) (*model.Organization, error) {
-	return nil, nil
+func (p *PostgresRepo) Open() error {
+	db, err := sql.Open(p.cfg.Protocol, fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		p.cfg.Host,
+		p.cfg.Port,
+		p.cfg.User,
+		p.cfg.Password,
+		p.cfg.Name,
+		p.cfg.SSLmode,
+	))
+	if err != nil {
+		return err
+	}
+	if err = db.Ping(); err != nil {
+		return err
+	}
+	p.db = db
+	return nil
+}
+
+func (p *PostgresRepo) Close() {
+	p.db.Close()
 }

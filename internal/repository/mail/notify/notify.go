@@ -49,7 +49,7 @@ func (s *MailServer) SendVerifyCode(email string, code string) error {
 
 	body := fmt.Sprintf(verificationEmailTemplate, code)
 	m.SetBody("text/html", body)
-
+	
 	if err := s.conn.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send verification code: %w", err)
 	}

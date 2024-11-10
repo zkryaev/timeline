@@ -15,13 +15,13 @@ import (
 )
 
 type Repository interface {
-	SaveUser(ctx context.Context, user *model.User) (uint64, error)
+	SaveUser(ctx context.Context, user *model.User) (int, error)
 	User(ctx context.Context) (*model.User, error)
-	SaveOrg(ctx context.Context, org *model.Organization) (uint64, error)
+	SaveOrg(ctx context.Context, org *model.Organization) (int, error)
 	Organization(ctx context.Context) (*model.Organization, error)
 }
 
-// TODO?: Написать контракт для Save: user, org. Get: user, org
+// TODO: в Usecase надо логировать
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
@@ -69,7 +69,6 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 	return nil, nil
 }
 
-// TODO: в Usecase надо логировать
 func (a *AuthUseCase) UpdateRefreshToken(ctx context.Context, req *jwt.Token) (string, error) {
 	// Валидируем Claims токена. Есть ли они и нормальные ли.
 	err := validation.ValidateTokenClaims(req)

@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS user_verify;
+DROP TABLE IF EXISTS users;
+-- DROP TABLE IF EXISTS city;
+DROP TABLE IF EXISTS orgs_verify;
+-- DROP TABLE IF EXISTS orgs_city;
+DROP TABLE IF EXISTS orgs;
+
+
+
+

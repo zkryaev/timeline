@@ -2,7 +2,7 @@ package model
 
 // здесь перечислены общие для приложения структуры
 
-type EntityCredentials struct {
+type Credentials struct {
 	Login      string
 	PasswdHash string
 }

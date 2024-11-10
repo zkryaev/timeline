@@ -30,6 +30,7 @@ type Database struct {
 	Name     string `env:"DB_NAME" env-required:"true"`
 	User     string `env:"DB_USER" env-required:"true"`
 	Password string `env:"DB_PASSWD" env-required:"true"`
+	SSLmode  string `env:"DB_SSLMODE" env-required:"true"`
 }
 
 type Mail struct {

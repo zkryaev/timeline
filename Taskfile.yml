@@ -8,14 +8,15 @@ vars:
   ENTRYPOINT: cmd/main.go
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
-  DOCKERFILE: docker-compose.yml
   SWAGGER_DOCS: docs/swagger.yml
-  MIGRATION_PATH: migrations
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DBPASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
 
 
 tasks:
+  dsn:
+    cmds:
+      - echo {{.DSN}}
   env_setup_check:
     desc: "Checks that all required environment variables are set and non-empty"
     cmds:
@@ -36,27 +37,6 @@ tasks:
     desc: "Run GolangCI-Lint and save output to file"
     cmds:
       - golangci-lint run > {{.LINTER_LOG}}.txt
-
-  migrate-up:
-    desc: "Run database migrations -up-"
-    cmds:
-      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRESS_DSN}} up
-    
-  migrate-down:
-    desc: "Run database migrations -down-"
-    cmds:
-      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRESS_DSN}} up
-
-  migrate-reset:
-    desc: "Reset database (migrate down and then up)"
-    cmds:
-      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRES_DSN}} down
-      - migrate -path {{.MIGRATION_PATH}} -database {{.POSTGRES_DSN}} up
-
-  docker_up:
-    desc: "Start Docker containers using docker-compose"
-    cmds:
-      - docker-compose -f {{.DOCKERFILE}} up -d
 
   build:
     desc: "Compile the application binary"
