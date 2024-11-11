@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"net/http"
 	"timeline/internal/controller/auth"
 
 	"github.com/gorilla/mux"
@@ -12,11 +11,13 @@ type Controllers struct {
 }
 
 const (
-	authPrefix       = "/auth"
-	authLogin        = "/login"
-	authRegisterOrg  = "/register/org"
-	authRegisterUser = "/register/user"
-	authRefreshToken = "/token/update"
+	authPrefix        = "/auth"
+	authLogin         = "/login"
+	authRegisterOrg   = "/register/org"
+	authRegisterUser  = "/register/user"
+	authRefreshToken  = "/refresh/token"
+	authSendCodeRetry = "/send/code"
+	authVerifyCode    = "/verify/code"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -28,6 +29,11 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")
 	authRouter.HandleFunc(authRegisterOrg, auth.OrgRegister).Methods("POST")
 	authRouter.HandleFunc(authRegisterUser, auth.UserRegister).Methods("POST")
-	authRouter.HandleFunc(authRefreshToken, auth.Middleware.IsRefreshToken(http.HandlerFunc(auth.UpdateAccessToken)).ServeHTTP).Methods("PUT")
+	authRouter.HandleFunc(authRefreshToken, auth.UpdateAccessToken).Methods("PUT")
+	authRouter.HandleFunc(authVerifyCode, auth.VerifyCode).Methods("POST")
+
+	authProtectedRouter := r.NewRoute().PathPrefix("/auth").Subrouter()
+	authProtectedRouter.Use(auth.Middleware.IsTokenValid)
+	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
 	return r
 }

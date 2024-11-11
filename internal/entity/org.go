@@ -15,7 +15,7 @@ type OrgInfo struct {
 	Lat       float64 `json:"lat" validate:"latitude"`
 }
 
-type City struct {
-	ID   uint64 `json:"id"`
-	Name string `json:"name" validate:"required,min=2,max=100"`
-}
+// type City struct {
+// 	ID   uint64 `json:"id"`
+// 	Name string `json:"name" validate:"required,min=2,max=100"`
+// }

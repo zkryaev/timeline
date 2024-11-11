@@ -7,11 +7,12 @@ CREATE TABLE IF NOT EXISTS users(
     social TEXT,
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS user_verify(
     user_verify_id SERIAL PRIMARY KEY,
-    user_id INT,  -- добавлен столбец для связи с таблицей users
+    user_id INT,
     code VARCHAR(6) NOT NULL,
     expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS orgs(
     lat FLOAT NOT NULL,
     long FLOAT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS city(

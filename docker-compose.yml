@@ -8,6 +8,7 @@ services:
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASSWD}
         POSTGRES_DB: ${DB_NAME}
+        TZ: "Europe/Moscow"
       ports:
         - "${DB_PORT}:5432" # Подключаем внешний порт из переменной окружения
       volumes:

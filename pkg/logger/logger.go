@@ -21,7 +21,6 @@ func New(env string) *zap.Logger {
 	encoder := zapcore.EncoderConfig{}
 	// получаем путь куда сохранять логи
 	LogsPath := envars.GetPath("LOGS_PATH")
-	fmt.Println(LogsPath)
 	OutputPaths := []string{"stdout"}
 	if _, err := os.Stat(LogsPath); err == nil {
 		OutputPaths = append(OutputPaths, LogsPath)

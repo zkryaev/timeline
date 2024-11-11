@@ -39,7 +39,8 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("неверный метод подписи: %v", token.Header["alg"])
 		}
-		return m.secret, nil
+		publicKey := &m.secret.PublicKey
+		return publicKey, nil
 	})
 	return token, err
 }
@@ -53,8 +54,8 @@ func (m *Middleware) IsTokenValid(next http.Handler) http.Handler {
 			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
-		if token.Claims.(jwt.MapClaims)["type"] != "access" {
-			http.Error(w, "", http.StatusUnauthorized)
+		if token.Claims.(jwt.MapClaims)["type"].(string) != "access" {
+			http.Error(w, "access not", http.StatusUnauthorized)
 			return
 		}
 		_, ok := token.Claims.(jwt.MapClaims)["id"]
@@ -65,22 +66,6 @@ func (m *Middleware) IsTokenValid(next http.Handler) http.Handler {
 		_, ok = token.Claims.(jwt.MapClaims)["is_org"]
 		if !ok {
 			http.Error(w, "", http.StatusBadRequest)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-// Валидация refresh токена
-func (m *Middleware) IsRefreshToken(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := m.ExtractToken(w, r)
-		if err != nil || !token.Valid {
-			http.Error(w, "", http.StatusUnauthorized)
-			return
-		}
-		if token.Claims.(jwt.MapClaims)["type"] != "refresh" {
-			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)

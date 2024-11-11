@@ -48,12 +48,12 @@ func (a *App) Stop() {
 	a.httpServer.Shutdown(context.Background())
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage *postgres.PostgresRepo, mailService *notify.Mail /*redis*/) error {
+func (a *App) SetupControllers(tokenCfg config.Token, storage *postgres.PostgresRepo, mailService notify.Mail /*redis*/) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
 	}
-	usecaseAuth := auth.New(privateKey, storage, storage, tokenCfg, a.log)
+	usecaseAuth := auth.New(privateKey, storage, storage, mailService, tokenCfg, a.log)
 	authAPI := authctrl.New(
 		usecaseAuth,
 		middleware.New(privateKey),
