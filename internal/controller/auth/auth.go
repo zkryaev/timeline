@@ -17,7 +17,7 @@ type Auth interface {
 	OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (int, error)
 	SendCodeRetry(ctx context.Context, req dto.SendCodeReq) error
 	VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*dto.TokenPair, error)
-	UpdateAccessToken(ctx context.Context, req *jwt.Token) (string, error)
+	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error)
 }
 
 type Middleware interface {
