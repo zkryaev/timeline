@@ -2,16 +2,10 @@ package postgres
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"timeline/internal/config"
 
 	_ "github.com/lib/pq"
-)
-
-var (
-	ErrUserExists   = errors.New("user already exists")
-	ErrUserNotFound = errors.New("user not found")
 )
 
 type PostgresRepo struct {

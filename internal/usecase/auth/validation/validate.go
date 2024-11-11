@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -11,7 +12,18 @@ var (
 	ErrClaimsNotFound = errors.New("not found token claims")
 )
 
-// пароль там должен быть не меньше 8 символов, состоять там из таких то таких символов и не должен состоять из других символов
+// Проверяем что дата создания <= текущая дата
+func IsAccountExpired(created_at time.Time) bool {
+	// обнуляет время, оставляя только дату
+	currentDate := time.Now().Truncate(24 * time.Hour)
+	createdDate := created_at.Truncate(24 * time.Hour)
+	if currentDate.After(createdDate) {
+		return true
+	}
+	return false
+}
+
+// Проверяем наличие полей и верного ли они типа
 func ValidateTokenClaims(req *jwt.Token) error {
 	_, ok := req.Claims.(jwt.MapClaims)["id"].(uint64)
 	if !ok {

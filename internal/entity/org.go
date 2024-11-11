@@ -1,4 +1,4 @@
-package model
+package entity
 
 type Organization struct {
 	ID   uint64  `json:"id"`

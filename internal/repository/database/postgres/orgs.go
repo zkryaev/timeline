@@ -3,12 +3,19 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"timeline/internal/model"
+	"timeline/internal/entity"
+	"timeline/internal/repository/models"
+)
+
+var (
+	ErrOrgExists   = errors.New("org already exists")
+	ErrOrgNotFound = errors.New("org not found")
 )
 
 // Сохраняет организацию + указанный города
-func (p *PostgresRepo) OrgFullSave(ctx context.Context, org *model.OrgInfo, creds *model.Credentials, cityName string) (int, error) {
+func (p *PostgresRepo) OrgSave(ctx context.Context, org *entity.OrgInfo, creds *entity.Credentials, cityName string) (int, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -20,19 +27,19 @@ func (p *PostgresRepo) OrgFullSave(ctx context.Context, org *model.OrgInfo, cred
 	}()
 
 	// Сначала сохраняем город и получаем его ID
-	cityID, err := OrgSaveCity(ctx, tx, cityName)
+	cityID, err := orgSaveCity(ctx, tx, cityName)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save city: %w", err)
 	}
 
 	// Сохраняем организацию
-	orgID, err := p.OrgInfoSave(ctx, org, creds)
+	orgID, err := p.orgInfoSave(ctx, org, creds)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save org: %w", err)
 	}
 
 	// Связываем организацию с городом
-	err = OrgCityLink(ctx, tx, orgID, cityID)
+	err = orgCityLink(ctx, tx, orgID, cityID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to link org to city: %w", err)
 	}
@@ -46,7 +53,7 @@ func (p *PostgresRepo) OrgFullSave(ctx context.Context, org *model.OrgInfo, cred
 	return orgID, nil
 }
 
-func (p *PostgresRepo) OrgInfoSave(ctx context.Context, org *model.OrgInfo, creds *model.Credentials) (int, error) {
+func (p *PostgresRepo) orgInfoSave(ctx context.Context, org *entity.OrgInfo, creds *entity.Credentials) (int, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -85,7 +92,7 @@ func (p *PostgresRepo) OrgInfoSave(ctx context.Context, org *model.OrgInfo, cred
 	return orgID, nil
 }
 
-func OrgSaveCity(ctx context.Context, tx *sql.Tx, cityName string) (int, error) {
+func orgSaveCity(ctx context.Context, tx *sql.Tx, cityName string) (int, error) {
 	var cityID int
 	query := `
 		INSERT INTO city (name)
@@ -99,7 +106,7 @@ func OrgSaveCity(ctx context.Context, tx *sql.Tx, cityName string) (int, error) 
 	return cityID, nil
 }
 
-func OrgCityLink(ctx context.Context, tx *sql.Tx, orgID, cityID int) error {
+func orgCityLink(ctx context.Context, tx *sql.Tx, orgID, cityID int) error {
 	query := `
 		INSERT INTO orgs_city (org_id, city_id)
 		VALUES ($1, $2);
@@ -112,7 +119,7 @@ func OrgCityLink(ctx context.Context, tx *sql.Tx, orgID, cityID int) error {
 }
 
 // Получить организацию по ее почте/логину
-func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*model.Organization, *model.Credentials, error) {
+func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Organization, *entity.Credentials, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
@@ -127,8 +134,8 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*model.Org
 		SELECT email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
         WHERE email = $1;
 	`
-	var org model.Organization
-	var creds model.Credentials
+	var org entity.Organization
+	var creds entity.Credentials
 	err = tx.QueryRowContext(ctx, query,
 		email,
 	).Scan(
@@ -153,7 +160,7 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*model.Org
 }
 
 // Получаем организацию по ее ID в БД
-func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*model.Organization, *model.Credentials, error) {
+func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organization, *entity.Credentials, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
@@ -168,8 +175,8 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*model.Organization
 		SELECT email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
         WHERE org_id = $1;
 	`
-	var org model.Organization
-	var creds model.Credentials
+	var org entity.Organization
+	var creds entity.Credentials
 	err = tx.QueryRowContext(ctx, query,
 		id,
 	).Scan(
@@ -193,11 +200,11 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*model.Organization
 	return &org, &creds, nil
 }
 
-// Проверяет наличие организации в БД по ее почте/логину
-func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) error {
+// Проверяет наличие организации в БД по ее почте/логину и возвращаем хеш пароля и ошибку
+func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) (*models.IsExistResponse, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	// При возникновении ошибки транзакция откатывается по выходу из функции
 	defer func() {
@@ -206,25 +213,28 @@ func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) error {
 		}
 	}()
 	query := `
-        SELECT COUNT(*) FROM orgs
+        SELECT org_id, passwd_hash, created_at FROM orgs
         WHERE email = $1;
     `
 
-	var count int
-	err = tx.QueryRowContext(ctx, query, email).Scan(&count)
+	var MetaInfo models.IsExistResponse
+	err = tx.QueryRowContext(ctx, query, email).Scan(
+		&MetaInfo.ID,
+		&MetaInfo.Hash,
+		&MetaInfo.CreatedAt,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to query user: %w", err)
-	}
-
-	// Если count == 0, значит, пользователь с таким email не существует
-	if count == 0 {
-		return ErrUserNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, fmt.Errorf("failed to query select org: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return nil
+
+	return &MetaInfo, nil
 }
 
 // Сохраняем код отправленный на почту организации

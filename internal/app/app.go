@@ -8,6 +8,7 @@ import (
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
 	"timeline/internal/libs/secret"
+	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/mail/notify"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
@@ -47,12 +48,12 @@ func (a *App) Stop() {
 	a.httpServer.Shutdown(context.Background())
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage auth.Repository, mailService notify.Mail /*redis*/) error {
+func (a *App) SetupControllers(tokenCfg config.Token, storage *postgres.PostgresRepo, mailService *notify.Mail /*redis*/) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
 	}
-	usecaseAuth := auth.New(privateKey, storage, tokenCfg, a.log)
+	usecaseAuth := auth.New(privateKey, storage, storage, tokenCfg, a.log)
 	authAPI := authctrl.New(
 		usecaseAuth,
 		middleware.New(privateKey),

@@ -1,6 +1,6 @@
 package dto
 
-import "timeline/internal/model"
+import "timeline/internal/entity"
 
 type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
@@ -14,12 +14,12 @@ type LoginReq struct {
 
 type UserRegisterReq struct {
 	Credentials
-	model.UserInfo
+	entity.UserInfo
 }
 
 type OrgRegisterReq struct {
 	Credentials
-	model.OrgInfo
+	entity.OrgInfo
 }
 
 type TokenPair struct {

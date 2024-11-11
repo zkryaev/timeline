@@ -13,6 +13,8 @@ require (
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
+require golang.org/x/crypto v0.29.0
+
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect

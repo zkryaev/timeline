@@ -2,12 +2,20 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
-	"timeline/internal/model"
+	"timeline/internal/entity"
+	"timeline/internal/repository/models"
+)
+
+var (
+	ErrUserExists   = errors.New("user already exists")
+	ErrUserNotFound = errors.New("user not found")
 )
 
 // Сохраняет пользователя и его почту/логин + пароль в хешированном виде
-func (p *PostgresRepo) UserSave(ctx context.Context, user *model.UserInfo, creds *model.Credentials) (int, error) {
+func (p *PostgresRepo) UserSave(ctx context.Context, user *entity.UserInfo, creds *entity.Credentials) (int, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -37,7 +45,7 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *model.UserInfo, creds
 }
 
 // Получить юзера по email
-func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*model.User, *model.Credentials, error) {
+func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*entity.User, *entity.Credentials, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
@@ -51,8 +59,8 @@ func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*model.Us
 		SELECT user_id, email, passwd_hash, user_name, telephone, social, about FROM users
 		WHERE email = $1;
 	`
-	var user model.User
-	var creds model.Credentials
+	var user entity.User
+	var creds entity.Credentials
 	err = tx.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&creds.Login,
@@ -73,7 +81,7 @@ func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*model.Us
 }
 
 // Получить юзера по ID из БД
-func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*model.User, *model.Credentials, error) {
+func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*entity.User, *entity.Credentials, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
@@ -87,8 +95,8 @@ func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*model.User, *mode
 		SELECT user_id, email, passwd_hash, user_name, telephone, social, about FROM users
 		WHERE email = $1;
 	`
-	var user model.User
-	var creds model.Credentials
+	var user entity.User
+	var creds entity.Credentials
 	err = tx.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&creds.Login,
@@ -109,10 +117,10 @@ func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*model.User, *mode
 }
 
 // Существуют ли юзер в БД
-func (p *PostgresRepo) UserIsExist(ctx context.Context, email string) error {
+func (p *PostgresRepo) UserIsExist(ctx context.Context, email string) (*models.IsExistResponse, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	// При возникновении ошибки транзакция откатывается по выходу из функции
 	defer func() {
@@ -121,25 +129,28 @@ func (p *PostgresRepo) UserIsExist(ctx context.Context, email string) error {
 		}
 	}()
 	query := `
-        SELECT COUNT(*) FROM users
+        SELECT user_id, passwd_hash, created_at FROM users
         WHERE email = $1;
     `
 
-	var count int
-	err = tx.QueryRowContext(ctx, query, email).Scan(&count)
+	var MetaInfo models.IsExistResponse
+	err = tx.QueryRowContext(ctx, query, email).Scan(
+		&MetaInfo.ID,
+		&MetaInfo.Hash,
+		&MetaInfo.CreatedAt,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to query user: %w", err)
-	}
-
-	// Если count == 0, значит, пользователь с таким email не существует
-	if count == 0 {
-		return ErrUserNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, fmt.Errorf("failed to query select org: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return nil
+
+	return &MetaInfo, nil
 }
 
 // Сохранить код отправленный на почту пользователя

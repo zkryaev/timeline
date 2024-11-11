@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
-	"timeline/internal/model/dto"
+	"timeline/internal/entity/dto"
 
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"

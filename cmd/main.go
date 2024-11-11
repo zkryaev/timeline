@@ -17,7 +17,7 @@ func main() {
 
 	//Инициализация логгера
 	logger.New(cfg.App.Env)
-
+	// TODO: Авто Миграция
 	// repo := &postgres.PostgresRepo{}
 	// // TODO: подключение к Redis
 
