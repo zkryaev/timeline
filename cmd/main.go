@@ -12,9 +12,12 @@ import (
 	"timeline/pkg/logger"
 
 	"github.com/joho/godotenv"
+	_ "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 )
 
+// @title Timeline API
+// @version 1.0
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("No .env file found")
