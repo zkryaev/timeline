@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"timeline/internal/config"
-	"timeline/internal/repository/database/postgres"
+	"timeline/pkg/logger"
 
 	"github.com/joho/godotenv"
 )
@@ -15,14 +15,9 @@ func main() {
 
 	cfg := config.MustLoad()
 
-	repo := postgres.New(cfg.DB)
-	repo.Open()
-	defer repo.Close()
+	//Инициализация логгера
+	logger.New(cfg.App.Env)
 
-	// //Инициализация логгера
-	// Logr := logger.New(cfg.App.Env)
-
-	// // TODO: подключение к БД
 	// repo := &postgres.PostgresRepo{}
 	// // TODO: подключение к Redis
 
@@ -38,7 +33,6 @@ func main() {
 	// 	)
 	// }
 
-	// // TODO: обсудить с Захаром легально так делать
 	// quit := make(chan os.Signal, 1)
 	// go func() {
 	// 	err = Application.Run()

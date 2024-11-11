@@ -87,8 +87,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	data, err := a.Usecase.UserRegister(ctx, req)
 	if err != nil {
-		// TODO: ошибку отрефакторить
-		http.Error(w, "Invalid username or password", http.StatusBadRequest)
+		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
 	// отдаем токен
@@ -116,8 +115,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	data, err := a.Usecase.OrgRegister(ctx, req)
 	if err != nil {
-		// TODO: ошибку отрефакторить
-		http.Error(w, "Invalid username or password", http.StatusBadRequest)
+		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
 	// отдаем токен

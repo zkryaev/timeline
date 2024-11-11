@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"timeline/internal/libs/envars"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -46,13 +47,9 @@ type Token struct {
 }
 
 func MustLoad() Config {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		log.Fatal("empty config-path-env")
-	}
-
+	configPath := envars.GetPath("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("the configuration file does not exist at the specified path: %s", configPath)
+		log.Fatalf("the cfg file doesn't exist at the path: %s", configPath)
 	}
 
 	var cfg Config

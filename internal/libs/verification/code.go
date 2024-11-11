@@ -6,7 +6,6 @@ import (
 	"strconv"
 )
 
-// TODO: надо ревьюить
 func GenerateCode() (string, error) {
 	min := 1000
 	max := 9999

@@ -6,10 +6,11 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"timeline/internal/libs/envars"
 )
 
 func LoadPrivateKey() (*rsa.PrivateKey, error) {
-	pathToSecret := os.Getenv("SECRET_PATH")
+	pathToSecret := envars.GetPath("SECRET_PATH")
 	if pathToSecret == "" {
 		return nil, fmt.Errorf("empty secret-path-env: %s", pathToSecret)
 	}
