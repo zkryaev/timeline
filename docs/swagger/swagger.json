@@ -1,0 +1,432 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Timeline API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Authorizes a user and returns a token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Login Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LoginReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TokenPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid username or password",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh/token": {
+            "put": {
+                "description": "Updates the access token using a refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Update Access Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refresh Token",
+                        "name": "refresh_token",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "New Access Token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AccessToken"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register/org": {
+            "post": {
+                "description": "Registers an organization and returns a token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register Organization",
+                "parameters": [
+                    {
+                        "description": "Organization Register Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrgRegisterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TokenPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register/user": {
+            "post": {
+                "description": "Registers a user and returns a token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register User",
+                "parameters": [
+                    {
+                        "description": "User Register Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserRegisterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TokenPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/send/code": {
+            "post": {
+                "description": "Sends a code retry request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Send Code Retry",
+                "parameters": [
+                    {
+                        "description": "Send Code Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SendCodeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Code resent successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify/code": {
+            "post": {
+                "description": "Verifies the code and returns a token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify Code",
+                "parameters": [
+                    {
+                        "description": "Verify Code Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyCodeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TokenPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Code or account expired",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.AccessToken": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LoginReq": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "is_org": {
+                    "type": "boolean"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 12
+                }
+            }
+        },
+        "dto.OrgRegisterReq": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "email",
+                "name",
+                "password",
+                "telephone"
+            ],
+            "properties": {
+                "about": {
+                    "description": "Описание организации",
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "address": {
+                    "description": "Адрес организации",
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "email": {
+                    "type": "string"
+                },
+                "lat": {
+                    "description": "Широта",
+                    "type": "number"
+                },
+                "long": {
+                    "description": "Долгота",
+                    "type": "number"
+                },
+                "name": {
+                    "description": "Название организации",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 12
+                },
+                "social": {
+                    "description": "Социальная ссылка",
+                    "type": "string"
+                },
+                "telephone": {
+                    "description": "Телефон организации",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SendCodeReq": {
+            "type": "object",
+            "required": [
+                "email",
+                "id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_org": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.TokenPair": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserRegisterReq": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password",
+                "social",
+                "telephone"
+            ],
+            "properties": {
+                "about": {
+                    "description": "Описание пользователя",
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Имя пользователя",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 12
+                },
+                "social": {
+                    "description": "Социальная ссылка",
+                    "type": "string"
+                },
+                "telephone": {
+                    "description": "Телефон пользователя",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerifyCodeReq": {
+            "type": "object",
+            "required": [
+                "code",
+                "email",
+                "id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "minLength": 3
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_org": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

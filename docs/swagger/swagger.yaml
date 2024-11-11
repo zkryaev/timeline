@@ -1,0 +1,294 @@
+definitions:
+  dto.AccessToken:
+    properties:
+      access_token:
+        type: string
+    type: object
+  dto.LoginReq:
+    properties:
+      email:
+        type: string
+      is_org:
+        type: boolean
+      password:
+        maxLength: 64
+        minLength: 12
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.OrgRegisterReq:
+    properties:
+      about:
+        description: Описание организации
+        maxLength: 1000
+        type: string
+      address:
+        description: Адрес организации
+        type: string
+      city:
+        maxLength: 100
+        minLength: 2
+        type: string
+      email:
+        type: string
+      lat:
+        description: Широта
+        type: number
+      long:
+        description: Долгота
+        type: number
+      name:
+        description: Название организации
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        maxLength: 64
+        minLength: 12
+        type: string
+      social:
+        description: Социальная ссылка
+        type: string
+      telephone:
+        description: Телефон организации
+        type: string
+    required:
+    - address
+    - city
+    - email
+    - name
+    - password
+    - telephone
+    type: object
+  dto.SendCodeReq:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      is_org:
+        type: boolean
+    required:
+    - email
+    - id
+    type: object
+  dto.TokenPair:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  dto.UserRegisterReq:
+    properties:
+      about:
+        description: Описание пользователя
+        maxLength: 500
+        type: string
+      email:
+        type: string
+      name:
+        description: Имя пользователя
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        maxLength: 64
+        minLength: 12
+        type: string
+      social:
+        description: Социальная ссылка
+        type: string
+      telephone:
+        description: Телефон пользователя
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - social
+    - telephone
+    type: object
+  dto.VerifyCodeReq:
+    properties:
+      code:
+        minLength: 3
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_org:
+        type: boolean
+    required:
+    - code
+    - email
+    - id
+    type: object
+info:
+  contact: {}
+  title: Timeline API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authorizes a user and returns a token pair
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenPair'
+        "400":
+          description: Invalid username or password
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - auth
+  /auth/refresh/token:
+    put:
+      consumes:
+      - application/json
+      description: Updates the access token using a refresh token
+      parameters:
+      - description: Refresh Token
+        in: header
+        name: refresh_token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New Access Token
+          schema:
+            $ref: '#/definitions/dto.AccessToken'
+        "400":
+          description: Invalid token
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Update Access Token
+      tags:
+      - auth
+  /auth/register/org:
+    post:
+      consumes:
+      - application/json
+      description: Registers an organization and returns a token pair
+      parameters:
+      - description: Organization Register Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrgRegisterReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TokenPair'
+        "400":
+          description: Invalid credentials
+          schema:
+            type: string
+      summary: Register Organization
+      tags:
+      - auth
+  /auth/register/user:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user and returns a token pair
+      parameters:
+      - description: User Register Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserRegisterReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TokenPair'
+        "400":
+          description: Invalid credentials
+          schema:
+            type: string
+      summary: Register User
+      tags:
+      - auth
+  /auth/send/code:
+    post:
+      consumes:
+      - application/json
+      description: Sends a code retry request
+      parameters:
+      - description: Send Code Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendCodeReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Code resent successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request data
+          schema:
+            type: string
+      summary: Send Code Retry
+      tags:
+      - auth
+  /auth/verify/code:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the code and returns a token pair
+      parameters:
+      - description: Verify Code Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyCodeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TokenPair'
+        "400":
+          description: Code or account expired
+          schema:
+            type: string
+      summary: Verify Code
+      tags:
+      - auth
+swagger: "2.0"

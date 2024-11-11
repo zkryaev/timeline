@@ -15,6 +15,7 @@ type VerifyCodeReq struct {
 	IsOrg bool   `json:"is_org"`
 }
 
+// Credentials структура для хранения данных авторизации (email и password)
 type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=12,max=64"`
@@ -39,4 +40,8 @@ type OrgRegisterReq struct {
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+}
+
+type AccessToken struct {
+	Token string `json:"access_token"`
 }

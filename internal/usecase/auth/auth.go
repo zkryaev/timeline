@@ -327,11 +327,11 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*d
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (string, error) {
+func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error) {
 	// Валидируем Claims токена. Есть ли они и нормальные ли.
 	err := validation.ValidateTokenClaims(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// Здесь уже спокойно кастую если выше проблем не возникло
 	tmp := req.Claims.(jwt.MapClaims)["id"].(float64)
@@ -342,7 +342,9 @@ func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (st
 	}
 	token, err := jwtlib.NewToken(a.secret, a.TokenCfg, metadata, "access")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return token, nil
+	return &dto.AccessToken{
+		Token: token,
+	}, nil
 }

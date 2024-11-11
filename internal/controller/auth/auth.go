@@ -43,7 +43,15 @@ func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoni
 	}
 }
 
-// Авторизация объекта. Принимает логин + пароль. Возвращает пару токенов
+// @Summary Login
+// @Description Authorizes a user and returns a token pair
+// @Tags auth
+// @Accept  json
+// @Produce json
+// @Param   request body dto.LoginReq true "Login Request"
+// @Success 200 {object} dto.TokenPair
+// @Failure 400 {string} string "Invalid username or password"
+// @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req dto.LoginReq
@@ -71,7 +79,15 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Регистрация пользователя. Получает информацию о пользователе. Возвращает пару токенов
+// @Summary Register User
+// @Description Registers a user and returns a token pair
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.UserRegisterReq true "User Register Request"
+// @Success 201 {object} dto.TokenPair
+// @Failure 400 {string} string "Invalid credentials"
+// @Router /auth/register/user [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req dto.UserRegisterReq
@@ -99,7 +115,15 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// Регистрация организации. Получает информацию о организации. Возвращает пару токенов
+// @Summary Register Organization
+// @Description Registers an organization and returns a token pair
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.OrgRegisterReq true "Organization Register Request"
+// @Success 201 {object} dto.TokenPair
+// @Failure 400 {string} string "Invalid credentials"
+// @Router /auth/register/org [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req dto.OrgRegisterReq
@@ -127,6 +151,15 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// @Summary Send Code Retry
+// @Description Sends a code retry request
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.SendCodeReq true "Send Code Request"
+// @Success 201 {string} string "Code resent successfully"
+// @Failure 400 {string} string "Invalid request data"
+// @Router /auth/send/code [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req dto.SendCodeReq
@@ -148,6 +181,15 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// @Summary Verify Code
+// @Description Verifies the code and returns a token pair
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.VerifyCodeReq true "Verify Code Request"
+// @Success 200 {object} dto.TokenPair
+// @Failure 400 {string} string "Code or account expired"
+// @Router /auth/verify/code [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req dto.VerifyCodeReq
@@ -175,7 +217,16 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Принимает refresh токен. Возвращает новый access токен
+// @Summary Update Access Token
+// @Description Updates the access token using a refresh token
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   refresh_token header string true "Refresh Token"
+// @Success 200 {object} dto.AccessToken "New Access Token"
+// @Failure 400 {string} string "Invalid token"
+// @Failure 401 {string} string "Unauthorized"
+// @Router /auth/refresh/token [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 	token, err := a.Middleware.ExtractToken(w, r)
 	if err != nil {
@@ -204,12 +255,8 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := map[string]string{
-		"access_token": refreshedAccessToken,
-	}
-
 	// Отправляем JSON-ответ
-	if err := a.json.NewEncoder(w).Encode(resp); err != nil {
+	if err := a.json.NewEncoder(w).Encode(refreshedAccessToken); err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
