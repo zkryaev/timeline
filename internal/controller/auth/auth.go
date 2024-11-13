@@ -64,7 +64,6 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Data is not valid", http.StatusBadRequest)
 		return
 	}
-
 	ctx := context.Background()
 	data, err := a.usecase.Login(ctx, req)
 	if err != nil {
@@ -96,20 +95,21 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// валидация полей
-	if a.validator.Struct(&req) != nil {
-		http.Error(w, "Data is not valid", http.StatusBadRequest)
+	if err := a.validator.Struct(&req); err != nil {
+
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx := context.Background()
 	data, err := a.usecase.UserRegister(ctx, req)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// отдаем токен
-	if a.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if err := a.json.NewEncoder(w).Encode(&data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)

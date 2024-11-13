@@ -215,11 +215,13 @@ func (p *PostgresRepo) UserSaveCode(ctx context.Context, code string, user_id in
         VALUES ($1, $2, $3);
 	`
 
+	// TODO: время UTC по гринвичу сделать то что отдаем в БД
+	// Фронт хавает
 	err = tx.QueryRowContext(
-		ctx, 
-		query, 
-		code, 
-		user_id, 
+		ctx,
+		query,
+		code,
+		user_id,
 		time.Now(), // FIXME:  время постгрес #3
 	).Err()
 	if err != nil {

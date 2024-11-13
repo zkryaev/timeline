@@ -260,6 +260,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req dto.SendCodeReq) er
 		)
 		return err
 	}
+	// TODO: добавить DEBUG логирование по всюду
 	// Отправляем на почту
 	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
 		a.Logger.Error(

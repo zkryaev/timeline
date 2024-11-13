@@ -17,7 +17,7 @@ var (
 	verificationEmailTemplate = fmt.Sprintf(`
     <div style="font-family: %s; color: %s;">
         <p>Ваш код подтверждения:</p>
-        <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; max-width: 55px;">
+        <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
             <span style="font-size: %s; font-weight: bold; color: %s;">%%s</span>
         </div>
         <p style="font-weight: bold;">Никому не сообщайте этот код.</p>
@@ -49,7 +49,7 @@ func (s *MailServer) SendVerifyCode(email string, code string) error {
 
 	body := fmt.Sprintf(verificationEmailTemplate, code)
 	m.SetBody("text/html", body)
-	
+
 	if err := s.conn.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send verification code: %w", err)
 	}
