@@ -11,6 +11,7 @@
 [Работа с переменными окружения](https://github.com/joho/godotenv) <br>
 [Генерация Swagger документации](https://github.com/swaggo/swag) <br>
 [Валидация полей структур](https://github.com/go-playground/validator) <br>
+[Миграции](https://github.com/golang-migrate/migrate?tab=readme-ov-file) <br>
 
 
 
