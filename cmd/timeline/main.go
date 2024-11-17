@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,7 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO: структуры в анотации сваггеру обновить надо бы
 // @title Timeline API
 // @version 1.0
 func main() {
@@ -64,9 +65,11 @@ func main() {
 	go func() {
 		err := App.Run()
 		if err != nil {
-			Logs.Error("failed to run server", zap.Error(err))
+			if !errors.Is(err, http.ErrServerClosed) {
+				Logs.Error("failed to run server", zap.Error(err))
+				errorChan <- err
+			}
 		}
-		errorChan <- err
 	}()
 	Logs.Info("Application is started")
 

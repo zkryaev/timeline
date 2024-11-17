@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"timeline/internal/config"
 
-	_ "github.com/jackc/pgx"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 type PostgresRepo struct {
