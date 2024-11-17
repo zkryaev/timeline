@@ -1,16 +1,17 @@
 package postgres
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"timeline/internal/config"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx"
+	"github.com/jmoiron/sqlx"
 )
 
 type PostgresRepo struct {
 	cfg config.Database
-	db  *sql.DB
+	db  *sqlx.DB
 }
 
 func New(cfg config.Database) *PostgresRepo {
@@ -20,7 +21,8 @@ func New(cfg config.Database) *PostgresRepo {
 }
 
 func (p *PostgresRepo) Open() error {
-	db, err := sql.Open(p.cfg.Protocol, fmt.Sprintf(
+	context.Background()
+	db, err := sqlx.Connect(p.cfg.Protocol, fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		p.cfg.Host,
 		p.cfg.Port,

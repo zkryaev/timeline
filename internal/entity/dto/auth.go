@@ -15,7 +15,7 @@ type VerifyCodeReq struct {
 	IsOrg bool   `json:"is_org"`
 }
 
-// Credentials структура для хранения данных авторизации (email и password)
+// Credentials структура для хранения данных авторизации
 type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=12,max=64"`
@@ -32,9 +32,9 @@ type UserRegisterReq struct {
 }
 
 type OrgRegisterReq struct {
-	City string `json:"city" validate:"required,min=2,max=100"`
 	Credentials
 	entity.OrgInfo
+	City string `json:"city" validate:"required,min=2,max=100"`
 }
 
 type TokenPair struct {

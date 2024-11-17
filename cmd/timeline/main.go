@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO: структуры в анотации сваггеру обновить надо бы
 // @title Timeline API
 // @version 1.0
 func main() {
@@ -57,9 +58,9 @@ func main() {
 		)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	quit := make(chan os.Signal, 1)
 	errorChan := make(chan error, 1)
-	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		err := App.Run()
 		if err != nil {

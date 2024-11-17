@@ -16,8 +16,8 @@ var (
 )
 
 // Сохраняет организацию + указанный города
-func (p *PostgresRepo) OrgSave(ctx context.Context, org *entity.OrgInfo, creds *entity.Credentials, cityName string) (int, error) {
-	tx, err := p.db.Begin()
+func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegisterModel, cityName string) (int, error) {
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
 	}
@@ -34,7 +34,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *entity.OrgInfo, creds *
 	}
 
 	// Сохраняем организацию
-	orgID, err := p.orgInfoSave(ctx, tx, org, creds)
+	orgID, err := p.orgInfoSave(ctx, tx, org)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save org: %w", err)
 	}
@@ -54,16 +54,17 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *entity.OrgInfo, creds *
 	return orgID, nil
 }
 
-func (p *PostgresRepo) orgInfoSave(ctx context.Context, tx *sql.Tx, org *entity.OrgInfo, creds *entity.Credentials) (int, error) {
+func (p *PostgresRepo) orgInfoSave(ctx context.Context, tx *sql.Tx, org *models.OrgRegisterModel) (int, error) {
 	query := `
-		INSERT INTO orgs (email, passwd_hash, org_name, org_address, telephone, social, about, lat, long, created_at)
+		INSERT INTO orgs (email, passwd_hash, org_name, org_address, telephone, social, about, lat, long, type)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING org_id;
 	`
 	orgID := 0
+
 	err := tx.QueryRowContext(ctx, query,
-		creds.Login,
-		creds.PasswdHash,
+		org.HashCreds.Email,
+		org.HashCreds.PasswdHash,
 		org.Name,
 		org.Address,
 		org.Telephone,
@@ -71,7 +72,7 @@ func (p *PostgresRepo) orgInfoSave(ctx context.Context, tx *sql.Tx, org *entity.
 		org.About,
 		org.Lat,
 		org.Long,
-		time.Now(), // FIXME: Как работать со временем в Postgres
+		org.Type,
 	).Scan(&orgID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save org: %w", err)
@@ -107,10 +108,10 @@ func orgCityLink(ctx context.Context, tx *sql.Tx, orgID, cityID int) error {
 }
 
 // Получить организацию по ее почте/логину
-func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Organization, *entity.Credentials, error) {
-	tx, err := p.db.Begin()
+func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Organization, error) {
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	// При возникновении ошибки транзакция откатывается по выходу из функции
 	defer func() {
@@ -119,15 +120,16 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Or
 		}
 	}()
 	query := `
-		SELECT email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
+		SELECT org_id, email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
         WHERE email = $1;
 	`
 	var org entity.Organization
-	var creds entity.Credentials
+	var creds entity.HashCreds
 	err = tx.QueryRowContext(ctx, query,
 		email,
 	).Scan(
-		&creds.Login,
+		&org.ID,
+		&creds.Email,
 		&creds.PasswdHash,
 		&org.Info.Name,
 		&org.Info.Address,
@@ -138,20 +140,20 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Or
 		&org.Info.Long,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to save user: %w", err)
+		return nil, fmt.Errorf("failed to save user: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &org, &creds, nil
+	return &org, nil
 }
 
 // Получаем организацию по ее ID в БД
-func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organization, *entity.Credentials, error) {
-	tx, err := p.db.Begin()
+func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organization, error) {
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	// При возникновении ошибки транзакция откатывается по выходу из функции
 	defer func() {
@@ -160,15 +162,14 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organizatio
 		}
 	}()
 	query := `
-		SELECT email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
+		SELECT org_id, email, passwd_hash, org_name, org_address, telephone, social, about, lat, long FROM orgs
         WHERE org_id = $1;
 	`
 	var org entity.Organization
-	var creds entity.Credentials
-	err = tx.QueryRowContext(ctx, query,
-		id,
-	).Scan(
-		&creds.Login,
+	var creds entity.HashCreds
+	err = tx.QueryRowContext(ctx, query, id).Scan(
+		&org.ID,
+		&creds.Email,
 		&creds.PasswdHash,
 		&org.Info.Name,
 		&org.Info.Address,
@@ -179,18 +180,18 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organizatio
 		&org.Info.Long,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to save user: %w", err)
+		return nil, fmt.Errorf("failed to save user: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &org, &creds, nil
+	return &org, nil
 }
 
 // Проверяет наличие организации в БД по ее почте/логину и возвращаем хеш пароля и ошибку
 func (p *PostgresRepo) OrgGetMetaInfo(ctx context.Context, email string) (*models.MetaInfo, error) {
-	tx, err := p.db.Begin()
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
@@ -227,7 +228,7 @@ func (p *PostgresRepo) OrgGetMetaInfo(ctx context.Context, email string) (*model
 }
 
 func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) (int, error) {
-	tx, err := p.db.Begin()
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
 	}
@@ -260,7 +261,7 @@ func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) (int, error
 
 // Сохраняем код отправленный на почту организации
 func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int) error {
-	tx, err := p.db.Begin()
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
 	}
@@ -296,7 +297,7 @@ func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int)
 // Получаем последний код отправленный на почту организации
 // Если ошибка, значит веденный код неверный
 func (p *PostgresRepo) OrgCode(ctx context.Context, code string, org_id int) (time.Time, error) {
-	tx, err := p.db.Begin()
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to start tx: %w", err)
 	}
@@ -319,12 +320,12 @@ func (p *PostgresRepo) OrgCode(ctx context.Context, code string, org_id int) (ti
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to commit tx: %w", err)
 	}
-
+	expires_at.Add(3 * time.Hour) // т.к время по гринвичу отстает на 3 часа от МСК
 	return expires_at, nil
 }
 
 func (p *PostgresRepo) OrgActivateAccount(ctx context.Context, org_id int) error {
-	tx, err := p.db.Begin()
+	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
 	}

@@ -2,9 +2,9 @@ package entity
 
 // здесь перечислены общие для приложения структуры
 
-type Credentials struct {
-	Login      string `json:"login"`       // Логин пользователя
-	PasswdHash string `json:"passwd_hash"` // Хеш пароля пользователя
+type HashCreds struct {
+	Email      string
+	PasswdHash string
 }
 
 type TokenMetadata struct {

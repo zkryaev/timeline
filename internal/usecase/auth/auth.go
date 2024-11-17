@@ -12,6 +12,8 @@ import (
 	"timeline/internal/libs/passwd"
 	"timeline/internal/libs/verification"
 	"timeline/internal/repository/mail/notify"
+	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/repository/mapper/usermap"
 	"timeline/internal/repository/models"
 	"timeline/internal/usecase/auth/validation"
 
@@ -20,19 +22,20 @@ import (
 )
 
 type UserRepository interface {
-	UserSave(ctx context.Context, user *entity.UserInfo, creds *entity.Credentials) (int, error)
-	UserByEmail(ctx context.Context, email string) (*entity.User, *entity.Credentials, error)
-	UserByID(ctx context.Context, id int) (*entity.User, *entity.Credentials, error)
+	UserSave(ctx context.Context, user *models.UserRegisterModel) (int, error)
+	UserByEmail(ctx context.Context, email string) (*entity.User, error)
+	UserByID(ctx context.Context, id int) (*entity.User, error)
 	UserGetMetaInfo(ctx context.Context, email string) (*models.MetaInfo, error)
 	UserSaveCode(ctx context.Context, code string, user_id int) error
 	UserCode(ctx context.Context, code string, user_id int) (time.Time, error)
 	UserActivateAccount(ctx context.Context, user_id int) error
 	UserIsExist(ctx context.Context, email string) (int, error)
 }
+
 type OrgRepository interface {
-	OrgSave(ctx context.Context, org *entity.OrgInfo, creds *entity.Credentials, cityName string) (int, error)
-	OrgByEmail(ctx context.Context, email string) (*entity.Organization, *entity.Credentials, error)
-	OrgByID(ctx context.Context, id int) (*entity.Organization, *entity.Credentials, error)
+	OrgSave(ctx context.Context, org *models.OrgRegisterModel, cityName string) (int, error)
+	OrgByEmail(ctx context.Context, email string) (*entity.Organization, error)
+	OrgByID(ctx context.Context, id int) (*entity.Organization, error)
 	OrgGetMetaInfo(ctx context.Context, email string) (*models.MetaInfo, error)
 	OrgSaveCode(ctx context.Context, code string, org_id int) error
 	OrgCode(ctx context.Context, code string, org_id int) (time.Time, error)
@@ -137,12 +140,9 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 		)
 		return 0, err
 	}
-	creds := entity.Credentials{
-		Login:      req.Credentials.Email,
-		PasswdHash: hash,
-	}
+	req.Credentials.Password = hash
 	// Создали юзера
-	userID, err := a.user.UserSave(ctx, &req.UserInfo, &creds)
+	userID, err := a.user.UserSave(ctx, usermap.ToModel(&req))
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
@@ -196,11 +196,8 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 		)
 		return 0, err
 	}
-	creds := entity.Credentials{
-		Login:      req.Credentials.Email,
-		PasswdHash: hash,
-	}
-	orgID, err := a.org.OrgSave(ctx, &req.OrgInfo, &creds, req.City)
+	req.Credentials.Password = hash
+	orgID, err := a.org.OrgSave(ctx, orgmap.ToModel(&req), req.City)
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
@@ -260,7 +257,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req dto.SendCodeReq) er
 		)
 		return err
 	}
-	// TODO: добавить DEBUG логирование по всюду
+
 	// Отправляем на почту
 	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
 		a.Logger.Error(

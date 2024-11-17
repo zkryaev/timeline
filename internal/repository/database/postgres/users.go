@@ -17,7 +17,7 @@ var (
 )
 
 // Сохраняет пользователя и его почту/логин + пароль в хешированном виде
-func (p *PostgresRepo) UserSave(ctx context.Context, user *entity.UserInfo, creds *entity.Credentials) (int, error) {
+func (p *PostgresRepo) UserSave(ctx context.Context, user *models.UserRegisterModel) (int, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -29,7 +29,7 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *entity.UserInfo, cred
 		}
 	}()
 	query := `
-		INSERT INTO users (email, passwd_hash, user_name, telephone, social, about, created_at)
+		INSERT INTO users (email, passwd_hash, first_name, last_name, telephone, social, about)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING user_id;
 	`
@@ -37,13 +37,13 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *entity.UserInfo, cred
 	err = tx.QueryRowContext(
 		ctx,
 		query,
-		creds.Login,
-		string(creds.PasswdHash),
-		user.Name,
+		user.HashCreds.Email,
+		user.HashCreds.PasswdHash,
+		user.FirstName,
+		user.LastName,
 		user.Telephone,
 		user.Social,
 		user.About,
-		time.Now(), // FIXME: время постгрес #2
 	).Scan(&userID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to save user: %w", err)
@@ -57,10 +57,10 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *entity.UserInfo, cred
 }
 
 // Получить юзера по email
-func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*entity.User, *entity.Credentials, error) {
+func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -68,35 +68,36 @@ func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*entity.U
 		}
 	}()
 	query := `
-		SELECT user_id, email, passwd_hash, user_name, telephone, social, about FROM users
+		SELECT user_id, email, passwd_hash, first_name, last_name, telephone, social, about FROM users
 		WHERE email = $1;
 	`
 	var user entity.User
-	var creds entity.Credentials
+	var creds entity.HashCreds
 	err = tx.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
-		&creds.Login,
+		&creds.Email,
 		&creds.PasswdHash,
-		&user.Info.Name,
+		&user.Info.FirstName,
+		&user.Info.LastName,
 		&user.Info.Telephone,
 		&user.Info.Social,
 		&user.Info.About,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get user by email: %w", err)
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &user, &creds, nil
+	return &user, nil
 }
 
 // Получить юзера по ID из БД
-func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*entity.User, *entity.Credentials, error) {
+func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*entity.User, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -108,24 +109,25 @@ func (p *PostgresRepo) UserByID(ctx context.Context, id int) (*entity.User, *ent
 		WHERE email = $1;
 	`
 	var user entity.User
-	var creds entity.Credentials
+	var creds entity.HashCreds
 	err = tx.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
-		&creds.Login,
+		&creds.Email,
 		&creds.PasswdHash,
-		&user.Info.Name,
+		&user.Info.FirstName,
+		&user.Info.LastName,
 		&user.Info.Telephone,
 		&user.Info.Social,
 		&user.Info.About,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to save user: %w", err)
+		return nil, fmt.Errorf("failed to save user: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &user, &creds, nil
+	return &user, nil
 }
 
 // Существуют ли юзер в БД
@@ -211,18 +213,15 @@ func (p *PostgresRepo) UserSaveCode(ctx context.Context, code string, user_id in
 		}
 	}()
 	query := `
-		INSERT INTO user_verify (code, user_id, expires_at)
+		INSERT INTO user_verify (code, user_id)
         VALUES ($1, $2, $3);
 	`
 
-	// TODO: время UTC по гринвичу сделать то что отдаем в БД
-	// Фронт хавает
 	err = tx.QueryRowContext(
 		ctx,
 		query,
 		code,
 		user_id,
-		time.Now(), // FIXME:  время постгрес #3
 	).Err()
 	if err != nil {
 		return fmt.Errorf("failed to save org code: %w", err)
@@ -264,7 +263,7 @@ func (p *PostgresRepo) UserCode(ctx context.Context, code string, user_id int) (
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to commit tx: %w", err)
 	}
-
+	expires_at.Add(3 * time.Hour)
 	return expires_at, nil
 }
 

@@ -84,7 +84,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.UserRegisterReq true "User Register Request"
-// @Success 201 {object} dto.TokenPair
+// @Success 201 {object} id
 // @Failure 400 {string} string "Invalid credentials"
 // @Router /auth/register/user [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +121,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.OrgRegisterReq true "Organization Register Request"
-// @Success 201 {object} dto.TokenPair
+// @Success 201 {object} id
 // @Failure 400 {string} string "Invalid credentials"
 // @Router /auth/register/org [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {

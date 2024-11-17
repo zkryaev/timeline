@@ -1,13 +1,14 @@
 package entity
 
 type User struct {
-	ID   uint64   `json:"id"`   // Уникальный идентификатор пользователя
-	Info UserInfo `json:"info"` // Информация о пользователе
+	ID   uint64   `json:"id" db:"user_id"`
+	Info UserInfo `json:"info"`
 }
 
 type UserInfo struct {
-	Name      string `json:"name" validate:"required,min=3,max=100"` // Имя пользователя
-	Telephone string `json:"telephone" validate:"required,e164"`     // Телефон пользователя
-	Social    string `json:"social" validate:"required,url"`         // Социальная ссылка
-	About     string `json:"about" validate:"max=500"`               // Описание пользователя
+	FirstName string `json:"first_name" validate:"required,min=3,max=100"`
+	LastName  string `json:"last_name" validate:"required,min=3,max=100"`
+	Telephone string `json:"telephone" validate:"e164"`
+	Social    string `json:"social" validate:"url"`
+	About     string `json:"about" validate:"max=500"`
 }
