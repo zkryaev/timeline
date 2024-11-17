@@ -43,9 +43,8 @@ func (a *App) Run() error {
 	return nil
 }
 
-func (a *App) Stop() {
-	a.log.Info("Shutdown application...")
-	a.httpServer.Shutdown(context.Background())
+func (a *App) Stop(ctx context.Context) {
+	a.httpServer.Shutdown(ctx)
 }
 
 func (a *App) SetupControllers(tokenCfg config.Token, storage *postgres.PostgresRepo, mailService notify.Mail /*redis*/) error {

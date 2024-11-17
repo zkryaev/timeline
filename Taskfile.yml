@@ -5,12 +5,13 @@ dotenv: ['.env']
 silent: true
 
 vars:
-  ENTRYPOINT: cmd/main.go
+  ENTRYPOINT: ./cmd/timeline/
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
   SWAGGER_DOCS: ./docs/swagger
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
-  DSN: "{{.DB}}://{{.DB_USER}}:{{.DBPASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+  MIGRATION_PATH: ./migrations
+  DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
   ENVS:
     - CONFIG_PATH
     - DB
@@ -28,8 +29,17 @@ vars:
 
 tasks:
   dsn:
+    desc: "Show DSN"
     cmds:
       - echo {{.DSN}}
+  migrate-up:
+    desc: "Apply migrations"
+    cmds:
+      - go run ./cmd/migrator/main.go --dsn={{.DSN}} --migrations-path={{.MIGRATION_PATH}}
+  migrate-down:
+    desc: "Reverse migrations"
+    cmds:
+      - migrate -database {{.DSN}} -path {{.MIGRATION_PATH}} down
   env_setup_check:
     desc: "Checks that all required environment variables are set and non-empty"
     cmds:
@@ -42,11 +52,18 @@ tasks:
           fi
       - echo "All required environment variables are set."
   docker-up:
-    desc: ""
+    desc: "Start docker-compose"
     cmds:
       - docker-compose up -d
+      - |
+        echo "Waiting for database to be ready..."
+        until nc -z -v -w30 localhost {{.DB_PORT}}; do
+          echo "Waiting for database connection..."
+          sleep 1
+        done
+        echo "Database is up and running!"
   docker-rm:
-    desc: ""
+    desc: "Stop and clean running containers"
     cmds:
       - docker stop $(docker ps -aq)
       - docker rm $(docker ps -aq)
@@ -74,8 +91,8 @@ tasks:
       - rm -r {{.LINTER_LOG}}/*
 
   run:
-    desc: "Run the compiled application"
-    deps: [env_setup_check, docker-up, build]
+    desc: "env-checks -> docker -> migrations -> build application -> run"
+    deps: [env_setup_check, docker-up, migrate-up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 

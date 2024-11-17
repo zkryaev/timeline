@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -19,58 +20,68 @@ import (
 // @title Timeline API
 // @version 1.0
 func main() {
+	// Подгружаем все переменные окружения
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("No .env file found")
 	}
 
+	// Подгружаем конфиг
 	cfg := config.MustLoad()
 
 	//Инициализация логгера
-	Logr := logger.New(cfg.App.Env)
-	// TODO: Надо бы Авто миграцию
+	Logs := logger.New(cfg.App.Env)
+	Logs.Info("Application is launched")
+
 	db := postgres.New(cfg.DB)
 	err := db.Open()
 	if err != nil {
-		Logr.Fatal(
+		Logs.Fatal(
 			"failed connection to Database",
 			zap.Error(err),
 		)
 	}
+	Logs.Info("Connected to Database successfuly")
 	defer db.Close()
 	// TODO: Redis
 
 	// Поднимаем почтовый сервис
 	mail := notify.New(cfg.Mail)
+	Logs.Info("Connected to Mail server successfuly")
 
-	Application := app.New(cfg.App, Logr)
-	err = Application.SetupControllers(cfg.Token, db, mail)
+	App := app.New(cfg.App, Logs)
+	err = App.SetupControllers(cfg.Token, db, mail)
 	if err != nil {
-		Logr.Fatal(
+		Logs.Fatal(
 			"failed setup controllers",
 			zap.Error(err),
 		)
 	}
 
 	quit := make(chan os.Signal, 1)
+	errorChan := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		err = Application.Run()
+		err := App.Run()
 		if err != nil {
-			quit <- os.Interrupt
+			Logs.Error("failed to run server", zap.Error(err))
 		}
+		errorChan <- err
 	}()
+	Logs.Info("Application is started")
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-	sig := <-quit
-	if err != nil {
-		Logr.Fatal(
-			"failed to run server",
+	select {
+	case sig := <-quit:
+		cancel()
+		Logs.Info("Received signal",
+			zap.String("signal", sig.String()),
+		)
+	case err := <-errorChan:
+		cancel()
+		Logs.Error("error occurred",
 			zap.Error(err),
 		)
 	}
-	Application.Stop()
-	Logr.Info(
-		"Gracefully stopped",
-		zap.String("signal", sig.String()),
-	)
-
+	App.Stop(ctx)
+	Logs.Info("Application stopped")
 }
