@@ -11,13 +11,17 @@ import (
 
 type Config struct {
 	App   Application `yaml:"app"`
-	DB    Database    `yaml:"db"`
-	Mail  Mail        `yaml:"mail"`
-	Token Token       `yaml:"token"`
+	DB    Database
+	Mail  Mail
+	Token Token `yaml:"token"`
 }
 
 type Application struct {
-	Env         string        `yaml:"env" env-required:"true"`
+	Env        string `yaml:"env" env-required:"true"`
+	HTTPServer `yaml:"http_server"`
+}
+
+type HTTPServer struct {
 	Host        string        `yaml:"host" env-default:"localhost"`
 	Port        string        `yaml:"port" env-default:"8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`

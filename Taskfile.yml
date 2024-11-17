@@ -11,7 +11,20 @@ vars:
   SWAGGER_DOCS: ./docs/swagger
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DBPASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
-
+  ENVS:
+    - CONFIG_PATH
+    - DB
+    - DB_USER
+    - DB_PASSWD
+    - DB_HOST
+    - DB_PORT
+    - DB_NAME
+    - DB_SSLMODE
+    - MAIL_HOST
+    - MAIL_PORT
+    - MAIL_USER
+    - MAIL_PASSWD
+    - SECRET_PATH
 
 tasks:
   dsn:
@@ -20,14 +33,24 @@ tasks:
   env_setup_check:
     desc: "Checks that all required environment variables are set and non-empty"
     cmds:
-      - for: [CONFIG_PATH, DB, DB_USER, DB_PASSWD, DB_HOST, DB_PORT, DB_NAME, DB_SSLMODE, MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASSWD, SECRET_PATH]
+      - for:
+          var: ENVS
         cmd: |
           if [ -z "${{ .ITEM }}" ]; then
             echo "Error: env {{ .ITEM }} isn't set." >&2
             exit 1
           fi
       - echo "All required environment variables are set."
-
+  docker-up:
+    desc: ""
+    cmds:
+      - docker-compose up -d
+  docker-rm:
+    desc: ""
+    cmds:
+      - docker stop $(docker ps -aq)
+      - docker rm $(docker ps -aq)
+      
   generate:
     desc: "Generate Swagger docs"
     cmds:
@@ -52,7 +75,7 @@ tasks:
 
   run:
     desc: "Run the compiled application"
-    deps: [env_setup_check, build]
+    deps: [env_setup_check, docker-up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
