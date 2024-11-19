@@ -214,7 +214,7 @@ func (p *PostgresRepo) UserSaveCode(ctx context.Context, code string, user_id in
 	}()
 	query := `
 		INSERT INTO user_verify (code, user_id)
-        VALUES ($1, $2, $3);
+        VALUES ($1, $2);
 	`
 
 	err = tx.QueryRowContext(
