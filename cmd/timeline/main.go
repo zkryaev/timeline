@@ -32,7 +32,7 @@ func main() {
 
 	//Инициализация логгера
 	Logs := logger.New(cfg.App.Env)
-	Logs.Info("Application is launched")
+	Logs.Info("Application is initializing")
 
 	db, err := repository.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
@@ -41,17 +41,18 @@ func main() {
 	err = db.Open()
 	if err != nil {
 		Logs.Fatal(
-			"failed connection to Database",
+			"failed to connect",
+			zap.String("Database", os.Getenv("DB")),
 			zap.Error(err),
 		)
 	}
-	Logs.Info("Connected to Database successfuly")
+	Logs.Info("Successfuly connected to", zap.String("Database", os.Getenv("DB")))
 	defer db.Close()
 	// TODO: Redis
 
 	// Поднимаем почтовый сервис
 	mail := notify.New(cfg.Mail)
-	Logs.Info("Connected to Mail server successfuly")
+	Logs.Info("Successfuly connected to", zap.String("Mail server", os.Getenv("MAIL_HOST")))
 
 	App := app.New(cfg.App, Logs)
 	err = App.SetupControllers(cfg.Token, db, mail)
@@ -74,7 +75,7 @@ func main() {
 			}
 		}
 	}()
-	Logs.Info("Application is started")
+	Logs.Info("Application is now running", zap.String("HTTP server", cfg.App.Host+":"+cfg.App.Port))
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {

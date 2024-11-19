@@ -34,7 +34,6 @@ type MailServer struct {
 }
 
 func New(cfg config.Mail) *MailServer {
-
 	return &MailServer{
 		conn: gomail.NewDialer("smtp."+cfg.Host, cfg.Port, cfg.User, cfg.Password),
 	}
