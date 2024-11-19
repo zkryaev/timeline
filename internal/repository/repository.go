@@ -2,10 +2,19 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
+	"timeline/internal/config"
 	"timeline/internal/entity"
+	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/models"
 )
+
+type Database interface {
+	Open() error
+	Close()
+	Repository
+}
 
 type Repository interface {
 	UserRepository
@@ -32,4 +41,14 @@ type OrgRepository interface {
 	OrgCode(ctx context.Context, code string, org_id int) (time.Time, error)
 	OrgActivateAccount(ctx context.Context, user_id int) error
 	OrgIsExist(ctx context.Context, email string) (int, error)
+}
+
+// Паттерн фабричный метод, для гибкого создания БД
+func GetDB(name string, cfg config.Database) (Database, error) {
+	switch name {
+	case "postgres":
+		return postgres.New(cfg), nil
+	default:
+		return nil, fmt.Errorf("unexpected db name")
+	}
 }

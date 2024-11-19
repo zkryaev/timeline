@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"timeline/internal/app"
 	"timeline/internal/config"
-	"timeline/internal/repository/database/postgres"
+	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
 	"timeline/pkg/logger"
 
@@ -34,8 +34,11 @@ func main() {
 	Logs := logger.New(cfg.App.Env)
 	Logs.Info("Application is launched")
 
-	db := postgres.New(cfg.DB)
-	err := db.Open()
+	db, err := repository.GetDB(os.Getenv("DB"), cfg.DB)
+	if err != nil {
+		Logs.Fatal("wrong db type was intered", zap.Error(err))
+	}
+	err = db.Open()
 	if err != nil {
 		Logs.Fatal(
 			"failed connection to Database",
