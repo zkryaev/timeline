@@ -72,11 +72,12 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// отдаем токен
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if a.json.NewEncoder(w).Encode(&data) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Register User
@@ -110,11 +111,12 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// отдаем токен
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	if err := a.json.NewEncoder(w).Encode(&data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 }
 
 // @Summary Register Organization
@@ -146,12 +148,13 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	// отдаем токен
 	if a.json.NewEncoder(w).Encode(&id) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 }
 
 // @Summary Send Code Retry
@@ -215,11 +218,12 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// отдаем токен
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if a.json.NewEncoder(w).Encode(&data) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Update Access Token
