@@ -11,6 +11,7 @@ import (
 	jwtlib "timeline/internal/libs/jwtlib"
 	"timeline/internal/libs/passwd"
 	"timeline/internal/libs/verification"
+	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
@@ -21,28 +22,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserRepository interface {
-	UserSave(ctx context.Context, user *models.UserRegisterModel) (int, error)
-	UserByEmail(ctx context.Context, email string) (*entity.User, error)
-	UserByID(ctx context.Context, id int) (*entity.User, error)
-	UserGetMetaInfo(ctx context.Context, email string) (*models.MetaInfo, error)
-	UserSaveCode(ctx context.Context, code string, user_id int) error
-	UserCode(ctx context.Context, code string, user_id int) (time.Time, error)
-	UserActivateAccount(ctx context.Context, user_id int) error
-	UserIsExist(ctx context.Context, email string) (int, error)
-}
-
-type OrgRepository interface {
-	OrgSave(ctx context.Context, org *models.OrgRegisterModel, cityName string) (int, error)
-	OrgByEmail(ctx context.Context, email string) (*entity.Organization, error)
-	OrgByID(ctx context.Context, id int) (*entity.Organization, error)
-	OrgGetMetaInfo(ctx context.Context, email string) (*models.MetaInfo, error)
-	OrgSaveCode(ctx context.Context, code string, org_id int) error
-	OrgCode(ctx context.Context, code string, org_id int) (time.Time, error)
-	OrgActivateAccount(ctx context.Context, user_id int) error
-	OrgIsExist(ctx context.Context, email string) (int, error)
-}
-
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrAccountExpired     = errors.New("account expired")
@@ -51,14 +30,14 @@ var (
 
 type AuthUseCase struct {
 	secret   *rsa.PrivateKey
-	user     UserRepository
-	org      OrgRepository
+	user     repository.UserRepository
+	org      repository.OrgRepository
 	mail     notify.Mail
 	TokenCfg config.Token
 	Logger   *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, userRepo UserRepository, orgRepo OrgRepository, mailSrv notify.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo repository.OrgRepository, mailSrv notify.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
