@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS users(
     verified BOOLEAN DEFAULT FALSE
 );
 
-CREATE UNIQUE INDEX email_idx ON users (email);
-
 CREATE TABLE IF NOT EXISTS user_verify(
     user_verify_id SERIAL PRIMARY KEY,
     user_id INT,
@@ -36,8 +34,6 @@ CREATE TABLE IF NOT EXISTS orgs(
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified BOOLEAN DEFAULT FALSE
 );
-
-CREATE UNIQUE INDEX email_idx ON orgs (email);
 
 CREATE TABLE IF NOT EXISTS city(
     city_id SERIAL PRIMARY KEY,
