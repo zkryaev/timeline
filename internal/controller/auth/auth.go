@@ -114,7 +114,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	if a.json.NewEncoder(w).Encode(&data) != nil {
+	if err = a.json.NewEncoder(w).Encode(&data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
