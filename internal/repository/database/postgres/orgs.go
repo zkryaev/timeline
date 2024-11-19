@@ -15,7 +15,7 @@ var (
 	ErrOrgNotFound = errors.New("org not found")
 )
 
-// Сохраняет организацию + указанный города
+// Сохраняет организацию + указанный город
 func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegisterModel, cityName string) (int, error) {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -107,7 +107,6 @@ func orgCityLink(ctx context.Context, tx *sql.Tx, orgID, cityID int) error {
 	return nil
 }
 
-// Получить организацию по ее почте/логину
 func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Organization, error) {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -149,7 +148,6 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*entity.Or
 	return &org, nil
 }
 
-// Получаем организацию по ее ID в БД
 func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*entity.Organization, error) {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -259,7 +257,7 @@ func (p *PostgresRepo) OrgIsExist(ctx context.Context, email string) (int, error
 	return id, nil
 }
 
-// Сохраняем код отправленный на почту организации
+// Сохраняет код отправленный на почту и id организации
 func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int) error {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -272,8 +270,8 @@ func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int)
 		}
 	}()
 	query := `
-		INSERT INTO orgs_verify (code, org_id, expires_at)
-        VALUES ($1, $2, $3);
+		INSERT INTO orgs_verify (code, org_id)
+        VALUES ($1, $2);
 	`
 
 	err = tx.QueryRowContext(
@@ -281,7 +279,6 @@ func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int)
 		query,
 		code,
 		org_id,
-		time.Now(),
 	).Err()
 	if err != nil {
 		return fmt.Errorf("failed to save org code: %w", err)
@@ -294,8 +291,8 @@ func (p *PostgresRepo) OrgSaveCode(ctx context.Context, code string, org_id int)
 	return nil
 }
 
-// Получаем последний код отправленный на почту организации
-// Если ошибка, значит веденный код неверный
+// Получаем время стухания последнего кода отправленного на почту организации
+// Если ошибка, значит веденный код неверный.
 func (p *PostgresRepo) OrgCode(ctx context.Context, code string, org_id int) (time.Time, error) {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -320,10 +317,10 @@ func (p *PostgresRepo) OrgCode(ctx context.Context, code string, org_id int) (ti
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	expires_at.Add(3 * time.Hour) // т.к время по гринвичу отстает на 3 часа от МСК
 	return expires_at, nil
 }
 
+// Обновляет поле verified = true
 func (p *PostgresRepo) OrgActivateAccount(ctx context.Context, org_id int) error {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {

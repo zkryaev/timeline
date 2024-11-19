@@ -14,19 +14,19 @@ var (
 )
 
 func IsCodeExpired(created_at time.Time) bool {
-	currentTime := time.Now()
+	currentTime := time.Now().UTC()
 	if currentTime.Sub(created_at) > 5*time.Minute {
 		return true
 	}
 	return false
 }
 
-// Проверяем что дата создания <= текущая дата
+// Проверяем что в формате UTC, что между текущей датой и датой создания не больше дня.
 func IsAccountExpired(created_at time.Time) bool {
-	// обнуляет время, оставляя только дату
-	currentDate := time.Now().Truncate(24 * time.Hour)
-	createdDate := created_at.Truncate(24 * time.Hour)
-	if currentDate.After(createdDate) {
+	Day := 24 * time.Hour
+	currentDate := time.Now().UTC()                    // Получаем текущее время в UTC
+	createdDate := created_at.Truncate(24 * time.Hour) // Обрезаем до суток
+	if currentDate.Sub(createdDate) > Day {
 		return true
 	}
 	return false

@@ -263,7 +263,6 @@ func (p *PostgresRepo) UserCode(ctx context.Context, code string, user_id int) (
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	expires_at.Add(3 * time.Hour)
 	return expires_at, nil
 }
 
