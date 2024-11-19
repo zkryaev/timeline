@@ -8,17 +8,16 @@ services:
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASSWD}
         POSTGRES_DB: ${DB_NAME}
-        TZ: "Europe/Moscow"
       ports:
         - "${DB_PORT}:5432" # Подключаем внешний порт из переменной окружения
-      volumes:
-        - pgdata:/var/lib/postgresql/data
-        - ./db_init_user/:/docker-entrypoint-initdb.d/ # монтируем инициализационные скрипты
+      #volumes:
+      #  - ./db_init_user/:/docker-entrypoint-initdb.d/ # монтируем инициализационные скрипты
+      # - pgdata:/var/lib/postgresql/data
       networks:
         - default
 
-volumes:
-  pgdata:
+#volumes:
+#  pgdata:
 
 networks:
   default:

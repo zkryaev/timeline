@@ -1,0 +1,9 @@
+logs
+.task
+/config/local.yml
+.env
+private_key.pem
+linter_logs*
+bin
+db_init_user
+docs/swagger
