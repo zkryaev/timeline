@@ -63,7 +63,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 
 	authAPI := authctrl.New(
 		usecaseAuth,
-		middleware.New(privateKey),
+		middleware.New(privateKey, a.log),
 		a.log,
 		jsoniter.ConfigCompatibleWithStandardLibrary,
 		*validator.New(),

@@ -23,6 +23,7 @@ type Auth interface {
 type Middleware interface {
 	ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.Token, error)
 	IsTokenValid(next http.Handler) http.Handler
+	HandlerLogs(next http.Handler) http.Handler
 }
 
 type AuthCtrl struct {
@@ -99,7 +100,6 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	// валидация полей
 	if err := a.validator.Struct(&req); err != nil {
-
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -138,15 +138,15 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// валидация полей
-	if a.validator.Struct(&req) != nil {
-		http.Error(w, "Data is not valid", http.StatusBadRequest)
+	if err := a.validator.Struct(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx := context.Background()
 	data, err := a.usecase.OrgRegister(ctx, req)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -175,14 +175,14 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// валидация полей
-	if a.validator.Struct(&req) != nil {
-		http.Error(w, "Data is not valid", http.StatusBadRequest)
+	if err := a.validator.Struct(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx := context.Background()
 	if err := a.usecase.SendCodeRetry(ctx, req); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -206,15 +206,15 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// валидация полей
-	if a.validator.Struct(&req) != nil {
-		http.Error(w, "Data is not valid", http.StatusBadRequest)
+	if err := a.validator.Struct(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx := context.Background()
 	data, err := a.usecase.VerifyCode(ctx, req)
 	if err != nil {
-		http.Error(w, "Code or account expired", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// отдаем токен
@@ -244,7 +244,7 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 			"failed update access token",
 			zap.String("ExtractToken", err.Error()),
 		)
-		http.Error(w, "Invalid token field", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if token.Claims.(jwt.MapClaims)["type"] != "refresh" {

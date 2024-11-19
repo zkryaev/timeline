@@ -23,7 +23,10 @@ const (
 func InitRouter(controllersSet *Controllers) *mux.Router {
 	r := mux.NewRouter()
 
+	// Установка доменных контроллеров
 	auth := controllersSet.Auth
+
+	r.Use(auth.Middleware.HandlerLogs)
 
 	authRouter := r.NewRoute().PathPrefix(authPrefix).Subrouter()
 	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")

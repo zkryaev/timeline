@@ -6,17 +6,43 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 )
+
+type respWriterCustom struct {
+	http.ResponseWriter
+	statusCode int         // Хранит статус ответа
+	header     http.Header // Заголовки ответа
+}
+
+func (rw *respWriterCustom) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (rw *respWriterCustom) Write(b []byte) (int, error) {
+	if rw.statusCode == 0 { // Если WriteHeader не был вызван
+		rw.WriteHeader(http.StatusOK)
+	}
+	return rw.ResponseWriter.Write(b)
+}
+
+func (rw *respWriterCustom) Header() http.Header {
+	return rw.ResponseWriter.Header()
+}
 
 type Middleware struct {
 	secret *rsa.PrivateKey
+	logger *zap.Logger
 }
 
-func New(key *rsa.PrivateKey) *Middleware {
+func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
 	return &Middleware{
 		secret: key,
+		logger: logger,
 	}
 }
 
@@ -24,6 +50,18 @@ var (
 	ErrTokenNotFound   = errors.New("token not found")
 	ErrAuthHeaderEmpty = errors.New("auth header empty")
 )
+
+func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &respWriterCustom{ResponseWriter: w}
+		next.ServeHTTP(rw, r)
+		w.Header().Get("")
+		duration := time.Since(start)
+
+		m.logger.Info(fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, r.RequestURI, rw.statusCode, duration))
+	})
+}
 
 func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
 	authHeader := r.Header.Get("Authorization")
