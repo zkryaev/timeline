@@ -13,8 +13,8 @@ import (
 
 type Auth interface {
 	Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPair, error)
-	UserRegister(ctx context.Context, req dto.UserRegisterReq) (int, error)
-	OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (int, error)
+	UserRegister(ctx context.Context, req dto.UserRegisterReq) (*dto.RegisterResp, error)
+	OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (*dto.RegisterResp, error)
 	SendCodeRetry(ctx context.Context, req dto.SendCodeReq) error
 	VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*dto.TokenPair, error)
 	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error)
@@ -86,7 +86,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.UserRegisterReq true "User Register Request"
-// @Success 201 {string} string "User ID"
+// @Success 201 {object} dto.RegisterResp "User ID"
 // @Failure 400
 // @Failure 500
 // @Router /auth/register/user [post]
@@ -105,7 +105,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	id, err := a.usecase.UserRegister(ctx, req)
+	data, err := a.usecase.UserRegister(ctx, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -114,10 +114,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	resp := map[string]int{
-		"user_id": id,
-	}
-	if a.json.NewEncoder(w).Encode(&resp) != nil {
+	if a.json.NewEncoder(w).Encode(&data) != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -129,7 +126,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.OrgRegisterReq true "Organization Register Request"
-// @Success 201 {object} string "Organization ID"
+// @Success 201 {object} dto.RegisterResp "Organization ID"
 // @Failure 400
 // @Failure 500
 // @Router /auth/register/org [post]
@@ -147,17 +144,14 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	id, err := a.usecase.OrgRegister(ctx, req)
+	data, err := a.usecase.OrgRegister(ctx, req)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	resp := map[string]int{
-		"org_id": id,
-	}
-	if a.json.NewEncoder(w).Encode(&resp) != nil {
+	if a.json.NewEncoder(w).Encode(&data) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}

@@ -102,14 +102,14 @@ func (a *AuthUseCase) Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPa
 // идем в БД и проверяем существует ли пользователь с таким email,
 // если НЕТ, то добавляем его в БД, если ДА -> ошибка
 // Отправляем на указанную почту код подтверждения
-func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq) (int, error) {
+func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq) (*dto.RegisterResp, error) {
 	_, err := a.user.UserIsExist(ctx, req.Email)
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
 			zap.String("UserIsExist", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
@@ -117,7 +117,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 			"failed to register user",
 			zap.String("GetHash", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	req.Credentials.Password = hash
 	// Создали юзера
@@ -127,7 +127,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 			"failed to register user",
 			zap.String("UserSave", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Генерируем код
 	code, err := verification.GenerateCode()
@@ -136,7 +136,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 			"failed to register user",
 			zap.String("GenerateCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Сохраняем его в БД
 	if err := a.user.UserSaveCode(ctx, code, userID); err != nil {
@@ -144,7 +144,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 			"failed to register user",
 			zap.String("UserSaveCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Отправляем на почту
 	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
@@ -152,20 +152,22 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 			"failed to register user",
 			zap.String("SendVerifyCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
-	return userID, nil
+	return &dto.RegisterResp{
+		Id: userID,
+	}, nil
 }
 
 // Аналогично работе с пользователем
-func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (int, error) {
+func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (*dto.RegisterResp, error) {
 	_, err := a.org.OrgIsExist(ctx, req.Email)
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
 			zap.String("OrgIsExist", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
@@ -173,7 +175,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 			"failed to register user",
 			zap.String("GetHash", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	req.Credentials.Password = hash
 	orgID, err := a.org.OrgSave(ctx, orgmap.ToModel(&req), req.City)
@@ -182,7 +184,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 			"failed to register user",
 			zap.String("OrgSave", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Генерируем код
 	code, err := verification.GenerateCode()
@@ -191,7 +193,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 			"failed to register user",
 			zap.String("GenerateCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Сохраняем его в БД
 	if err := a.org.OrgSaveCode(ctx, code, orgID); err != nil {
@@ -199,7 +201,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 			"failed to register user",
 			zap.String("OrgSaveCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
 	// Отправляем на почту
 	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
@@ -207,9 +209,11 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 			"failed to register user",
 			zap.String("SendVerifyCode", err.Error()),
 		)
-		return 0, err
+		return nil, err
 	}
-	return orgID, nil
+	return &dto.RegisterResp{
+		Id: orgID,
+	}, nil
 }
 
 func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req dto.SendCodeReq) error {

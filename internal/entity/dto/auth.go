@@ -31,6 +31,10 @@ type UserRegisterReq struct {
 	entity.UserInfo
 }
 
+type RegisterResp struct {
+	Id int `json:"id"`
+}
+
 type OrgRegisterReq struct {
 	Credentials
 	entity.OrgInfo
