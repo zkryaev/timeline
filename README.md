@@ -8,12 +8,12 @@
 ### Схема БД
 ![image](https://github.com/user-attachments/assets/a9277e30-09dd-483d-b710-bc61f7ca2c70)
 
-### Зависимости
+### Используемые библиотеки
 [Роутер](https://github.com/gorilla/mux) <br>
 [Миграции](https://github.com/golang-migrate/migrate?tab=readme-ov-file) <br>
 [Работа с JWT](https://github.com/golang-jwt/jwt) <br>
 [Работа с JSON](https://github.com/json-iterator/go) <br>
-[Драйвер для БД](https://github.com/jackc/pgx?ysclid=m3kfe9usdw209993533) <br>
+[Драйвер для БД](https://github.com/lib/pq) <br>
 [Интерфейс для БД](https://github.com/jmoiron/sqlx) <br>
 [Работа с почтой по SMTP](https://github.com/go-gomail/gomail) <br>
 [Валидация полей структур](https://github.com/go-playground/validator) <br>
