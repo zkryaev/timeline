@@ -9,6 +9,7 @@ vars:
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
   SWAGGER_DOCS: ./docs/swagger
+  SWAGGER_SRC: ./cmd/timeline/main.go
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   MIGRATION_PATH: ./migrations
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
@@ -40,6 +41,11 @@ tasks:
     desc: "Reverse migrations"
     cmds:
       - migrate -database {{.DSN}} -path {{.MIGRATION_PATH}} down
+  migrate-deploy:
+    desc: "Migrations + waiting for DB"
+    cmds:
+      - sleep 4
+      - {task: migrate-up}
   env_setup_check:
     desc: "Checks that all required environment variables are set and non-empty"
     cmds:
@@ -59,19 +65,17 @@ tasks:
         echo "Waiting for database to be ready..."
         until nc -z -v -w30 localhost {{.DB_PORT}}; do
           echo "Waiting for database connection..."
-          sleep 1
         done
         echo "Database is up and running!"
   docker-rm:
     desc: "Stop and clean running containers"
     cmds:
-      - docker stop $(docker ps -aq)
-      - docker rm $(docker ps -aq)
+      - docker-compose down
       
-  generate:
+  gen-api:
     desc: "Generate Swagger docs"
     cmds:
-      - swag init -g ./cmd/main.go -o {{.SWAGGER_DOCS}}
+      - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_DOCS}}
 
   lint:
     desc: "Run GolangCI-Lint and save output to file"
@@ -90,9 +94,16 @@ tasks:
       - rm -r {{.OUTPUT_BINARY}}/*
       - rm -r {{.LINTER_LOG}}/*
 
-  run:
+  deploy:
     desc: "env-checks -> docker -> migrations -> build application -> run"
-    deps: [env_setup_check, docker-up, migrate-up, build]
+    deps: [env_setup_check, docker-up, migrate-deploy, build]
+    cmds:
+      - defer: { task: docker-rm }
+      - ./{{.OUTPUT_BINARY}}
+
+  run:
+    desc: "build application -> run"
+    deps: [build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
