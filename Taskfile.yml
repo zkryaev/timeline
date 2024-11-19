@@ -110,4 +110,4 @@ tasks:
   default:
     desc: "Default task - runs Swagger generation"
     cmds:
-      - task: generate
+      - task: gen-api

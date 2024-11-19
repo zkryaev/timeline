@@ -105,7 +105,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	data, err := a.usecase.UserRegister(ctx, req)
+	id, err := a.usecase.UserRegister(ctx, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -113,7 +113,11 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	// отдаем токен
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := a.json.NewEncoder(w).Encode(&data); err != nil {
+
+	resp := map[string]int{
+		"user_id": id,
+	}
+	if a.json.NewEncoder(w).Encode(&resp) != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -150,8 +154,10 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	// отдаем токен
-	if a.json.NewEncoder(w).Encode(&id) != nil {
+	resp := map[string]int{
+		"org_id": id,
+	}
+	if a.json.NewEncoder(w).Encode(&resp) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
