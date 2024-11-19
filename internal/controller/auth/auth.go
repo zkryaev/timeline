@@ -50,7 +50,8 @@ func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoni
 // @Produce json
 // @Param   request body dto.LoginReq true "Login Request"
 // @Success 200 {object} dto.TokenPair
-// @Failure 400 {string} string "Invalid username or password"
+// @Failure 400
+// @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
@@ -84,8 +85,9 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.UserRegisterReq true "User Register Request"
-// @Success 201 {object} id
-// @Failure 400 {string} string "Invalid credentials"
+// @Success 201 {string} string "User ID"
+// @Failure 400
+// @Failure 500
 // @Router /auth/register/user [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
@@ -121,8 +123,9 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.OrgRegisterReq true "Organization Register Request"
-// @Success 201 {object} id
-// @Failure 400 {string} string "Invalid credentials"
+// @Success 201 {object} string "Organization ID"
+// @Failure 400
+// @Failure 500
 // @Router /auth/register/org [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
@@ -138,13 +141,13 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	data, err := a.usecase.OrgRegister(ctx, req)
+	id, err := a.usecase.OrgRegister(ctx, req)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
 	// отдаем токен
-	if a.json.NewEncoder(w).Encode(&data) != nil {
+	if a.json.NewEncoder(w).Encode(&id) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
@@ -158,7 +161,8 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param   request body dto.SendCodeReq true "Send Code Request"
 // @Success 201 {string} string "Code resent successfully"
-// @Failure 400 {string} string "Invalid request data"
+// @Failure 400
+// @Failure 500
 // @Router /auth/send/code [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
@@ -188,7 +192,8 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param   request body dto.VerifyCodeReq true "Verify Code Request"
 // @Success 200 {object} dto.TokenPair
-// @Failure 400 {string} string "Code or account expired"
+// @Failure 400
+// @Failure 500
 // @Router /auth/verify/code [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
@@ -224,8 +229,9 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param   refresh_token header string true "Refresh Token"
 // @Success 200 {object} dto.AccessToken "New Access Token"
-// @Failure 400 {string} string "Invalid token"
-// @Failure 401 {string} string "Unauthorized"
+// @Failure 400
+// @Failure 401
+// @Failure 500
 // @Router /auth/refresh/token [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 	token, err := a.Middleware.ExtractToken(w, r)
