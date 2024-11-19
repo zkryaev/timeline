@@ -71,6 +71,7 @@ tasks:
     desc: "Stop and clean running containers"
     cmds:
       - docker-compose down
+      - sleep 0.5
       
   gen-api:
     desc: "Generate Swagger docs"
