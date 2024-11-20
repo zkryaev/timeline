@@ -138,21 +138,30 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 		)
 		return nil, err
 	}
-	// Сохраняем его в БД
-	if err := a.user.UserSaveCode(ctx, code, userID); err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("UserSaveCode", err.Error()),
-		)
-		return nil, err
+	// Отправляем на почту (две попытки на отправку)
+	maxRetries := 2
+	for try := maxRetries; try > 0; try-- {
+		if err = a.mail.SendVerifyCode(req.Email, code); err != nil {
+			time.Sleep(500 * time.Millisecond)
+		} else {
+			break
+		}
 	}
-	// Отправляем на почту
-	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
-		a.Logger.Error(
+	if err != nil {
+		a.Logger.Warn(
 			"failed to register user",
 			zap.String("SendVerifyCode", err.Error()),
 		)
-		return nil, err
+	} else {
+		// Сохраняем код в БД если он успешно был отправлен.
+		// Иначе клиент должен будет ретраить создание кода HTTP ручкой
+		if err := a.user.UserSaveCode(ctx, code, userID); err != nil {
+			a.Logger.Error(
+				"failed to register user",
+				zap.String("UserSaveCode", err.Error()),
+			)
+			return nil, err
+		}
 	}
 	return &dto.RegisterResp{
 		Id: userID,
