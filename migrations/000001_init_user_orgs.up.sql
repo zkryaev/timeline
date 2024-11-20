@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS orgs(
     email VARCHAR(255) UNIQUE NOT NULL,
     type VARCHAR(255) NOT NULL,
     passwd_hash TEXT NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    org_name VARCHAR(255) NOT NULL,
     org_address VARCHAR(300) NOT NULL,
     telephone VARCHAR(255),
     social VARCHAR(255),
