@@ -195,30 +195,29 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 		)
 		return nil, err
 	}
-	// Сохраняем код в БД
-	if err = a.org.OrgSaveCode(ctx, code, orgID); err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("OrgSaveCode", err.Error()),
-		)
-		return nil, err
-	}
 	// Отправляем на почту (две попытки на отправку)
 	maxRetries := 2
 	for try := maxRetries; try > 0; try-- {
 		if err = a.mail.SendVerifyCode(req.Email, code); err != nil {
-			time.Sleep(60 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 		} else {
 			break
 		}
 	}
-	// Если обе попытки были не успешными, вовзращаем ошибку
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
 			zap.String("SendVerifyCode", err.Error()),
 		)
-		return nil, err
+	} else {
+		// Сохраняем код в БД если он успешно был отправлен. Иначе клиент должен будет ретраить создание кода HTTP ручкой
+		if err = a.org.OrgSaveCode(ctx, code, orgID); err != nil {
+			a.Logger.Error(
+				"failed to register user",
+				zap.String("OrgSaveCode", err.Error()),
+			)
+			return nil, err
+		}
 	}
 	return &dto.RegisterResp{
 		Id: orgID,
