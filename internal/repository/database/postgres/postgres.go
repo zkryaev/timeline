@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"timeline/internal/config"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 type PostgresRepo struct {
@@ -22,7 +22,7 @@ func New(cfg config.Database) *PostgresRepo {
 
 func (p *PostgresRepo) Open() error {
 	context.Background()
-	db, err := sqlx.Connect(p.cfg.Protocol, fmt.Sprintf(
+	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		p.cfg.Host,
 		p.cfg.Port,
@@ -30,9 +30,10 @@ func (p *PostgresRepo) Open() error {
 		p.cfg.Password,
 		p.cfg.Name,
 		p.cfg.SSLmode,
-	))
+	)
+	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	if err = db.Ping(); err != nil {
 		return err

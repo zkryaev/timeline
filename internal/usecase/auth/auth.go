@@ -205,7 +205,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 		}
 	}
 	if err != nil {
-		a.Logger.Error(
+		a.Logger.Warn(
 			"failed to register user",
 			zap.String("SendVerifyCode", err.Error()),
 		)
