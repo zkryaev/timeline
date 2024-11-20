@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	// Driver for performing migrations into postgres
@@ -25,10 +26,21 @@ func main() {
 		log.Fatal("migrations-path is required")
 	}
 
-	m, err := migrate.New(
-		"file://"+migrationsPath,
-		dsn,
-	)
+	var m *migrate.Migrate
+	var err error
+	// Две попытки между которыми 1 секунда
+	maxRetries := 2
+	for try := maxRetries; try > 0; try-- {
+		m, err = migrate.New(
+			"file://"+migrationsPath,
+			dsn,
+		)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+		} else {
+			break
+		}
+	}
 	if err != nil {
 		log.Fatal("migrate.New: ", err)
 	}
