@@ -15,6 +15,9 @@ var (
 	ErrOrgNotFound = errors.New("org not found")
 )
 
+// TODO: переработать. Города создавать на этапе миграций. А организации добавлять одним запросом
+// Т.е сохраняем организацию и добавляем запись в таблицу, разрешающую связь
+// многие ко многим (т.к в одном городе может быть много одних и тех же организация)
 // Сохраняет организацию + указанный город
 func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegisterModel, cityName string) (int, error) {
 	tx, err := p.db.BeginTx(ctx, &sql.TxOptions{})
