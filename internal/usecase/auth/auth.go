@@ -28,6 +28,12 @@ var (
 	ErrCodeExpired        = errors.New("code expired")
 )
 
+var (
+	// Получено экспериментальным путем.
+	// Верхняя замеренная граница отправки 10 секунд, в случае сервиса gmail.com
+	SendEmailTimeout = 10 * time.Second
+)
+
 type AuthUseCase struct {
 	secret   *rsa.PrivateKey
 	user     repository.UserRepository
@@ -93,9 +99,6 @@ func (a *AuthUseCase) Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenP
 	return tokens, nil
 }
 
-// идем в БД и проверяем существует ли пользователь с таким email,
-// если НЕТ, то добавляем его в БД, если ДА -> ошибка
-// Отправляем на указанную почту код подтверждения
 func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq) (*dto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
@@ -125,7 +128,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq
 		return nil, err
 	}
 	// TODO: подумать над этим еще
-	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
+	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
 	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
 		ID:    userID,
 		Email: req.Email,
@@ -135,33 +138,51 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq
 	return &dto.RegisterResp{Id: userID}, nil
 }
 
+// (Experimental)
 // Выполняет отправку кода на почту и сохранение кода в БД.
-// Отправка на почту занимает ~2 секунды. Попытки = 2. Задержка между попытками = 500мс
+// Чтобы не флудить логгами, отображаются только Error и Warn.
+// Error - явная ошибка либо в используемом сервисе почты, либо в БД.
+// Warn - истечение таймаута = неизвестная, неявная ошибка.
 func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *dto.VerifyCodeReq) {
 	maxRetries := 2
 	retryDelay := 500 * time.Millisecond
-	var err error
-	done := make(chan struct{}, 1)
+	done := make(chan error, 1)
+	defer close(done)
 	go func() {
+		var err error
 		for try := maxRetries; try > 0; try-- {
+			// start := time.Now()
 			select {
 			case <-ctx.Done():
 				err = ctx.Err()
 				return
 			default:
-				if err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code); err == nil {
-					break
-				}
-				time.Sleep(retryDelay)
+				err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code)
+			}
+			// log.Println("Send code to email took", time.Now().Sub(start), try)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryDelay)
+		} // TODO: Что насчет error groups?
+		// start := time.Now()
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			return
+		default:
+			if err != nil {
+				done <- err
+				return
+			} else if err = a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err == nil {
+				// log.Println("Save code to DB took", time.Now().Sub(start))
+				done <- nil
+				return
+			} else {
+				done <- err
+				return
 			}
 		}
-		if err != nil {
-			return
-			// Если код отправлен успешно сохраняем в БД
-		} else if err := a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err != nil {
-			return
-		}
-		done <- struct{}{}
 	}()
 
 	select {
@@ -171,7 +192,10 @@ func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *dto.VerifyC
 			zap.String("email", metaInfo.Email),
 		)
 		return
-	case <-done:
+	case err := <-done:
+		if err != nil {
+			a.Logger.Error("failed to send code to email", zap.Error(err))
+		}
 		return
 	}
 }
@@ -204,7 +228,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) 
 		)
 		return nil, err
 	}
-	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
+	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
 	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
 		ID:    orgID,
 		Email: req.Email,
