@@ -2,8 +2,6 @@ version: '3'
 
 dotenv: ['.env']
 
-silent: true
-
 vars:
   ENTRYPOINT: ./cmd/timeline/
   OUTPUT_BINARY: bin/timeline
@@ -30,6 +28,7 @@ vars:
 
 tasks:
   dsn:
+    silent: true
     desc: "Show DSN"
     cmds:
       - echo {{.DSN}}
@@ -47,6 +46,7 @@ tasks:
       - sleep 4
       - {task: migrate-up}
   env_setup_check:
+    silent: true
     desc: "Checks that all required environment variables are set and non-empty"
     cmds:
       - for:
@@ -58,6 +58,7 @@ tasks:
           fi
       - echo "All required environment variables are set."
   docker-up:
+    silent: true
     desc: "Start docker-compose"
     cmds:
       - docker-compose up -d
