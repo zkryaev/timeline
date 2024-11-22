@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users(
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     telephone VARCHAR(255),
-    social TEXT,
+    city VARCHAR(100) NOT NULL,
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified BOOLEAN DEFAULT FALSE
@@ -22,22 +22,17 @@ CREATE TABLE IF NOT EXISTS user_verify(
 CREATE TABLE IF NOT EXISTS orgs(
     org_id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    type VARCHAR(255) NOT NULL,
     passwd_hash TEXT NOT NULL,
-    org_name VARCHAR(255) NOT NULL,
-    org_address VARCHAR(300) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    address VARCHAR(300) NOT NULL,
     telephone VARCHAR(255),
-    social VARCHAR(255),
-    about TEXT,
     lat FLOAT NOT NULL,
     long FLOAT NOT NULL,
+    about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified BOOLEAN DEFAULT FALSE
-);
-
-CREATE TABLE IF NOT EXISTS city(
-    city_id SERIAL PRIMARY KEY,
-    name VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS orgs_verify(
@@ -46,13 +41,6 @@ CREATE TABLE IF NOT EXISTS orgs_verify(
     code VARCHAR(6) NOT NULL,
     expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS orgs_city(
-    city_id INT,
-    org_id INT,
-    FOREIGN KEY (city_id) REFERENCES city(city_id) ON DELETE CASCADE,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE 
 );
 
 
