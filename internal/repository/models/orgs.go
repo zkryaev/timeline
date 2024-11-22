@@ -1,18 +1,18 @@
 package models
 
-type OrgRegisterModel struct {
+type OrgRegister struct {
 	HashCreds
 	OrgInfo
 }
-
 type OrgInfo struct {
+	OrgID     int     `db:"org_id"`
 	Name      string  `db:"name"`
-	Address   string  `db:"org_address"`
-	Long      float64 `db:"long"`
-	Lat       float64 `db:"lat"`
 	Type      string  `db:"type"`
+	City      string  `db:"city"`
+	Address   string  `db:"address"`
 	Telephone string  `db:"telephone"`
-	Social    string  `db:"social"`
+	Lat       float64 `db:"lat"`
+	Long      float64 `db:"long"`
 	About     string  `db:"about"`
 }
 

@@ -2,11 +2,17 @@ package models
 
 import "time"
 
-type MetaInfo struct {
+type ExpInfo struct {
 	ID        int
-	Hash      string
-	CreatedAt time.Time
 	Verified  bool
+	CreatedAt time.Time
+	Hash      string
+}
+
+type CodeInfo struct {
+	ID    int
+	Code  string
+	IsOrg bool
 }
 
 type HashCreds struct {
