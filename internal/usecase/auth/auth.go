@@ -13,9 +13,9 @@ import (
 	"timeline/internal/libs/verification"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
+	"timeline/internal/repository/mapper/codemap"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
-	"timeline/internal/repository/models"
 	"timeline/internal/usecase/auth/validation"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,51 +32,45 @@ type AuthUseCase struct {
 	secret   *rsa.PrivateKey
 	user     repository.UserRepository
 	org      repository.OrgRepository
+	code     repository.CodeRepository
 	mail     notify.Mail
 	TokenCfg config.Token
 	Logger   *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo repository.OrgRepository, mailSrv notify.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo repository.OrgRepository, codeRepo repository.CodeRepository, mailSrv notify.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
 		org:      orgRepo,
+		code:     codeRepo,
 		mail:     mailSrv,
 		TokenCfg: cfg,
 		Logger:   logger,
 	}
 }
 
-// Идем в БД и проверяем существует ли пользователь с таким email и не сгорел ли его аккаунт,
-// если ДА получаем его, сравниваем хеш паролей если совпадают генерим и отдаем токены
-func (a *AuthUseCase) Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPair, error) {
-	MetaInfo := &models.MetaInfo{}
-	var err error
-	switch req.IsOrg {
-	case false: // user
-		MetaInfo, err = a.user.UserGetMetaInfo(ctx, req.Email)
-	case true: // org
-		MetaInfo, err = a.org.OrgGetMetaInfo(ctx, req.Email)
-	}
+func (a *AuthUseCase) Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenPair, error) {
+	// TODO: Пока так, а вообще CRON по идее будет чистить сгоревшие аккаунты
+	exp, err := a.code.AccountExpiration(ctx, req.Email, req.IsOrg)
 	if err != nil {
 		a.Logger.Error(
 			"failed login account",
-			zap.Error(err),
+			zap.String("AccountExpiration", err.Error()),
 		)
 		return nil, err
 	}
 	// если не активирован
-	if !MetaInfo.Verified {
+	if !exp.Verified {
 		// то проверяем не стух ли он еще
-		if validation.IsAccountExpired(MetaInfo.CreatedAt) {
+		if validation.IsAccountExpired(exp.CreatedAt) {
 			return nil, ErrAccountExpired
 		}
 	}
-	if err := passwd.CompareWithHash(req.Password, MetaInfo.Hash); err != nil {
+	if err := passwd.CompareWithHash(req.Password, exp.Hash); err != nil {
 		a.Logger.Error(
 			"failed login account",
-			zap.Error(err),
+			zap.String("CompareWithHash", err.Error()),
 		)
 		return nil, err
 	}
@@ -85,7 +79,7 @@ func (a *AuthUseCase) Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPa
 		a.secret,
 		a.TokenCfg,
 		&entity.TokenMetadata{
-			ID:    uint64(MetaInfo.ID),
+			ID:    uint64(exp.ID),
 			IsOrg: req.IsOrg,
 		},
 	)
@@ -102,15 +96,7 @@ func (a *AuthUseCase) Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPa
 // идем в БД и проверяем существует ли пользователь с таким email,
 // если НЕТ, то добавляем его в БД, если ДА -> ошибка
 // Отправляем на указанную почту код подтверждения
-func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq) (*dto.RegisterResp, error) {
-	_, err := a.user.UserIsExist(ctx, req.Email)
-	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("UserIsExist", err.Error()),
-		)
-		return nil, err
-	}
+func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq) (*dto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		a.Logger.Error(
@@ -121,7 +107,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 	}
 	req.Credentials.Password = hash
 	// Создали юзера
-	userID, err := a.user.UserSave(ctx, usermap.ToModel(&req))
+	userID, err := a.user.UserSave(ctx, usermap.ToModel(req))
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
@@ -138,59 +124,73 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req dto.UserRegisterReq)
 		)
 		return nil, err
 	}
-	// Отправляем на почту (две попытки на отправку)
+	// TODO: подумать над этим еще
+	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
+	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+		ID:    userID,
+		Email: req.Email,
+		Code:  code,
+		IsOrg: false,
+	})
+	return &dto.RegisterResp{Id: userID}, nil
+}
+
+// Выполняет отправку кода на почту и сохранение кода в БД.
+// Отправка на почту занимает ~2 секунды. Попытки = 2. Задержка между попытками = 500мс
+func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *dto.VerifyCodeReq) {
 	maxRetries := 2
-	for try := maxRetries; try > 0; try-- {
-		if err = a.mail.SendVerifyCode(req.Email, code); err != nil {
-			time.Sleep(500 * time.Millisecond)
-		} else {
-			break
+	retryDelay := 500 * time.Millisecond
+	var err error
+	done := make(chan struct{}, 1)
+	go func() {
+		for try := maxRetries; try > 0; try-- {
+			select {
+			case <-ctx.Done():
+				err = ctx.Err()
+				return
+			default:
+				if err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code); err == nil {
+					break
+				}
+				time.Sleep(retryDelay)
+			}
 		}
-	}
-	if err != nil {
+		if err != nil {
+			return
+			// Если код отправлен успешно сохраняем в БД
+		} else if err := a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err != nil {
+			return
+		}
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
 		a.Logger.Warn(
-			"failed to register user",
-			zap.String("SendVerifyCode", err.Error()),
+			"processing code failed due to timeout",
+			zap.String("email", metaInfo.Email),
 		)
-	} else {
-		// Сохраняем код в БД если он успешно был отправлен.
-		// Иначе клиент должен будет ретраить создание кода HTTP ручкой
-		if err := a.user.UserSaveCode(ctx, code, userID); err != nil {
-			a.Logger.Error(
-				"failed to register user",
-				zap.String("UserSaveCode", err.Error()),
-			)
-			return nil, err
-		}
+		return
+	case <-done:
+		return
 	}
-	return &dto.RegisterResp{
-		Id: userID,
-	}, nil
 }
 
 // Аналогично работе с пользователем
-func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (*dto.RegisterResp, error) {
-	_, err := a.org.OrgIsExist(ctx, req.Email)
-	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("OrgIsExist", err.Error()),
-		)
-		return nil, err
-	}
+func (a *AuthUseCase) OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) (*dto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		a.Logger.Error(
-			"failed to register user",
+			"failed to register org",
 			zap.String("GetHash", err.Error()),
 		)
 		return nil, err
 	}
 	req.Credentials.Password = hash
-	orgID, err := a.org.OrgSave(ctx, orgmap.ToModel(&req), req.City)
+	orgID, err := a.org.OrgSave(ctx, orgmap.ToModel(req))
 	if err != nil {
 		a.Logger.Error(
-			"failed to register user",
+			"failed to register org",
 			zap.String("OrgSave", err.Error()),
 		)
 		return nil, err
@@ -199,92 +199,50 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (
 	code, err := verification.GenerateCode()
 	if err != nil {
 		a.Logger.Error(
-			"failed to register user",
+			"failed to register org",
 			zap.String("GenerateCode", err.Error()),
 		)
 		return nil, err
 	}
-	// Отправляем на почту (две попытки на отправку)
-	maxRetries := 2
-	for try := maxRetries; try > 0; try-- {
-		if err = a.mail.SendVerifyCode(req.Email, code); err != nil {
-			time.Sleep(500 * time.Millisecond)
-		} else {
-			break
-		}
-	}
-	if err != nil {
-		a.Logger.Warn(
-			"failed to register user",
-			zap.String("SendVerifyCode", err.Error()),
-		)
-	} else {
-		// Сохраняем код в БД если он успешно был отправлен. Иначе клиент должен будет ретраить создание кода HTTP ручкой
-		if err = a.org.OrgSaveCode(ctx, code, orgID); err != nil {
-			a.Logger.Error(
-				"failed to register user",
-				zap.String("OrgSaveCode", err.Error()),
-			)
-			return nil, err
-		}
-	}
-	return &dto.RegisterResp{
-		Id: orgID,
-	}, nil
+	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
+	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+		ID:    orgID,
+		Email: req.Email,
+		Code:  code,
+		IsOrg: true,
+	})
+	return &dto.RegisterResp{Id: orgID}, nil
 }
 
-func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req dto.SendCodeReq) error {
+func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *dto.SendCodeReq) {
 	// Генерируем код
 	code, err := verification.GenerateCode()
 	if err != nil {
 		a.Logger.Error(
-			"failed to register user",
+			"retry send code failed",
 			zap.String("GenerateCode", err.Error()),
 		)
-		return err
+		return
 	}
-	switch req.IsOrg {
-	case false:
-		err = a.user.UserSaveCode(ctx, code, req.ID)
-	case true:
-		err = a.org.OrgSaveCode(ctx, code, req.ID)
-	}
-	// Сохраняем его в БД
-	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("User/OrgSaveCode", err.Error()),
-		)
-		return err
-	}
-
-	// Отправляем на почту
-	if err := a.mail.SendVerifyCode(req.Email, code); err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("SendVerifyCode", err.Error()),
-		)
-		return err
-	}
-	return nil
+	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
+	a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+		ID:    req.ID,
+		Email: req.Email,
+		IsOrg: req.IsOrg,
+		Code:  code,
+	})
 }
 
-func (a *AuthUseCase) VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*dto.TokenPair, error) {
-	var exp time.Time
-	var err error
-	switch req.IsOrg {
-	case false:
-		exp, err = a.user.UserCode(ctx, req.Code, req.ID)
-	case true:
-		exp, err = a.org.OrgCode(ctx, req.Code, req.ID)
-	}
+func (a *AuthUseCase) VerifyCode(ctx context.Context, req *dto.VerifyCodeReq) (*dto.TokenPair, error) {
+	exp, err := a.code.VerifyCode(ctx, codemap.ToModel(req))
 	if err != nil {
 		a.Logger.Error(
 			"failed to verify code",
-			zap.String("User/OrgCode", err.Error()),
+			zap.String("VerifyCode", err.Error()),
 		)
 		return nil, err
 	}
+
 	if ok := validation.IsCodeExpired(exp); ok {
 		a.Logger.Error(
 			"failed to verify code",
@@ -292,14 +250,8 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*d
 		)
 		return nil, ErrCodeExpired
 	}
-	// Активируем аккаунт
-	switch req.IsOrg {
-	case false:
-		err = a.user.UserActivateAccount(ctx, req.ID)
-	case true:
-		err = a.org.OrgActivateAccount(ctx, req.ID)
-	}
-	if err != nil {
+
+	if err = a.code.ActivateAccount(ctx, req.ID, req.IsOrg); err != nil {
 		a.Logger.Error(
 			"failed to verify code",
 			zap.String("UserActivateAccount", err.Error()),

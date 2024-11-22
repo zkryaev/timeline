@@ -12,11 +12,11 @@ import (
 )
 
 type Auth interface {
-	Login(ctx context.Context, req dto.LoginReq) (*dto.TokenPair, error)
-	UserRegister(ctx context.Context, req dto.UserRegisterReq) (*dto.RegisterResp, error)
-	OrgRegister(ctx context.Context, req dto.OrgRegisterReq) (*dto.RegisterResp, error)
-	SendCodeRetry(ctx context.Context, req dto.SendCodeReq) error
-	VerifyCode(ctx context.Context, req dto.VerifyCodeReq) (*dto.TokenPair, error)
+	Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenPair, error)
+	UserRegister(ctx context.Context, req *dto.UserRegisterReq) (*dto.RegisterResp, error)
+	OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) (*dto.RegisterResp, error)
+	SendCodeRetry(ctx context.Context, req *dto.SendCodeReq)
+	VerifyCode(ctx context.Context, req *dto.VerifyCodeReq) (*dto.TokenPair, error)
 	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error)
 }
 
@@ -67,7 +67,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := context.Background()
-	data, err := a.usecase.Login(ctx, req)
+	data, err := a.usecase.Login(ctx, &req)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusBadRequest)
 		return
@@ -105,7 +105,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	data, err := a.usecase.UserRegister(ctx, req)
+	data, err := a.usecase.UserRegister(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -144,7 +144,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	data, err := a.usecase.OrgRegister(ctx, req)
+	data, err := a.usecase.OrgRegister(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -181,10 +181,7 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	if err := a.usecase.SendCodeRetry(ctx, req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	a.usecase.SendCodeRetry(ctx, &req)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -212,7 +209,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	data, err := a.usecase.VerifyCode(ctx, req)
+	data, err := a.usecase.VerifyCode(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
