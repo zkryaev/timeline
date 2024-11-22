@@ -56,6 +56,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		privateKey,
 		storage,
 		storage,
+		storage,
 		mailService,
 		tokenCfg,
 		a.log,
