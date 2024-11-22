@@ -11,9 +11,9 @@ type OrgInfo struct {
 	Long      float64 `json:"long" validate:"required,longitude"`
 	Lat       float64 `json:"lat" validate:"required,latitude"`
 	Type      string  `json:"type" validate:"required"`
-	Telephone string  `json:"telephone,omitempty" validate:"e164"`
-	Social    string  `json:"social,omitempty" validate:"url"`
-	About     string  `json:"about,omitempty" validate:"max=1000"`
+	Telephone string  `json:"telephone" validate:"e164"`
+	City      string  `json:"city" validate:"required"`
+	About     string  `json:"about,omitempty" validate:"max=1500"`
 }
 
 // type OrgAddInfo struct {

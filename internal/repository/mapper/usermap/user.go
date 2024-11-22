@@ -5,8 +5,8 @@ import (
 	"timeline/internal/repository/models"
 )
 
-func ToModel(dto *dto.UserRegisterReq) *models.UserRegisterModel {
-	return &models.UserRegisterModel{
+func ToModel(dto *dto.UserRegisterReq) *models.UserRegister {
+	return &models.UserRegister{
 		HashCreds: models.HashCreds{
 			Email:      dto.Email,
 			PasswdHash: dto.Password,
@@ -15,7 +15,7 @@ func ToModel(dto *dto.UserRegisterReq) *models.UserRegisterModel {
 			FirstName: dto.FirstName,
 			LastName:  dto.LastName,
 			Telephone: dto.Telephone,
-			Social:    dto.Social,
+			City:      dto.City,
 			About:     dto.About,
 		},
 	}

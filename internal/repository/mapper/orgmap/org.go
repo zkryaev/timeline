@@ -5,20 +5,20 @@ import (
 	"timeline/internal/repository/models"
 )
 
-func ToModel(dto *dto.OrgRegisterReq) *models.OrgRegisterModel {
-	return &models.OrgRegisterModel{
+func ToModel(dto *dto.OrgRegisterReq) *models.OrgRegister {
+	return &models.OrgRegister{
 		HashCreds: models.HashCreds{
 			Email:      dto.Email,
 			PasswdHash: dto.Password,
 		},
 		OrgInfo: models.OrgInfo{
 			Name:      dto.Name,
+			Type:      dto.Type,
+			City:      dto.City,
 			Address:   dto.Address,
+			Telephone: dto.Telephone,
 			Long:      dto.Long,
 			Lat:       dto.Lat,
-			Type:      dto.Type,
-			Telephone: dto.Telephone,
-			Social:    dto.Social,
 			About:     dto.About,
 		},
 	}
