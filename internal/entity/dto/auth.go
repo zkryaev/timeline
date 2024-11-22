@@ -38,7 +38,6 @@ type RegisterResp struct {
 type OrgRegisterReq struct {
 	Credentials
 	entity.OrgInfo
-	City string `json:"city" validate:"required,min=2,max=100"`
 }
 
 type TokenPair struct {
