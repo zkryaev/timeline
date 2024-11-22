@@ -15,14 +15,14 @@ const (
 
 var (
 	verificationEmailTemplate = fmt.Sprintf(`
-    <div style="font-family: %s; color: %s;">
-        <p>Ваш код подтверждения:</p>
-        <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
-            <span style="font-size: %s; font-weight: bold; color: %s;">%%s</span>
-        </div>
-        <p style="font-weight: bold;">Никому не сообщайте этот код.</p>
-        <p style="color: #777;">Вы получили это письмо, поскольку Ваш адрес был указан при регистрации в сервисе Timeline.</p>
-    </div>`, emailFont, textColor, codeFontSize, textColor)
+	  <div style="font-family: %s; color: %s;">
+		  <p>Ваш код подтверждения:</p>
+		  <div style="display: inline-block; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f0f0f0; cursor: pointer;" title="Скопируйте этот код">
+			  <span style="font-size: %s; font-weight: bold; color: %s;">%%s</span>
+		  </div>
+		  <p style="font-weight: bold;">Никому не сообщайте этот код.</p>
+		  <p style="color: #777;">Вы получили это письмо, поскольку ваш адрес был указан при регистрации в сервисе Timeline.</p>
+	  </div>`, emailFont, textColor, codeFontSize, textColor)
 )
 
 type Mail interface {
