@@ -38,6 +38,8 @@ type OrgRepository interface {
 	OrgSave(ctx context.Context, org *models.OrgRegister) (int, error)
 	OrgByEmail(ctx context.Context, email string) (*models.OrgRegister, error)
 	OrgByID(ctx context.Context, id int) (*models.OrgRegister, error)
+	OrgsSearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error)
+	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД
