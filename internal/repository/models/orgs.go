@@ -7,6 +7,7 @@ type OrgRegister struct {
 type OrgInfo struct {
 	OrgID     int     `db:"org_id"`
 	Name      string  `db:"name"`
+	Rating    float64 `db:"rating"`
 	Type      string  `db:"type"`
 	City      string  `db:"city"`
 	Address   string  `db:"address"`
@@ -16,7 +17,9 @@ type OrgInfo struct {
 	About     string  `db:"about"`
 }
 
-type VerifyInfo struct {
-	userID string `db:"user_id"`
-	code   string `db:"code"`
+type OrgSummary struct {
+	OrgID  int     `db:"org_id"`
+	Name   string  `db:"name"`
+	Rating float64 `db:"rating"`
+	Type   string  `db:"type"`
 }
