@@ -7,11 +7,13 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
+	"timeline/internal/controller/domens"
 	"timeline/internal/libs/secret"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
+	"timeline/internal/usecase/usercase"
 
 	"github.com/go-playground/validator"
 	jsoniter "github.com/json-iterator/go"
@@ -70,8 +72,13 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		*validator.New(),
 	)
 
+	usecaseUser := usercase.New(storage, storage, a.log)
+
+	userAPI := domens.NewUserCtrl(usecaseUser, a.log, jsoniter.ConfigCompatibleWithStandardLibrary, *validator.New())
+
 	controllerSet := &controller.Controllers{
 		Auth: authAPI,
+		User: userAPI,
 	}
 
 	a.httpServer.Handler = controller.InitRouter(controllerSet)
