@@ -3,13 +3,13 @@ package dto
 import "timeline/internal/entity"
 
 type SendCodeReq struct {
-	ID    int    `json:"id" validate:"required"`
+	ID    int    `json:"id" validate:"required,gt=0"`
 	Email string `json:"email" validate:"required,email"`
 	IsOrg bool   `json:"is_org"`
 }
 
 type VerifyCodeReq struct {
-	ID    int    `json:"id" validate:"required"`
+	ID    int    `json:"id" validate:"required,gt=0"`
 	Email string `json:"email" validate:"required,email"`
 	Code  string `json:"code" validate:"required,min=3"`
 	IsOrg bool   `json:"is_org"`
