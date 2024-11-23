@@ -22,7 +22,7 @@ type UserCtrl struct {
 	validator validator.Validate
 }
 
-func New(usecase User, logger *zap.Logger, jsoniter jsoniter.API, validator validator.Validate) *UserCtrl {
+func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, validator validator.Validate) *UserCtrl {
 	return &UserCtrl{
 		usecase:   usecase,
 		Logger:    logger,
