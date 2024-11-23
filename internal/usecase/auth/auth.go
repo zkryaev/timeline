@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"errors"
+	"strings"
 	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity"
@@ -211,7 +212,8 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) 
 		return nil, err
 	}
 	req.Credentials.Password = hash
-	orgID, err := a.org.OrgSave(ctx, orgmap.ToModel(req))
+	req.Name = strings.ToLower(req.Name)
+	orgID, err := a.org.OrgSave(ctx, orgmap.RegisterReqToModel(req))
 	if err != nil {
 		a.Logger.Error(
 			"failed to register org",
