@@ -66,7 +66,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Data is not valid", http.StatusBadRequest)
 		return
 	}
-	ctx := context.Background()
+	ctx := r.Context()
 	data, err := a.usecase.Login(ctx, &req)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusBadRequest)
@@ -104,7 +104,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	data, err := a.usecase.UserRegister(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -143,7 +143,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	data, err := a.usecase.OrgRegister(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -180,7 +180,7 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	a.usecase.SendCodeRetry(ctx, &req)
 	w.WriteHeader(http.StatusCreated)
 }
@@ -208,7 +208,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	data, err := a.usecase.VerifyCode(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -248,8 +248,7 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid token", http.StatusBadRequest)
 		return
 	}
-	// TODO: Нет работы с контекстами
-	ctx := context.Background()
+	ctx := r.Context()
 	refreshedAccessToken, err := a.usecase.UpdateAccessToken(ctx, token)
 	if err != nil {
 		a.Logger.Error(
