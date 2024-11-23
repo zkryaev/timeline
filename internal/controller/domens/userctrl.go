@@ -31,6 +31,16 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 	}
 }
 
+// @Summary Organization Searching
+// @Description Get organizations that are satisfiered to search params
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.SearchReq true "Search parameters request"
+// @Success 200 {object} dto.SearchResp
+// @Failure 400
+// @Failure 500
+// @Router /user/find/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	var req dto.SearchReq
 	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
@@ -57,6 +67,16 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Show Organizations on Map
+// @Description Get organizations that located at the given area
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Param   request body dto.OrgAreaReq true "Area parameters"
+// @Success 200 {object} dto.OrgAreaResp
+// @Failure 400
+// @Failure 500
+// @Router /user/show/map [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	var req dto.OrgAreaReq
 	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
