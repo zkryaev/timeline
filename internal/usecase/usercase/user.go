@@ -1,4 +1,4 @@
-package userface
+package usercase
 
 import (
 	"context"
