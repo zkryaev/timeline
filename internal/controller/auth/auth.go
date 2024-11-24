@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/authdto"
 
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"
@@ -12,12 +12,12 @@ import (
 )
 
 type Auth interface {
-	Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenPair, error)
-	UserRegister(ctx context.Context, req *dto.UserRegisterReq) (*dto.RegisterResp, error)
-	OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) (*dto.RegisterResp, error)
-	SendCodeRetry(ctx context.Context, req *dto.SendCodeReq)
-	VerifyCode(ctx context.Context, req *dto.VerifyCodeReq) (*dto.TokenPair, error)
-	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error)
+	Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error)
+	UserRegister(ctx context.Context, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error)
+	OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error)
+	SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq)
+	VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error)
+	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*authdto.AccessToken, error)
 }
 
 type Middleware interface {
@@ -49,14 +49,14 @@ func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoni
 // @Tags auth
 // @Accept  json
 // @Produce json
-// @Param   request body dto.LoginReq true "Login Request"
-// @Success 200 {object} dto.TokenPair
+// @Param   request body authdto.LoginReq true "Login Request"
+// @Success 200 {object} authdto.TokenPair
 // @Failure 400
 // @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
-	var req dto.LoginReq
+	var req authdto.LoginReq
 	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
@@ -86,14 +86,14 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   request body dto.UserRegisterReq true "User Register Request"
-// @Success 201 {object} dto.RegisterResp "User ID"
+// @Param   request body authdto.UserRegisterReq true "User Register Request"
+// @Success 201 {object} authdto.RegisterResp "User ID"
 // @Failure 400
 // @Failure 500
 // @Router /auth/register/user [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
-	var req dto.UserRegisterReq
+	var req authdto.UserRegisterReq
 	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
 		return
@@ -125,14 +125,14 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   request body dto.OrgRegisterReq true "Organization Register Request"
-// @Success 201 {object} dto.RegisterResp "Organization ID"
+// @Param   request body authdto.OrgRegisterReq true "Organization Register Request"
+// @Success 201 {object} authdto.RegisterResp "Organization ID"
 // @Failure 400
 // @Failure 500
 // @Router /auth/register/org [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
-	var req dto.OrgRegisterReq
+	var req authdto.OrgRegisterReq
 	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
 		return
@@ -162,14 +162,14 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   request body dto.SendCodeReq true "Send Code Request"
+// @Param   request body authdto.SendCodeReq true "Send Code Request"
 // @Success 201 {string} string "Code resent successfully"
 // @Failure 400
 // @Failure 500
 // @Router /auth/send/code [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
-	var req dto.SendCodeReq
+	var req authdto.SendCodeReq
 	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
 		return
@@ -190,14 +190,14 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   request body dto.VerifyCodeReq true "Verify Code Request"
-// @Success 200 {object} dto.TokenPair
+// @Param   request body authdto.VerifyCodeReq true "Verify Code Request"
+// @Success 200 {object} authdto.TokenPair
 // @Failure 400
 // @Failure 500
 // @Router /auth/verify/code [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
-	var req dto.VerifyCodeReq
+	var req authdto.VerifyCodeReq
 	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
 		return
@@ -229,7 +229,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param   refresh_token header string true "Refresh Token"
-// @Success 200 {object} dto.AccessToken "New Access Token"
+// @Success 200 {object} authdto.AccessToken "New Access Token"
 // @Failure 400
 // @Failure 401
 // @Failure 500

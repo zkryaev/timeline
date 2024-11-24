@@ -2,6 +2,7 @@ package controller
 
 import (
 	"timeline/internal/controller/auth"
+	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/users"
 
 	"github.com/gorilla/mux"
@@ -10,6 +11,7 @@ import (
 type Controllers struct {
 	Auth *auth.AuthCtrl
 	User *users.UserCtrl
+	Org  *orgs.OrgCtrl
 }
 
 // Auth
@@ -23,10 +25,17 @@ const (
 	authVerifyCode    = "/verify/code"
 )
 
+// User
 const (
 	userPrefix     = "/user"
 	userMapOrgs    = "/show/map"
 	userSearchOrgs = "/find/orgs"
+	userUpdate     = "/update"
+)
+
+const (
+	orgPrefix = "/org"
+	orgUpdate = "/update"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -35,9 +44,12 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// Установка доменных контроллеров
 	auth := controllersSet.Auth
 	user := controllersSet.User
+	org := controllersSet.Org
 
 	r.Use(auth.Middleware.HandlerLogs)
 
+	// Auth
+	// !!!! Пока версия не продовая все ручки доступны без токенов !!!!
 	authRouter := r.NewRoute().PathPrefix(authPrefix).Subrouter()
 	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")
 	authRouter.HandleFunc(authRegisterOrg, auth.OrgRegister).Methods("POST")
@@ -49,10 +61,16 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	authProtectedRouter.Use(auth.Middleware.IsTokenValid)
 	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
 
+	// User
 	userRouter := r.NewRoute().PathPrefix(userPrefix).Subrouter()
-	// Пока версия не продовая
 	// userRouter.Use(auth.Middleware.IsTokenValid)
 	userRouter.HandleFunc(userMapOrgs, user.OrganizationInArea).Methods("GET")
 	userRouter.HandleFunc(userSearchOrgs, user.SearchOrganization).Methods("GET")
+
+	// Org
+	orgRouter := r.NewRoute().PathPrefix(orgPrefix).Subrouter()
+	// orgRouter.Use(auth.Middleware.IsTokenValid)
+	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
+
 	return r
 }

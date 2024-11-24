@@ -7,12 +7,14 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
+	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/users"
 	"timeline/internal/libs/secret"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
+	"timeline/internal/usecase/orgcase"
 	"timeline/internal/usecase/usercase"
 
 	"github.com/go-playground/validator"
@@ -54,6 +56,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 	if err != nil {
 		return err
 	}
+	// Инициализация Auth
 	usecaseAuth := auth.New(
 		privateKey,
 		storage,
@@ -73,6 +76,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		validator,
 	)
 
+	// Инициализация User
 	usecaseUser := usercase.New(
 		storage,
 		storage,
@@ -86,9 +90,24 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		validator,
 	)
 
+	// Инициализация Org
+	usecaseOrg := orgcase.New(
+		storage,
+		storage,
+		a.log,
+	)
+
+	orgAPI := orgs.NewOrgCtrl(
+		usecaseOrg,
+		a.log,
+		json,
+		validator,
+	)
+
 	controllerSet := &controller.Controllers{
 		Auth: authAPI,
 		User: userAPI,
+		Org:  orgAPI,
 	}
 
 	a.httpServer.Handler = controller.InitRouter(controllerSet)
