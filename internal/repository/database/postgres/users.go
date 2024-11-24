@@ -90,15 +90,15 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) (*m
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE users (first_name, last_name, city, telephone, about)
+	query := `UPDATE users
 		SET 
 			first_name = $1,
 			last_name = $2,
 			city = $3,
 			telephone = $4,
-			about = $5,
+			about = $5
 		WHERE user_id = $6
-		RETURNING first_name, last_name, city, telephone, about;
+		RETURNING user_id, first_name, last_name, city, telephone, about;
 		`
 	var UpdatedInfo models.UserInfo
 	if err := tx.QueryRowxContext(ctx, query,
@@ -113,7 +113,7 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) (*m
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
-		return nil, fmt.Errorf("failed update org info: %w", err)
+		return nil, fmt.Errorf("failed update user info: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)

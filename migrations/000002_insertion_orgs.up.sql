@@ -1,6 +1,6 @@
 INSERT INTO orgs (email, passwd_hash, name, type, city, address, telephone, lat, long, about, verified)
 VALUES
-('org1', 'hashed_1', 'Organization One', 'Парикмахерские', 'Moscow', '123 Main St, Moscow', '+7 123 456 7890', 55.7558, 37.6173,'', TRUE),
+('org1', 'hashed_1', 'Organization One', 'Парикмахерские', 'Moscow', '123 Main St, Moscow', '+71234567890', 55.7558, 37.6173,'', TRUE),
 ('org2', 'hashed_2', 'Organization Two', 'Образование', 'Saint Petersburg', '456 Second St, Saint Petersburg', '+72345678901', 59.9343, 30.3351,'', TRUE),
 ('org3', 'hashed_3', 'Organization Three', 'Медицина', 'Novosibirsk', '789 Third St, Novosibirsk', '+73456789012', 55.0084, 82.9357,'', TRUE),
 ('org4', 'hashed_4', 'Organization Four', 'Спорт', 'Yekaterinburg', '321 Fourth St, Yekaterinburg', '+74567890123', 56.8389, 60.6057,'', TRUE),

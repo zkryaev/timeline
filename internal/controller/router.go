@@ -66,7 +66,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// userRouter.Use(auth.Middleware.IsTokenValid)
 	userRouter.HandleFunc(userMapOrgs, user.OrganizationInArea).Methods("GET")
 	userRouter.HandleFunc(userSearchOrgs, user.SearchOrganization).Methods("GET")
-
+	userRouter.HandleFunc(userUpdate, user.UpdateUser).Methods("PUT")
 	// Org
 	orgRouter := r.NewRoute().PathPrefix(orgPrefix).Subrouter()
 	// orgRouter.Use(auth.Middleware.IsTokenValid)

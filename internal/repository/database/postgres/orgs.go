@@ -199,18 +199,18 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*m
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE orgs (name, type, city, address, telephone, lat, long, about)
+	query := `UPDATE orgs
 		SET 
 			name = $1,
 			type = $2,
 			city = $3,
 			address = $4,
 			telephone = $5,
-			lat = %6
-			long = %7,
-			about = %8
+			lat = $6,
+			long = $7,
+			about = $8
 		WHERE org_id = $9
-		RETURNING name, type, city, address, telephone, lat, long, about;
+		RETURNING org_id, name, type, city, address, telephone, lat, long, about;
 		`
 	var UpdatedInfo models.OrgUpdate
 	if err := tx.QueryRowxContext(ctx, query,

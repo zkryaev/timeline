@@ -10,14 +10,14 @@ services:
         POSTGRES_DB: ${DB_NAME}
       ports:
         - "${DB_PORT}:5432" # Подключаем внешний порт из переменной окружения
-      volumes:
+      #volumes:
       #  - ./db_init_user/:/docker-entrypoint-initdb.d/ # монтируем инициализационные скрипты
-       - pgdata:/var/lib/postgresql/data
+      # - pgdata:/var/lib/postgresql/data
       networks:
         - default
 
-volumes:
-  pgdata:
+#volumes:
+#  pgdata:
 
 networks:
   default:
