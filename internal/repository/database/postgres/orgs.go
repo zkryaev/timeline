@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"timeline/internal/repository/models"
 
 	"github.com/jackc/pgx/v5"
@@ -139,10 +140,10 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 		ctx,
 		&orgList,
 		query,
-		area.Left.Lat,
-		area.Right.Lat,
-		area.Left.Long,
-		area.Right.Long,
+		area.Left.Lat,   // Нижняя граница широты
+		area.Right.Lat,  // Верхняя граница широты
+		area.Left.Long,  // Левая граница долготы
+		area.Right.Long, // Правая граница долготы
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgsNotFound
@@ -167,7 +168,7 @@ func (p *PostgresRepo) OrgsSearch(ctx context.Context, params *models.SearchPara
 		}
 	}()
 	query := `SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
-		WHERE ($1 = '' OR ILIKE('%' || $1 || '%'))
+		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%')
 		`
 	orgList := make([]*models.OrgInfo, 0, params.Limit)
 	if params.Type != "" {

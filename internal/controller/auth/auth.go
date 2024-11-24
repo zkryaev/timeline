@@ -31,10 +31,10 @@ type AuthCtrl struct {
 	Logger     *zap.Logger
 	Middleware Middleware
 	json       jsoniter.API
-	validator  validator.Validate
+	validator  *validator.Validate
 }
 
-func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoniter.API, validator validator.Validate) *AuthCtrl {
+func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *AuthCtrl {
 	return &AuthCtrl{
 		usecase:    usecase,
 		Logger:     logger,

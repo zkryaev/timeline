@@ -36,7 +36,7 @@ func main() {
 			dsn,
 		)
 		if err != nil {
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 		} else {
 			break
 		}

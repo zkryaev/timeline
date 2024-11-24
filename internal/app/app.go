@@ -7,7 +7,7 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
-	"timeline/internal/controller/domens"
+	"timeline/internal/controller/domens/users"
 	"timeline/internal/libs/secret"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
@@ -63,18 +63,28 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		tokenCfg,
 		a.log,
 	)
-
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+	validator := validator.New()
 	authAPI := authctrl.New(
 		usecaseAuth,
 		middleware.New(privateKey, a.log),
 		a.log,
-		jsoniter.ConfigCompatibleWithStandardLibrary,
-		*validator.New(),
+		json,
+		validator,
 	)
 
-	usecaseUser := usercase.New(storage, storage, a.log)
+	usecaseUser := usercase.New(
+		storage,
+		storage,
+		a.log,
+	)
 
-	userAPI := domens.NewUserCtrl(usecaseUser, a.log, jsoniter.ConfigCompatibleWithStandardLibrary, *validator.New())
+	userAPI := users.NewUserCtrl(
+		usecaseUser,
+		a.log,
+		json,
+		validator,
+	)
 
 	controllerSet := &controller.Controllers{
 		Auth: authAPI,

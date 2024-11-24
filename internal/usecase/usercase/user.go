@@ -26,8 +26,9 @@ type UserUseCase struct {
 
 func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, logger *zap.Logger) *UserUseCase {
 	return &UserUseCase{
-		user: userRepo,
-		org:  orgRepo,
+		user:   userRepo,
+		org:    orgRepo,
+		Logger: logger,
 	}
 }
 

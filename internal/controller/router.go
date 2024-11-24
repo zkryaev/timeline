@@ -2,14 +2,14 @@ package controller
 
 import (
 	"timeline/internal/controller/auth"
-	"timeline/internal/controller/domens"
+	"timeline/internal/controller/domens/users"
 
 	"github.com/gorilla/mux"
 )
 
 type Controllers struct {
 	Auth *auth.AuthCtrl
-	User *domens.UserCtrl
+	User *users.UserCtrl
 }
 
 // Auth
@@ -25,8 +25,8 @@ const (
 
 const (
 	userPrefix     = "/user"
-	userMapOrgs    = "/user/show/map"
-	userSearchOrgs = "/user/find/orgs"
+	userMapOrgs    = "/show/map"
+	userSearchOrgs = "/find/orgs"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -50,7 +50,8 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
 
 	userRouter := r.NewRoute().PathPrefix(userPrefix).Subrouter()
-	userRouter.Use(auth.Middleware.IsTokenValid)
+	// Пока версия не продовая
+	// userRouter.Use(auth.Middleware.IsTokenValid)
 	userRouter.HandleFunc(userMapOrgs, user.OrganizationInArea).Methods("GET")
 	userRouter.HandleFunc(userSearchOrgs, user.SearchOrganization).Methods("GET")
 	return r

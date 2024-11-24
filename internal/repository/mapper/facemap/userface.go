@@ -18,6 +18,6 @@ func SearchToModel(dto *dto.SearchReq) *models.SearchParams {
 func AreaToModel(dto *dto.OrgAreaReq) *models.AreaParams {
 	return &models.AreaParams{
 		Left:  models.Coordinate{Lat: dto.LeftLowerCorner.Lat, Long: dto.LeftLowerCorner.Long},
-		Right: models.Coordinate{Lat: dto.LeftLowerCorner.Lat, Long: dto.LeftLowerCorner.Long},
+		Right: models.Coordinate{Lat: dto.RightUpperCorner.Lat, Long: dto.RightUpperCorner.Long},
 	}
 }

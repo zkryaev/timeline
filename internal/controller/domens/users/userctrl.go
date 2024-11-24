@@ -1,4 +1,4 @@
-package domens
+package users
 
 import (
 	"context"
@@ -19,10 +19,10 @@ type UserCtrl struct {
 	usecase   User
 	Logger    *zap.Logger
 	json      jsoniter.API
-	validator validator.Validate
+	validator *validator.Validate
 }
 
-func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, validator validator.Validate) *UserCtrl {
+func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *UserCtrl {
 	return &UserCtrl{
 		usecase:   usecase,
 		Logger:    logger,
@@ -33,7 +33,7 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 
 // @Summary Organization Searching
 // @Description Get organizations that are satisfiered to search params
-// @Tags auth
+// @Tags User
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.SearchReq true "Search parameters request"
@@ -47,8 +47,8 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
 	}
-	// валидация полей
-	if err := u.validator.Struct(&req); err != nil {
+	var err error
+	if err = u.validator.Struct(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -58,7 +58,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// отдаем токен
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if u.json.NewEncoder(w).Encode(&data) != nil {
@@ -69,7 +69,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Show Organizations on Map
 // @Description Get organizations that located at the given area
-// @Tags auth
+// @Tags User
 // @Accept  json
 // @Produce  json
 // @Param   request body dto.OrgAreaReq true "Area parameters"

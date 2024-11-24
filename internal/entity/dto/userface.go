@@ -3,8 +3,8 @@ package dto
 import "timeline/internal/entity"
 
 type SearchReq struct {
-	Page  int    `json:"page" validator:"required,gte=1"`
-	Limit int    `json:"limit" validator:"required,gt=0"`
+	Page  int    `json:"page" validate:"required,min=1"`
+	Limit int    `json:"limit" validate:"required,min=1"`
 	Name  string `json:"name"`
 	Type  string `json:"type"`
 }

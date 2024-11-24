@@ -55,10 +55,10 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &respWriterCustom{ResponseWriter: w}
-		next.ServeHTTP(rw, r)
-		w.Header().Get("")
-		duration := time.Since(start)
 
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start)
 		m.logger.Info(fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, r.RequestURI, rw.statusCode, duration))
 	})
 }
