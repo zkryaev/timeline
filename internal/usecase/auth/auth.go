@@ -8,7 +8,7 @@ import (
 	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/authdto"
 	jwtlib "timeline/internal/libs/jwtlib"
 	"timeline/internal/libs/passwd"
 	"timeline/internal/libs/verification"
@@ -57,7 +57,7 @@ func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo reposi
 	}
 }
 
-func (a *AuthUseCase) Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenPair, error) {
+func (a *AuthUseCase) Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error) {
 	// TODO: Пока так, а вообще CRON по идее будет чистить сгоревшие аккаунты
 	exp, err := a.code.AccountExpiration(ctx, req.Email, req.IsOrg)
 	if err != nil {
@@ -100,7 +100,7 @@ func (a *AuthUseCase) Login(ctx context.Context, req *dto.LoginReq) (*dto.TokenP
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq) (*dto.RegisterResp, error) {
+func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		a.Logger.Error(
@@ -111,7 +111,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq
 	}
 	req.Credentials.Password = hash
 	// Создали юзера
-	userID, err := a.user.UserSave(ctx, usermap.ToModel(req))
+	userID, err := a.user.UserSave(ctx, usermap.UserRegisterToModel(req))
 	if err != nil {
 		a.Logger.Error(
 			"failed to register user",
@@ -130,13 +130,13 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq
 	}
 	// TODO: подумать над этим еще
 	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
-	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+	go a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
 		ID:    userID,
 		Email: req.Email,
 		Code:  code,
 		IsOrg: false,
 	})
-	return &dto.RegisterResp{Id: userID}, nil
+	return &authdto.RegisterResp{Id: userID}, nil
 }
 
 // (Experimental)
@@ -144,7 +144,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *dto.UserRegisterReq
 // Чтобы не флудить логгами, отображаются только Error и Warn.
 // Error - явная ошибка либо в используемом сервисе почты, либо в БД.
 // Warn - истечение таймаута = неизвестная, неявная ошибка.
-func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *dto.VerifyCodeReq) {
+func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *authdto.VerifyCodeReq) {
 	maxRetries := 2
 	retryDelay := 500 * time.Millisecond
 	done := make(chan error, 1)
@@ -202,7 +202,7 @@ func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *dto.VerifyC
 }
 
 // Аналогично работе с пользователем
-func (a *AuthUseCase) OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) (*dto.RegisterResp, error) {
+func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		a.Logger.Error(
@@ -231,16 +231,16 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *dto.OrgRegisterReq) 
 		return nil, err
 	}
 	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
-	go a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+	go a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
 		ID:    orgID,
 		Email: req.Email,
 		Code:  code,
 		IsOrg: true,
 	})
-	return &dto.RegisterResp{Id: orgID}, nil
+	return &authdto.RegisterResp{Id: orgID}, nil
 }
 
-func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *dto.SendCodeReq) {
+func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq) {
 	// Генерируем код
 	code, err := verification.GenerateCode()
 	if err != nil {
@@ -251,7 +251,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *dto.SendCodeReq) {
 		return
 	}
 	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
-	a.codeProccessing(ctxOnSend, &dto.VerifyCodeReq{
+	a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
 		ID:    req.ID,
 		Email: req.Email,
 		IsOrg: req.IsOrg,
@@ -259,7 +259,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *dto.SendCodeReq) {
 	})
 }
 
-func (a *AuthUseCase) VerifyCode(ctx context.Context, req *dto.VerifyCodeReq) (*dto.TokenPair, error) {
+func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
 	exp, err := a.code.VerifyCode(ctx, codemap.ToModel(req))
 	if err != nil {
 		a.Logger.Error(
@@ -303,7 +303,7 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req *dto.VerifyCodeReq) (*
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*dto.AccessToken, error) {
+func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*authdto.AccessToken, error) {
 	// Валидируем Claims токена. Есть ли они и нормальные ли.
 	err := validation.ValidateTokenClaims(req)
 	if err != nil {
@@ -320,7 +320,7 @@ func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*d
 	if err != nil {
 		return nil, err
 	}
-	return &dto.AccessToken{
+	return &authdto.AccessToken{
 		Token: token,
 	}, nil
 }

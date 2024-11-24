@@ -7,7 +7,7 @@ type Organization struct {
 
 type OrgInfo struct {
 	Name      string  `json:"name" validate:"min=3,max=100"`
-	Rating    float64 `json:"rating"`
+	Rating    float64 `json:"rating,omitempty"`
 	Address   string  `json:"address" validate:"required"`
 	Long      float64 `json:"long" validate:"required,longitude"`
 	Lat       float64 `json:"lat" validate:"required,latitude"`

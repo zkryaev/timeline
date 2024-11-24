@@ -5,11 +5,13 @@ import (
 	"errors"
 	"strings"
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/orgdto"
+	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/repository"
 	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/mapper/facemap"
 	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/repository/mapper/usermap"
 
 	"go.uber.org/zap"
 )
@@ -32,9 +34,23 @@ func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, l
 	}
 }
 
-func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *dto.SearchReq) (*dto.SearchResp, error) {
+func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error) {
+	data, err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(user))
+	if err != nil {
+		if errors.Is(err, postgres.ErrUserNotFound) {
+			return nil, err
+		}
+		u.Logger.Error(
+			"failed user update",
+			zap.Error(err),
+		)
+	}
+	return usermap.UserUpdateToDTO(data), nil
+}
+
+func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*orgdto.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
-	data, err := u.org.OrgsSearch(ctx, facemap.SearchToModel(sreq))
+	data, err := u.org.OrgsBySearch(ctx, facemap.SearchToModel(sreq))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
 			return nil, ErrNoOrgs
@@ -42,7 +58,7 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *dto.SearchReq) (*dto
 		u.Logger.Error("SearchOrgs", zap.Error(err))
 		return nil, err
 	}
-	resp := &dto.SearchResp{
+	resp := &orgdto.SearchResp{
 		Orgs: make([]*entity.Organization, 0, len(data)),
 	}
 	for _, v := range data {
@@ -51,7 +67,7 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *dto.SearchReq) (*dto
 	return resp, nil
 }
 
-func (u *UserUseCase) OrgsInArea(ctx context.Context, area *dto.OrgAreaReq) (*dto.OrgAreaResp, error) {
+func (u *UserUseCase) OrgsInArea(ctx context.Context, area *orgdto.OrgAreaReq) (*orgdto.OrgAreaResp, error) {
 	data, err := u.org.OrgsInArea(ctx, facemap.AreaToModel(area))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
@@ -60,7 +76,7 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, area *dto.OrgAreaReq) (*dt
 		u.Logger.Error("OrgsInArea", zap.Error(err))
 		return nil, err
 	}
-	resp := &dto.OrgAreaResp{
+	resp := &orgdto.OrgAreaResp{
 		Orgs: make([]*entity.MapOrgInfo, 0, len(data)),
 	}
 	for _, v := range data {

@@ -1,8 +1,8 @@
 package entity
 
 type User struct {
-	ID   uint64   `json:"id" db:"user_id"`
-	Info UserInfo `json:"info"`
+	UserID int      `json:"id"`
+	Info   UserInfo `json:"info"`
 }
 
 type UserInfo struct {
