@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"timeline/internal/repository/models"
 
 	"github.com/jackc/pgx/v5"
