@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"timeline/internal/repository/models"
 
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 var (
@@ -156,7 +156,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 }
 
 // Принимает пагинацию, имя и тип организации. Возвращает соответствующие организации
-func (p *PostgresRepo) OrgsSearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error) {
+func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -187,4 +187,51 @@ func (p *PostgresRepo) OrgsSearch(ctx context.Context, params *models.SearchPara
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
 	return orgList, nil
+}
+
+func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `UPDATE orgs (name, type, city, address, telephone, lat, long, about)
+		SET 
+			name = $1,
+			type = $2,
+			city = $3,
+			address = $4,
+			telephone = $5,
+			lat = %6
+			long = %7,
+			about = %8
+		WHERE org_id = $9
+		RETURNING name, type, city, address, telephone, lat, long, about;
+		`
+	var UpdatedInfo models.OrgUpdate
+	if err := tx.QueryRowxContext(ctx, query,
+		new.Name,
+		new.Type,
+		new.City,
+		new.Address,
+		new.Telephone,
+		new.Lat,
+		new.Long,
+		new.About,
+		new.OrgID,
+	).StructScan(&UpdatedInfo); err != nil {
+		// В данном случае ErrNoRows аналог стдшного NoRowsAffected
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, fmt.Errorf("failed update org info: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return &UpdatedInfo, nil
 }

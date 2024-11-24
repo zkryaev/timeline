@@ -6,7 +6,7 @@ type UserRegister struct {
 }
 
 type UserInfo struct {
-	OrgID     int    `db:"user_id"`
+	UserID    int    `db:"user_id"`
 	FirstName string `db:"first_name"`
 	LastName  string `db:"last_name"`
 	Telephone string `db:"telephone"`

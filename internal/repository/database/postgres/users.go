@@ -53,7 +53,7 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *models.UserRegister) 
 	return UserID, nil
 }
 
-func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*models.UserRegister, error) {
+func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -64,37 +64,10 @@ func (p *PostgresRepo) UserByEmail(ctx context.Context, email string) (*models.U
 		}
 	}()
 	query := `
-		SELECT user_id, email, passwd_hash, first_name, last_name, telephone, city, about FROM users
-		WHERE email = $1;
-	`
-	var user models.UserRegister
-	if err = tx.GetContext(ctx, &user, query, email); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrUserNotFound
-		}
-		return nil, fmt.Errorf("failed to get user by email: %w", err)
-	}
-	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
-	}
-	return &user, nil
-}
-
-func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserRegister, error) {
-	tx, err := p.db.Beginx()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-	query := `
-		SELECT user_id, email, passwd_hash, user_name, telephone, city, about FROM users
+		SELECT user_id, first_name, last_name, city, telephone, about FROM users
 		WHERE user_id = $1;
 	`
-	var user models.UserRegister
+	var user models.UserInfo
 	if err = tx.GetContext(ctx, &user, query, UserID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -105,4 +78,45 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserRe
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
 	return &user, nil
+}
+
+func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) (*models.UserInfo, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `UPDATE users (first_name, last_name, city, telephone, about)
+		SET 
+			first_name = $1,
+			last_name = $2,
+			city = $3,
+			telephone = $4,
+			about = $5,
+		WHERE user_id = $6
+		RETURNING first_name, last_name, city, telephone, about;
+		`
+	var UpdatedInfo models.UserInfo
+	if err := tx.QueryRowxContext(ctx, query,
+		new.FirstName,
+		new.LastName,
+		new.City,
+		new.Telephone,
+		new.About,
+		new.UserID,
+	).StructScan(&UpdatedInfo); err != nil {
+		// В данном случае ErrNoRows аналог стдшного NoRowsAffected
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed update org info: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return &UpdatedInfo, nil
 }

@@ -2,11 +2,12 @@ package orgmap
 
 import (
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/authdto"
+	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/repository/models"
 )
 
-func RegisterReqToModel(dto *dto.OrgRegisterReq) *models.OrgRegister {
+func RegisterReqToModel(dto *authdto.OrgRegisterReq) *models.OrgRegister {
 	return &models.OrgRegister{
 		HashCreds: models.HashCreds{
 			Email:      dto.Email,
@@ -62,5 +63,33 @@ func OrgSummaryToDTO(model *models.OrgSummary) *entity.MapOrgInfo {
 		Name:   model.Name,
 		Rating: model.Rating,
 		Type:   model.Type,
+	}
+}
+
+func UpdateToModel(dto *orgdto.OrgUpdateReq) *models.OrgUpdate {
+	return &models.OrgUpdate{
+		OrgID:     dto.OrgID,
+		Name:      dto.Name,
+		Type:      dto.Type,
+		City:      dto.City,
+		Address:   dto.Address,
+		Telephone: dto.Telephone,
+		Lat:       dto.Lat,
+		Long:      dto.Long,
+		About:     dto.About,
+	}
+}
+
+func UpdateToDTO(model *models.OrgUpdate) *orgdto.OrgUpdateResp {
+	return &orgdto.OrgUpdateResp{
+		OrgID:     model.OrgID,
+		Name:      model.Name,
+		Type:      model.Type,
+		City:      model.City,
+		Address:   model.Address,
+		Telephone: model.Telephone,
+		Lat:       model.Lat,
+		Long:      model.Long,
+		About:     model.About,
 	}
 }

@@ -29,17 +29,21 @@ type CodeRepository interface {
 }
 
 type UserRepository interface {
+	UserUpdate(ctx context.Context, new *models.UserInfo) (*models.UserInfo, error)
 	UserSave(ctx context.Context, user *models.UserRegister) (int, error)
-	UserByEmail(ctx context.Context, email string) (*models.UserRegister, error)
-	UserByID(ctx context.Context, userID int) (*models.UserRegister, error)
+	UserByID(ctx context.Context, userID int) (*models.UserInfo, error)
 }
 
 type OrgRepository interface {
 	OrgSave(ctx context.Context, org *models.OrgRegister) (int, error)
+
 	OrgByEmail(ctx context.Context, email string) (*models.OrgRegister, error)
 	OrgByID(ctx context.Context, id int) (*models.OrgRegister, error)
-	OrgsSearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error)
+
+	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error)
 	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)
+
+	OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error)
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД

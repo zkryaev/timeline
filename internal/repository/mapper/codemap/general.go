@@ -1,11 +1,11 @@
 package codemap
 
 import (
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/repository/models"
 )
 
-func ToModel(dtoCode *dto.VerifyCodeReq) *models.CodeInfo {
+func ToModel(dtoCode *authdto.VerifyCodeReq) *models.CodeInfo {
 	return &models.CodeInfo{
 		ID:    dtoCode.ID,
 		Code:  dtoCode.Code,
