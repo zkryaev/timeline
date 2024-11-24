@@ -1,4 +1,4 @@
-package dto
+package authdto
 
 import "timeline/internal/entity"
 

@@ -6,7 +6,7 @@ import (
 	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto"
+	"timeline/internal/entity/dto/authdto"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -15,7 +15,7 @@ var (
 	ErrInvalidTokenType = errors.New("invalid token type")
 )
 
-func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata) (*dto.TokenPair, error) {
+func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata) (*authdto.TokenPair, error) {
 	AccessToken, err := NewToken(secret, cfg, metadata, "access")
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.Tok
 	if err != nil {
 		return nil, err
 	}
-	return &dto.TokenPair{
+	return &authdto.TokenPair{
 		AccessToken:  AccessToken,
 		RefreshToken: RefreshToken,
 	}, nil
