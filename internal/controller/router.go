@@ -58,7 +58,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	authRouter.HandleFunc(authVerifyCode, auth.VerifyCode).Methods("POST")
 
 	authProtectedRouter := r.NewRoute().PathPrefix("/auth").Subrouter()
-	authProtectedRouter.Use(auth.Middleware.IsTokenValid)
+	// authProtectedRouter.Use(auth.Middleware.IsTokenValid)
 	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
 
 	// User
