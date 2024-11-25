@@ -189,7 +189,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param id query int true "User id"
-// @Success 200 {object} userdto.UserInfo
+// @Success 200 {object} userdto.UserGetResp
 // @Failure 400
 // @Failure 500
 // @Router /user/info/{id} [get]
