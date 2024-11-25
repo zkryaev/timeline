@@ -3,6 +3,7 @@ package usercase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
@@ -32,6 +33,18 @@ func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, l
 		org:    orgRepo,
 		Logger: logger,
 	}
+}
+
+func (u *UserUseCase) User(ctx context.Context, id int) (*userdto.UserGetResp, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("Id must be > 0")
+	}
+	data, err := u.user.UserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	resp := usermap.UserInfoToGetResp(data)
+	return resp, nil
 }
 
 func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error) {

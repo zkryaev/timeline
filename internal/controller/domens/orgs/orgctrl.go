@@ -34,7 +34,7 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 // @Description Update organization information
 // @Tags Organization
 // @Accept  json
-// @Produce  json
+// @Produce json
 // @Param   request body orgdto.OrgUpdateReq true "New org info"
 // @Success 200 {object} orgdto.OrgUpdateResp
 // @Failure 400

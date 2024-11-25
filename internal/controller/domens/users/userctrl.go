@@ -10,6 +10,7 @@ import (
 	"timeline/internal/entity/dto/userdto"
 
 	"github.com/go-playground/validator"
+	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
@@ -18,6 +19,7 @@ type User interface {
 	SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*orgdto.SearchResp, error)
 	OrgsInArea(ctx context.Context, area *orgdto.OrgAreaReq) (*orgdto.OrgAreaResp, error)
 	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error)
+	User(ctx context.Context, id int) (*userdto.UserGetResp, error)
 }
 
 type UserCtrl struct {
@@ -179,4 +181,41 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
 		return
 	}
+}
+
+// @Summary Get user
+// @Description Get user by his id
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param id query int true "User id"
+// @Success 200 {object} userdto.UserInfo
+// @Failure 400
+// @Failure 500
+// @Router /user/info/{id} [get]
+func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	idString, ok := params["id"]
+	if !ok {
+		http.Error(w, "No user id provided", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	data, err := u.usecase.User(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if u.json.NewEncoder(w).Encode(&data) != nil {
+		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+		return
+	}
+
 }
