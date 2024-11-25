@@ -47,7 +47,7 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 // @Success 200 {object} userdto.UserUpdateResp
 // @Failure 400
 // @Failure 500
-// @Router /user/update [put]
+// @Router /users/update [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var req userdto.UserUpdateReq
 	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
@@ -85,7 +85,7 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} orgdto.SearchResp
 // @Failure 400
 // @Failure 500
-// @Router /user/find/orgs [get]
+// @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	params := map[string]bool{
 		"limit": true,
@@ -137,7 +137,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} orgdto.OrgAreaResp
 // @Failure 400
 // @Failure 500
-// @Router /user/show/map [get]
+// @Router /users/map/orgs [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	params := map[string]bool{
 		"min_lat":  true,
@@ -188,11 +188,11 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param id query int true "User id"
+// @Param id path int true "User id"
 // @Success 200 {object} userdto.UserGetResp
 // @Failure 400
 // @Failure 500
-// @Router /user/info/{id} [get]
+// @Router /users/info/{id} [get]
 func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idString, ok := params["id"]

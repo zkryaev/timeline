@@ -14,28 +14,34 @@ type Controllers struct {
 	Org  *orgs.OrgCtrl
 }
 
+// General
+const (
+	health = "/health"
+	v1     = "/v1"
+)
+
 // Auth
 const (
 	authPrefix        = "/auth"
 	authLogin         = "/login"
-	authRegisterOrg   = "/register/org"
-	authRegisterUser  = "/register/user"
-	authRefreshToken  = "/refresh/token"
-	authSendCodeRetry = "/send/code"
-	authVerifyCode    = "/verify/code"
+	authRegisterOrg   = "/orgs"
+	authRegisterUser  = "/users"
+	authRefreshToken  = "/tokens/refresh"
+	authSendCodeRetry = "/codes/send"
+	authVerifyCode    = "/codes/verify"
 )
 
 // User
 const (
-	userPrefix     = "/user"
-	userMapOrgs    = "/show/map"
-	userSearchOrgs = "/find/orgs"
+	userPrefix     = "/users"
+	userMapOrgs    = "/map/orgs"
+	userSearchOrgs = "/search/orgs"
 	userUpdate     = "/update"
 	userGetInfo    = "/info/{id}"
 )
 
 const (
-	orgPrefix = "/org"
+	orgPrefix = "/orgs"
 	orgUpdate = "/update"
 )
 
@@ -48,29 +54,31 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	org := controllersSet.Org
 
 	r.Use(auth.Middleware.HandlerLogs)
+	r.HandleFunc(health, HealthCheck)
 
+	v1 := r.NewRoute().PathPrefix(v1).Subrouter()
 	// Auth
 	// !!!! Пока версия не продовая все ручки доступны без токенов !!!!
-	authRouter := r.NewRoute().PathPrefix(authPrefix).Subrouter()
+	authRouter := v1.NewRoute().PathPrefix(authPrefix).Subrouter()
 	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")
 	authRouter.HandleFunc(authRegisterOrg, auth.OrgRegister).Methods("POST")
 	authRouter.HandleFunc(authRegisterUser, auth.UserRegister).Methods("POST")
 	authRouter.HandleFunc(authRefreshToken, auth.UpdateAccessToken).Methods("PUT")
 	authRouter.HandleFunc(authVerifyCode, auth.VerifyCode).Methods("POST")
 
-	authProtectedRouter := r.NewRoute().PathPrefix("/auth").Subrouter()
+	authProtectedRouter := v1.NewRoute().PathPrefix("/auth").Subrouter()
 	// authProtectedRouter.Use(auth.Middleware.IsTokenValid)
 	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
 
 	// User
-	userRouter := r.NewRoute().PathPrefix(userPrefix).Subrouter()
+	userRouter := v1.NewRoute().PathPrefix(userPrefix).Subrouter()
 	// userRouter.Use(auth.Middleware.IsTokenValid)
 	userRouter.HandleFunc(userMapOrgs, user.OrganizationInArea).Methods("GET")
 	userRouter.HandleFunc(userSearchOrgs, user.SearchOrganization).Methods("GET")
 	userRouter.HandleFunc(userGetInfo, user.GetUserByID).Methods("GET")
 	userRouter.HandleFunc(userUpdate, user.UpdateUser).Methods("PUT")
 	// Org
-	orgRouter := r.NewRoute().PathPrefix(orgPrefix).Subrouter()
+	orgRouter := v1.NewRoute().PathPrefix(orgPrefix).Subrouter()
 	// orgRouter.Use(auth.Middleware.IsTokenValid)
 	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
 

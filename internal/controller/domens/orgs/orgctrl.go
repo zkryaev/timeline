@@ -39,7 +39,7 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 // @Success 200 {object} orgdto.OrgUpdateResp
 // @Failure 400
 // @Failure 500
-// @Router /org/update [put]
+// @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 	var req orgdto.OrgUpdateReq
 	if o.json.NewDecoder(r.Body).Decode(&req) != nil {

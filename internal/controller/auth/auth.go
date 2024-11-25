@@ -90,7 +90,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} authdto.RegisterResp "User ID"
 // @Failure 400
 // @Failure 500
-// @Router /auth/register/user [post]
+// @Router /auth/users [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req authdto.UserRegisterReq
@@ -129,7 +129,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} authdto.RegisterResp "Organization ID"
 // @Failure 400
 // @Failure 500
-// @Router /auth/register/org [post]
+// @Router /auth/orgs [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req authdto.OrgRegisterReq
@@ -166,7 +166,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {string} string "Code resent successfully"
 // @Failure 400
 // @Failure 500
-// @Router /auth/send/code [post]
+// @Router /auth/codes/send [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req authdto.SendCodeReq
@@ -194,7 +194,7 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} authdto.TokenPair
 // @Failure 400
 // @Failure 500
-// @Router /auth/verify/code [post]
+// @Router /auth/codes/verify [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req authdto.VerifyCodeReq
@@ -233,7 +233,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Failure 400
 // @Failure 401
 // @Failure 500
-// @Router /auth/refresh/token [put]
+// @Router /auth/tokens/refresh [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 	token, err := a.Middleware.ExtractToken(w, r)
 	if err != nil {

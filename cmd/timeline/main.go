@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	_ "timeline/docs/swagger"
 	"timeline/internal/app"
 	"timeline/internal/config"
 	"timeline/internal/repository"
@@ -21,6 +22,8 @@ import (
 
 // @title Timeline API
 // @version 1.0
+// @BasePath /v1
+// @schemes http
 func main() {
 	// Подгружаем все переменные окружения
 	if err := godotenv.Load(); err != nil {
