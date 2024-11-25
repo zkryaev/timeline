@@ -171,7 +171,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchPa
 		`
 	orgList := make([]*models.OrgInfo, 0, params.Limit)
 	if params.Type != "" {
-		query += ` AND type = $2 LIMIT $3 OFFSET $4;`
+		query += ` AND ($2 = '' OR type ILIKE '%' || $2 || '%') LIMIT $3 OFFSET $4;`
 		err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset)
 	} else {
 		query += ` LIMIT $2 OFFSET $3;`
