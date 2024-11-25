@@ -3,6 +3,9 @@ package users
 import (
 	"context"
 	"net/http"
+	"strconv"
+	"timeline/internal/controller/validation"
+	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/entity/dto/userdto"
 
@@ -73,19 +76,35 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param   request body orgdto.SearchReq true "Search parameters request"
+// @Param limit query int true "Limit the number of results"
+// @Param page query int true "Page number for pagination"
+// @Param name query string false "Name of the organization to search for"
+// @Param type query string false "Type of the organization"
 // @Success 200 {object} orgdto.SearchResp
 // @Failure 400
 // @Failure 500
 // @Router /user/find/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
-	var req orgdto.SearchReq
-	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	params := map[string]bool{
+		"limit": true,
+		"page":  true,
+		"name":  false,
+		"type":  false,
+	}
+	if !validation.IsQueryValid(r, params) {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
-	var err error
-	if err = u.validator.Struct(&req); err != nil {
+	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
+	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
+
+	req := orgdto.SearchReq{
+		Page:  int(page),
+		Limit: int(limit),
+		Name:  r.URL.Query().Get("name"),
+		Type:  r.URL.Query().Get("type"),
+	}
+	if err := u.validator.Struct(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -109,16 +128,38 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param   request body orgdto.OrgAreaReq true "Area parameters"
+// @Param min_lat query float32 true "Minimum latitude for the search area"
+// @Param min_long query float32 true "Minimum longitude for the search area"
+// @Param max_lat query float32 true "Maximum latitude for the search area"
+// @Param max_long query float32 true "Maximum longitude for the search area"
 // @Success 200 {object} orgdto.OrgAreaResp
 // @Failure 400
 // @Failure 500
 // @Router /user/show/map [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
-	var req orgdto.OrgAreaReq
-	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	params := map[string]bool{
+		"min_lat":  true,
+		"min_long": true,
+		"max_lat":  true,
+		"max_long": true,
+	}
+	if !validation.IsQueryValid(r, params) {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
+	}
+	minLat, _ := strconv.ParseFloat(r.URL.Query().Get("min_lat"), 64)
+	minLong, _ := strconv.ParseFloat(r.URL.Query().Get("min_long"), 64)
+	maxLat, _ := strconv.ParseFloat(r.URL.Query().Get("max_lat"), 64)
+	maxLong, _ := strconv.ParseFloat(r.URL.Query().Get("max_long"), 64)
+	req := orgdto.OrgAreaReq{
+		LeftLowerCorner: entity.MapPoint{
+			Lat:  minLat,
+			Long: minLong,
+		},
+		RightUpperCorner: entity.MapPoint{
+			Lat:  maxLat,
+			Long: maxLong,
+		},
 	}
 	// валидация полей
 	if err := u.validator.Struct(&req); err != nil {
