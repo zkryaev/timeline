@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -58,8 +59,13 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rw, r)
 
+		decodedURI, err := url.QueryUnescape(r.RequestURI)
+		if err != nil {
+			decodedURI = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
+		}
+
 		duration := time.Since(start)
-		m.logger.Info(fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, r.RequestURI, rw.statusCode, duration))
+		m.logger.Info(fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.statusCode, duration))
 	})
 }
 
