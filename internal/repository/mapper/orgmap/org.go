@@ -50,10 +50,11 @@ func OrgInfoToEntity(model *models.OrgInfo) *entity.OrgInfo {
 
 func MapOrgInfoToModel(dto *entity.MapOrgInfo) *models.OrgSummary {
 	return &models.OrgSummary{
-		OrgID:  dto.OrgID,
-		Name:   dto.Name,
-		Rating: dto.Rating,
-		Type:   dto.Type,
+		OrgID:      dto.OrgID,
+		Name:       dto.Name,
+		Rating:     dto.Rating,
+		Type:       dto.Type,
+		Coordinate: models.Coordinate{Lat: dto.Coords.Lat, Long: dto.Coords.Long},
 	}
 }
 
@@ -63,6 +64,7 @@ func OrgSummaryToDTO(model *models.OrgSummary) *entity.MapOrgInfo {
 		Name:   model.Name,
 		Rating: model.Rating,
 		Type:   model.Type,
+		Coords: entity.MapPoint{Lat: model.Coordinate.Lat, Long: model.Coordinate.Long},
 	}
 }
 

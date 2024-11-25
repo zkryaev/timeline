@@ -130,7 +130,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT org_id, name, rating, type FROM orgs
+	query := `SELECT org_id, name, rating, type, lat, long FROM orgs
 		WHERE lat BETWEEN $1 AND $2
 		AND long BETWEEN $3 AND $4;
 		`

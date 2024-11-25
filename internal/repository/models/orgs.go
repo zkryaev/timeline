@@ -22,6 +22,7 @@ type OrgSummary struct {
 	Name   string  `db:"name"`
 	Rating float64 `db:"rating"`
 	Type   string  `db:"type"`
+	Coordinate
 }
 
 type OrgUpdate struct {

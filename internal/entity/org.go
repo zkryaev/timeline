@@ -18,10 +18,11 @@ type OrgInfo struct {
 }
 
 type MapOrgInfo struct {
-	OrgID  int     `json:"org_id"`
-	Name   string  `json:"name"`
-	Rating float64 `json:"rating"`
-	Type   string  `json:"type"`
+	OrgID  int      `json:"org_id"`
+	Name   string   `json:"name"`
+	Rating float64  `json:"rating"`
+	Type   string   `json:"type"`
+	Coords MapPoint `json:"coords"`
 }
 
 // type OrgAddInfo struct {
