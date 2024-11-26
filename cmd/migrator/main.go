@@ -29,20 +29,21 @@ func main() {
 	var m *migrate.Migrate
 	var err error
 	// Две попытки между которыми 1 секунда
-	maxRetries := 3
+	maxRetries := 5
 	for try := maxRetries; try > 0; try-- {
 		m, err = migrate.New(
 			"file://"+migrationsPath,
 			dsn,
 		)
 		if err != nil {
+			log.Printf("failed to apply migrate at %d attempt\n", maxRetries-try+1)
 			time.Sleep(2 * time.Second)
 		} else {
 			break
 		}
 	}
 	if err != nil {
-		log.Fatal("migrate.New: ", err)
+		log.Fatal("migrate.New: ", err.Error())
 	}
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
