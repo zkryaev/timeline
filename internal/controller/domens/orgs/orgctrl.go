@@ -33,6 +33,14 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 	}
 }
 
+// @Summary Organization information
+// @Description Get organization information
+// @Tags Organization
+// @Param   id path int true "org_id"
+// @Success 200 {object} orgdto.Organization
+// @Failure 400
+// @Failure 500
+// @Router /orgs/info/{id} [put]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idString, ok := params["id"]

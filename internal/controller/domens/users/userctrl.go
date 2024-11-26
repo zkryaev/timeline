@@ -82,7 +82,7 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Param page query int true "Page number for pagination"
 // @Param name query string false "Name of the organization to search for"
 // @Param type query string false "Type of the organization"
-// @Success 200 {object} orgdto.SearchResp
+// @Success 200 {object} general.SearchResp
 // @Failure 400
 // @Failure 500
 // @Router /users/search/orgs [get]
@@ -134,7 +134,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Param min_long query float32 true "Minimum longitude for the search area"
 // @Param max_lat query float32 true "Maximum latitude for the search area"
 // @Param max_long query float32 true "Maximum longitude for the search area"
-// @Success 200 {object} orgdto.OrgAreaResp
+// @Success 200 {object} general.OrgAreaResp
 // @Failure 400
 // @Failure 500
 // @Router /users/map/orgs [get]
@@ -188,7 +188,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param id path int true "User id"
+// @Param id path int true "user_id"
 // @Success 200 {object} userdto.UserGetResp
 // @Failure 400
 // @Failure 500
