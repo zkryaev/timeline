@@ -41,8 +41,9 @@ const (
 )
 
 const (
-	orgPrefix = "/orgs"
-	orgUpdate = "/update"
+	orgPrefix  = "/orgs"
+	orgGetInfo = "/info/{id}"
+	orgUpdate  = "/update"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -81,6 +82,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	orgRouter := v1.NewRoute().PathPrefix(orgPrefix).Subrouter()
 	// orgRouter.Use(auth.Middleware.IsTokenValid)
 	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
+	orgRouter.HandleFunc(orgGetInfo, org.GetOrgByID).Methods("GET")
 
 	return r
 }

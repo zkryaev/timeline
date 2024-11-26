@@ -1,10 +1,5 @@
 package entity
 
-type Organization struct {
-	OrgID int     `json:"id"`
-	Info  OrgInfo `json:"info"`
-}
-
 type OrgInfo struct {
 	Name      string  `json:"name" validate:"min=3,max=100"`
 	Rating    float64 `json:"rating,omitempty"`

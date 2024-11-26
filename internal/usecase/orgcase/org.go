@@ -3,6 +3,7 @@ package orgcase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/repository"
 	"timeline/internal/repository/database/postgres"
@@ -23,6 +24,21 @@ func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, l
 		org:    orgRepo,
 		Logger: logger,
 	}
+}
+
+func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organization, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("Id must be > 0")
+	}
+	data, err := o.org.OrgByID(ctx, id)
+	if err != nil {
+		o.Logger.Error(
+			"failed get organization",
+			zap.Error(err),
+		)
+		return nil, err
+	}
+	return orgmap.OrgInfoToDTO(data), nil
 }
 
 func (o *OrgUseCase) OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateResp, error) {

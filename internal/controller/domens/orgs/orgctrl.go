@@ -3,14 +3,17 @@ package orgs
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"timeline/internal/entity/dto/orgdto"
 
 	"github.com/go-playground/validator"
+	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
 type Org interface {
+	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
 	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateResp, error)
 }
 
@@ -27,6 +30,31 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 		Logger:    logger,
 		json:      jsoniter,
 		validator: validator,
+	}
+}
+
+func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	idString, ok := params["id"]
+	if !ok {
+		http.Error(w, "No org id provided", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	data, err := o.usecase.Organization(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if o.json.NewEncoder(w).Encode(&data) != nil {
+		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+		return
 	}
 }
 

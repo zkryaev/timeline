@@ -24,3 +24,4 @@ type UserUpdateResp struct {
 	City      string `json:"city"`
 	About     string `json:"about"`
 }
+

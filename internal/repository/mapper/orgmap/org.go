@@ -27,10 +27,10 @@ func RegisterReqToModel(dto *authdto.OrgRegisterReq) *models.OrgRegister {
 	}
 }
 
-func OrgInfoToDTO(model *models.OrgInfo) *entity.Organization {
-	return &entity.Organization{
+func OrgInfoToDTO(model *models.OrgInfo) *orgdto.Organization {
+	return &orgdto.Organization{
 		OrgID: model.OrgID,
-		Info:  *OrgInfoToEntity(model),
+		Info:  OrgInfoToEntity(model),
 	}
 }
 

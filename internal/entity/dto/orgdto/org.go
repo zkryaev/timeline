@@ -2,6 +2,11 @@ package orgdto
 
 import "timeline/internal/entity"
 
+type Organization struct {
+	OrgID int            `json:"id"`
+	Info  *entity.OrgInfo `json:"info"`
+}
+
 type OrgUpdateReq struct {
 	OrgID     int     `json:"org_id" validate:"required"`
 	Name      string  `json:"name" validate:"min=3,max=100"`
@@ -24,24 +29,4 @@ type OrgUpdateResp struct {
 	Telephone string  `json:"telephone"`
 	City      string  `json:"city"`
 	About     string  `json:"about,omitempty"`
-}
-
-type SearchReq struct {
-	Page  int    `json:"page" validate:"required,min=1"`
-	Limit int    `json:"limit" validate:"required,min=1"`
-	Name  string `json:"name,omitempty"`
-	Type  string `json:"type,omitempty"`
-}
-
-type SearchResp struct {
-	Orgs []*entity.Organization `json:"orgs"`
-}
-
-type OrgAreaReq struct {
-	LeftLowerCorner  entity.MapPoint `json:"left_lower_corner"`
-	RightUpperCorner entity.MapPoint `json:"right_upper_corner"`
-}
-
-type OrgAreaResp struct {
-	Orgs []*entity.MapOrgInfo `json:"map_orgs"`
 }

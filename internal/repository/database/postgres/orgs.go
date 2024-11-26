@@ -58,7 +58,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (in
 	return orgID, nil
 }
 
-func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.OrgRegister, error) {
+func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -71,10 +71,10 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.Or
 	}()
 
 	query := `
-		SELECT org_id, email, passwd_hash, name, rating, type, city, address, telephone, lat, long, about FROM orgs
+		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
         WHERE email = $1;
 	`
-	var org models.OrgRegister
+	var org models.OrgInfo
 	if err := tx.GetContext(ctx, &org, query, email); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
@@ -88,7 +88,7 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.Or
 	return &org, nil
 }
 
-func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgRegister, error) {
+func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -99,10 +99,10 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgRegister
 		}
 	}()
 	query := `
-		SELECT org_id, email, passwd_hash, name, rating, type, city, address, telephone, lat, long, about FROM orgs
+		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
         WHERE org_id = $1;
 	`
-	var org models.OrgRegister
+	var org models.OrgInfo
 	if err = tx.GetContext(ctx, &org, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
@@ -114,10 +114,6 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgRegister
 	}
 	return &org, nil
 }
-
-/*
-	Получение организаций
-*/
 
 // Принимает две точки на карте по диагонале. Возвращает список организаций лежащий в диапазоне этих двух точек
 func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error) {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto/orgdto"
+	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
 
 	"github.com/go-playground/validator"
@@ -16,8 +16,8 @@ import (
 )
 
 type User interface {
-	SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*orgdto.SearchResp, error)
-	OrgsInArea(ctx context.Context, area *orgdto.OrgAreaReq) (*orgdto.OrgAreaResp, error)
+	SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error)
+	OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
 	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error)
 	User(ctx context.Context, id int) (*userdto.UserGetResp, error)
 }
@@ -100,7 +100,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
 	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
 
-	req := orgdto.SearchReq{
+	req := general.SearchReq{
 		Page:  int(page),
 		Limit: int(limit),
 		Name:  r.URL.Query().Get("name"),
@@ -153,7 +153,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	minLong, _ := strconv.ParseFloat(r.URL.Query().Get("min_long"), 64)
 	maxLat, _ := strconv.ParseFloat(r.URL.Query().Get("max_lat"), 64)
 	maxLong, _ := strconv.ParseFloat(r.URL.Query().Get("max_long"), 64)
-	req := orgdto.OrgAreaReq{
+	req := general.OrgAreaReq{
 		LeftLowerCorner: entity.MapPoint{
 			Lat:  minLat,
 			Long: minLong,

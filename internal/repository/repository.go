@@ -37,8 +37,8 @@ type UserRepository interface {
 type OrgRepository interface {
 	OrgSave(ctx context.Context, org *models.OrgRegister) (int, error)
 
-	OrgByEmail(ctx context.Context, email string) (*models.OrgRegister, error)
-	OrgByID(ctx context.Context, id int) (*models.OrgRegister, error)
+	OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error)
+	OrgByID(ctx context.Context, id int) (*models.OrgInfo, error)
 
 	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error)
 	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)

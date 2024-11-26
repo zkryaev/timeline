@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"timeline/internal/entity"
+	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/repository"
@@ -61,7 +62,7 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateRe
 	return usermap.UserUpdateToDTO(data), nil
 }
 
-func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*orgdto.SearchResp, error) {
+func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
 	data, err := u.org.OrgsBySearch(ctx, facemap.SearchToModel(sreq))
 	if err != nil {
@@ -71,8 +72,8 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*
 		u.Logger.Error("SearchOrgs", zap.Error(err))
 		return nil, err
 	}
-	resp := &orgdto.SearchResp{
-		Orgs: make([]*entity.Organization, 0, len(data)),
+	resp := &general.SearchResp{
+		Orgs: make([]*orgdto.Organization, 0, len(data)),
 	}
 	for _, v := range data {
 		resp.Orgs = append(resp.Orgs, orgmap.OrgInfoToDTO(v))
@@ -80,7 +81,7 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *orgdto.SearchReq) (*
 	return resp, nil
 }
 
-func (u *UserUseCase) OrgsInArea(ctx context.Context, area *orgdto.OrgAreaReq) (*orgdto.OrgAreaResp, error) {
+func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error) {
 	data, err := u.org.OrgsInArea(ctx, facemap.AreaToModel(area))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
@@ -89,7 +90,7 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, area *orgdto.OrgAreaReq) (
 		u.Logger.Error("OrgsInArea", zap.Error(err))
 		return nil, err
 	}
-	resp := &orgdto.OrgAreaResp{
+	resp := &general.OrgAreaResp{
 		Orgs: make([]*entity.MapOrgInfo, 0, len(data)),
 	}
 	for _, v := range data {

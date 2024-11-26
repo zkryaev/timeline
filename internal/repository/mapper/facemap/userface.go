@@ -1,11 +1,11 @@
 package facemap
 
 import (
-	"timeline/internal/entity/dto/orgdto"
+	"timeline/internal/entity/dto/general"
 	"timeline/internal/repository/models"
 )
 
-func SearchToModel(dto *orgdto.SearchReq) *models.SearchParams {
+func SearchToModel(dto *general.SearchReq) *models.SearchParams {
 	return &models.SearchParams{
 		Page:   dto.Page,
 		Limit:  dto.Limit,
@@ -15,7 +15,7 @@ func SearchToModel(dto *orgdto.SearchReq) *models.SearchParams {
 	}
 }
 
-func AreaToModel(dto *orgdto.OrgAreaReq) *models.AreaParams {
+func AreaToModel(dto *general.OrgAreaReq) *models.AreaParams {
 	return &models.AreaParams{
 		Left:  models.Coordinate{Lat: dto.LeftLowerCorner.Lat, Long: dto.LeftLowerCorner.Long},
 		Right: models.Coordinate{Lat: dto.RightUpperCorner.Lat, Long: dto.RightUpperCorner.Long},
