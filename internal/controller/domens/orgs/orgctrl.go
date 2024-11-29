@@ -67,7 +67,7 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Update
+// @Summary Update org info
 // @Description Update organization information
 // @Tags Organization
 // @Accept  json
@@ -102,7 +102,7 @@ func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Update
+// @Summary Update timetable
 // @Description Update organization timetable
 // @Tags Organization
 // @Accept  json
