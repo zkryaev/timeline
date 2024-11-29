@@ -9,6 +9,7 @@ import (
 	authctrl "timeline/internal/controller/auth"
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/users"
+	validation "timeline/internal/controller/validation"
 	"timeline/internal/libs/secret"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
@@ -17,7 +18,6 @@ import (
 	"timeline/internal/usecase/orgcase"
 	"timeline/internal/usecase/usercase"
 
-	"github.com/go-playground/validator"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
@@ -67,7 +67,8 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		a.log,
 	)
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
-	validator := validator.New()
+	validator := validation.NewCustomValidator()
+
 	authAPI := authctrl.New(
 		usecaseAuth,
 		middleware.New(privateKey, a.log),
