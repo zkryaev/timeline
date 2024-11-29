@@ -58,6 +58,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (in
 	return orgID, nil
 }
 
+// Unused!
 func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
@@ -71,7 +72,8 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.Or
 	}()
 
 	query := `
-		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
+		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about 
+		FROM orgs
         WHERE email = $1;
 	`
 	var org models.OrgInfo
@@ -99,7 +101,8 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgInfo, er
 		}
 	}()
 	query := `
-		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
+		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about 
+		FROM orgs
         WHERE org_id = $1;
 	`
 	var org models.OrgInfo
@@ -107,7 +110,18 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgInfo, er
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
-		return nil, fmt.Errorf("failed get org by id: %w", err)
+		return nil, fmt.Errorf("failed to get org by id: %w", err)
+	}
+	query = `
+		SELECT weekday, open, close, break_start, break_end
+		FROM timetables
+		WHERE org_id = $1
+	`
+	if err := tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
@@ -126,10 +140,28 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT org_id, name, rating, type, lat, long FROM orgs
-		WHERE lat BETWEEN $1 AND $2
-		AND long BETWEEN $3 AND $4;
-		`
+	// Запрос с расписанием на текущий день
+	query := `SELECT
+		o.org_id,
+		o.name,
+		o.rating,
+		o.type,
+		o.lat,
+		o.long,
+		t.weekday,
+		t.open,   
+		t.close,
+		t.break_start, 
+		t.break_end
+	FROM orgs o
+	LEFT JOIN timetables t
+		ON o.org_id = t.org_id
+		AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
+	WHERE o.lat BETWEEN $1 AND $2
+	AND o.long BETWEEN $3 AND $4;
+	`
+
+	// Результирующий список
 	orgList := make([]*models.OrgSummary, 0, 1)
 	if err = tx.SelectContext(
 		ctx,
@@ -143,46 +175,60 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed to get orgs at given area: %w", err)
+		return nil, fmt.Errorf("failed to get orgs in area with schedule: %w", err)
 	}
+
+	// Завершаем транзакцию
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
+
 	return orgList, nil
 }
 
-// Принимает пагинацию, имя и тип организации. Возвращает соответствующие организации
-func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error) {
+// Принимает пагинацию, имя и тип организации. Возвращает соответствующие организации, число найденных
+func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT org_id, name, rating, type, city, address, telephone, lat, long, about FROM orgs
-		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%')
-		`
-	orgList := make([]*models.OrgInfo, 0, params.Limit)
-	if params.Type != "" {
-		query += ` AND ($2 = '' OR type ILIKE '%' || $2 || '%') LIMIT $3 OFFSET $4;`
-		err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset)
-	} else {
-		query += ` LIMIT $2 OFFSET $3;`
-		err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Limit, params.Offset)
-	}
-	if err != nil {
+	query := `SELECT 
+			COUNT(*)
+		FROM orgs 
+		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%') 
+		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
+	`
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, params.Name, params.Type).Scan(&found); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrOrgsNotFound
+			return nil, 0, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, 0, fmt.Errorf("failed orgs searching: %w", err)
+	}
+	query = `SELECT 
+			org_id, name, rating, type, city, address, telephone, lat, long, about 
+		FROM orgs
+		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%')
+		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
+		LIMIT $3 
+		OFFSET $4;
+	`
+	orgList := make([]*models.OrgInfo, 0, params.Limit)
+	if err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrOrgsNotFound
+		}
+		return nil, 0, fmt.Errorf("failed orgs searching: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return orgList, nil
+	return orgList, found, nil
 }
 
 func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error) {
@@ -207,7 +253,7 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*m
 			about = $8
 		WHERE org_id = $9
 		RETURNING org_id, name, type, city, address, telephone, lat, long, about;
-		`
+	`
 	var UpdatedInfo models.OrgUpdate
 	if err := tx.QueryRowxContext(ctx, query,
 		new.Name,

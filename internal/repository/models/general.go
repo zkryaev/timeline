@@ -19,8 +19,3 @@ type HashCreds struct {
 	Email      string `db:"email"`
 	PasswdHash string `db:"passwd_hash"`
 }
-
-type Coordinate struct {
-	Lat  float64 `db:"lat"`
-	Long float64 `db:"long"`
-}

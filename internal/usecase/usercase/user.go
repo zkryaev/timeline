@@ -64,7 +64,7 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateRe
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
-	data, err := u.org.OrgsBySearch(ctx, facemap.SearchToModel(sreq))
+	data, found, err := u.org.OrgsBySearch(ctx, facemap.SearchToModel(sreq))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
 			return nil, ErrNoOrgs
@@ -73,7 +73,11 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (
 		return nil, err
 	}
 	resp := &general.SearchResp{
-		Orgs: make([]*orgdto.Organization, 0, len(data)),
+		Pages: 1,
+		Orgs:  make([]*orgdto.Organization, 0, len(data)),
+	}
+	if found > sreq.Limit {
+		resp.Pages = (found + 1) / sreq.Limit
 	}
 	for _, v := range data {
 		resp.Orgs = append(resp.Orgs, orgmap.OrgInfoToDTO(v))

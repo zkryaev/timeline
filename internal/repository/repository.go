@@ -40,7 +40,7 @@ type OrgRepository interface {
 	OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error)
 	OrgByID(ctx context.Context, id int) (*models.OrgInfo, error)
 
-	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, error)
+	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, int, error)
 	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)
 
 	OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error)

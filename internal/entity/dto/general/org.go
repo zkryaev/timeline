@@ -13,7 +13,8 @@ type SearchReq struct {
 }
 
 type SearchResp struct {
-	Orgs []*orgdto.Organization `json:"orgs"`
+	Pages int                    `json:"pages"`
+	Orgs  []*orgdto.Organization `json:"orgs"`
 }
 
 type OrgAreaReq struct {
@@ -22,5 +23,6 @@ type OrgAreaReq struct {
 }
 
 type OrgAreaResp struct {
-	Orgs []*entity.MapOrgInfo `json:"map_orgs"`
+	Found int                  `json:"found"`
+	Orgs  []*entity.MapOrgInfo `json:"map_orgs"`
 }
