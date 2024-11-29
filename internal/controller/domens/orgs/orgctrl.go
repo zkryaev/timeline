@@ -102,6 +102,16 @@ func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Update
+// @Description Update organization timetable
+// @Tags Organization
+// @Accept  json
+// @Produce json
+// @Param   request body orgdto.TimetableUpdate true "New org info"
+// @Success 200 {object} orgdto.TimetableUpdate
+// @Failure 400
+// @Failure 500
+// @Router /orgs/{id}/timetable [put]
 func (o *OrgCtrl) UpdateOrgTimetable(w http.ResponseWriter, r *http.Request) {
 	var req orgdto.TimetableUpdate
 	if o.json.NewDecoder(r.Body).Decode(&req) != nil {
