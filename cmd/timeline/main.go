@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	_ "timeline/docs/swagger"
 	"timeline/internal/app"
 	"timeline/internal/config"
 	"timeline/internal/repository"
