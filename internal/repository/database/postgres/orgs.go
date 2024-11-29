@@ -251,12 +251,23 @@ func (p *PostgresRepo) OrgTimetableUpdate(ctx context.Context, id int, new []*mo
 			break_end = $5
 		WHERE org_id = $6;
 	`
-	res, err := tx.ExecContext(ctx, query, id)
-	if err != nil {
-		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
-			return ErrOrgNotFound
+	for _, hours := range new {
+		res, err := tx.ExecContext(ctx, query,
+			hours.Weekday,
+			hours.Open,
+			hours.Close,
+			hours.BreakStart,
+			hours.BreakEnd,
+			id,
+		)
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("failed update org timetable: %w", err)
+		if res != nil {
+			if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
+				return ErrOrgNotFound
+			}
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

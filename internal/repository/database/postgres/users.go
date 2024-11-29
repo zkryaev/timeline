@@ -108,10 +108,12 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) err
 		new.UserID,
 	)
 	if err != nil {
+		return fmt.Errorf("failed update user info: %w", err)
+	}
+	if res != nil {
 		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
 			return ErrOrgNotFound
 		}
-		return fmt.Errorf("failed update user info: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

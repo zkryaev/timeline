@@ -15,6 +15,7 @@ import (
 type Org interface {
 	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
 	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error)
+	OrgTimetableUpdate(ctx context.Context, newTimetable *orgdto.TimetableUpdate) (*orgdto.TimetableUpdate, error)
 }
 
 type OrgCtrl struct {
@@ -89,6 +90,31 @@ func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	data, err := o.usecase.OrgUpdate(ctx, &req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if o.json.NewEncoder(w).Encode(&data) != nil {
+		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (o *OrgCtrl) UpdateOrgTimetable(w http.ResponseWriter, r *http.Request) {
+	var req orgdto.TimetableUpdate
+	if o.json.NewDecoder(r.Body).Decode(&req) != nil {
+		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+		return
+	}
+	var err error
+	if err = o.validator.Struct(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	data, err := o.usecase.OrgTimetableUpdate(ctx, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

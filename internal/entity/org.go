@@ -22,7 +22,6 @@ type MapOrgInfo struct {
 	Coords        MapPoint  `json:"coords"`
 }
 
-// TODO: валидация когда приходит
 type OpenHours struct {
 	Weekday    int    `json:"weekday"`
 	Open       string `json:"open,omitempty" validate:"time"`
