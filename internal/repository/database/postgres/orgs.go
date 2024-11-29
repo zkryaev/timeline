@@ -231,10 +231,43 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchPa
 	return orgList, found, nil
 }
 
-func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error) {
+// Принимает org_id и расписание организации. Если
+func (p *PostgresRepo) OrgTimetableUpdate(ctx context.Context, id int, new []*models.OpenHours) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `UPDATE timetables
+		SET 
+			weekday = $1, 
+			open = $2,
+			close = $3,
+			break_start = $4,
+			break_end = $5
+		WHERE org_id = $6;
+	`
+	res, err := tx.ExecContext(ctx, query, id)
+	if err != nil {
+		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
+			return ErrOrgNotFound
+		}
+		return fmt.Errorf("failed update org timetable: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -251,11 +284,9 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*m
 			lat = $6,
 			long = $7,
 			about = $8
-		WHERE org_id = $9
-		RETURNING org_id, name, type, city, address, telephone, lat, long, about;
+		WHERE org_id = $9;
 	`
-	var UpdatedInfo models.OrgUpdate
-	if err := tx.QueryRowxContext(ctx, query,
+	res, err := tx.ExecContext(ctx, query,
 		new.Name,
 		new.Type,
 		new.City,
@@ -265,15 +296,15 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*m
 		new.Long,
 		new.About,
 		new.OrgID,
-	).StructScan(&UpdatedInfo); err != nil {
-		// В данном случае ErrNoRows аналог стдшного NoRowsAffected
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrOrgNotFound
+	)
+	if err != nil {
+		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
+			return ErrOrgNotFound
 		}
-		return nil, fmt.Errorf("failed update org info: %w", err)
+		return fmt.Errorf("failed update org info: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &UpdatedInfo, nil
+	return nil
 }

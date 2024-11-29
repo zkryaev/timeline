@@ -19,16 +19,3 @@ type OrgUpdateReq struct {
 	About     string              `json:"about,omitempty" validate:"max=1500"`
 	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
 }
-
-type OrgUpdateResp struct {
-	OrgID     int                 `json:"org_id"`
-	Name      string              `json:"name"`
-	Address   string              `json:"address"`
-	Long      float64             `json:"long"`
-	Lat       float64             `json:"lat"`
-	Type      string              `json:"type"`
-	Telephone string              `json:"telephone"`
-	City      string              `json:"city"`
-	About     string              `json:"about,omitempty"`
-	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
-}

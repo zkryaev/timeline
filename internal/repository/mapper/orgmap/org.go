@@ -149,17 +149,17 @@ func UpdateToModel(dto *orgdto.OrgUpdateReq) *models.OrgUpdate {
 	}
 }
 
-func UpdateToDTO(model *models.OrgUpdate) *orgdto.OrgUpdateResp {
-	return &orgdto.OrgUpdateResp{
-		OrgID:     model.OrgID,
-		Name:      model.Name,
-		Type:      model.Type,
-		City:      model.City,
-		Address:   model.Address,
-		Telephone: model.Telephone,
-		Lat:       model.Lat,
-		Long:      model.Long,
-		About:     model.About,
-		Timetable: TimetableToEntity(model.Timetable),
-	}
-}
+// func UpdateToDTO(model *models.OrgUpdate) *orgdto.OrgUpdateResp {
+// 	return &orgdto.OrgUpdateResp{
+// 		OrgID:     model.OrgID,
+// 		Name:      model.Name,
+// 		Type:      model.Type,
+// 		City:      model.City,
+// 		Address:   model.Address,
+// 		Telephone: model.Telephone,
+// 		Lat:       model.Lat,
+// 		Long:      model.Long,
+// 		About:     model.About,
+// 		Timetable: TimetableToEntity(model.Timetable),
+// 	}
+// }
