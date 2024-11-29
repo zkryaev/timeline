@@ -14,7 +14,7 @@ import (
 
 type Org interface {
 	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
-	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateResp, error)
+	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error)
 }
 
 type OrgCtrl struct {
@@ -72,7 +72,7 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce json
 // @Param   request body orgdto.OrgUpdateReq true "New org info"
-// @Success 200 {object} orgdto.OrgUpdateResp
+// @Success 200 {object} orgdto.OrgUpdateReq
 // @Failure 400
 // @Failure 500
 // @Router /orgs/update [put]

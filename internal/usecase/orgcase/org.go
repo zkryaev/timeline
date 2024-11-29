@@ -41,9 +41,8 @@ func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organiza
 	return orgmap.OrgInfoToDTO(data), nil
 }
 
-func (o *OrgUseCase) OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateResp, error) {
-	data, err := o.org.OrgUpdate(ctx, orgmap.UpdateToModel(org))
-	if err != nil {
+func (o *OrgUseCase) OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error) {
+	if err := o.org.OrgUpdate(ctx, orgmap.UpdateToModel(org)); err != nil {
 		if errors.Is(err, postgres.ErrUserNotFound) {
 			return nil, err
 		}
@@ -52,5 +51,5 @@ func (o *OrgUseCase) OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*
 			zap.Error(err),
 		)
 	}
-	return orgmap.UpdateToDTO(data), nil
+	return org, nil
 }
