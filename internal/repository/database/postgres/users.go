@@ -80,10 +80,10 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserIn
 	return &user, nil
 }
 
-func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) (*models.UserInfo, error) {
+func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -98,25 +98,23 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) (*m
 			telephone = $4,
 			about = $5
 		WHERE user_id = $6
-		RETURNING user_id, first_name, last_name, city, telephone, about;
 		`
-	var UpdatedInfo models.UserInfo
-	if err := tx.QueryRowxContext(ctx, query,
+	res, err := tx.ExecContext(ctx, query,
 		new.FirstName,
 		new.LastName,
 		new.City,
 		new.Telephone,
 		new.About,
 		new.UserID,
-	).StructScan(&UpdatedInfo); err != nil {
-		// В данном случае ErrNoRows аналог стдшного NoRowsAffected
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrUserNotFound
+	)
+	if err != nil {
+		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
+			return ErrOrgNotFound
 		}
-		return nil, fmt.Errorf("failed update user info: %w", err)
+		return fmt.Errorf("failed update user info: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return &UpdatedInfo, nil
+	return nil
 }

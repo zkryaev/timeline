@@ -18,7 +18,7 @@ import (
 type User interface {
 	SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error)
 	OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
-	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error)
+	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateReq, error)
 	User(ctx context.Context, id int) (*userdto.UserGetResp, error)
 }
 
@@ -44,7 +44,7 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 // @Accept  json
 // @Produce  json
 // @Param   request body userdto.UserUpdateReq true "New user info"
-// @Success 200 {object} userdto.UserUpdateResp
+// @Success 200 {object} userdto.UserUpdateReq
 // @Failure 400
 // @Failure 500
 // @Router /users/update [put]
@@ -116,7 +116,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if u.json.NewEncoder(w).Encode(&data) != nil {

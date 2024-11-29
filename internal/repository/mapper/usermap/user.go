@@ -47,13 +47,13 @@ func UserUpdateToModel(dto *userdto.UserUpdateReq) *models.UserInfo {
 	}
 }
 
-func UserUpdateToDTO(model *models.UserInfo) *userdto.UserUpdateResp {
-	return &userdto.UserUpdateResp{
-		UserID:    model.UserID,
-		FirstName: model.FirstName,
-		LastName:  model.LastName,
-		Telephone: model.Telephone,
-		City:      model.City,
-		About:     model.About,
-	}
-}
+// func UserUpdateToDTO(model *models.UserInfo) *userdto.UserUpdateResp {
+// 	return &userdto.UserUpdateResp{
+// 		UserID:    model.UserID,
+// 		FirstName: model.FirstName,
+// 		LastName:  model.LastName,
+// 		Telephone: model.Telephone,
+// 		City:      model.City,
+// 		About:     model.About,
+// 	}
+// }

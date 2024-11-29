@@ -48,9 +48,8 @@ func (u *UserUseCase) User(ctx context.Context, id int) (*userdto.UserGetResp, e
 	return resp, nil
 }
 
-func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateResp, error) {
-	data, err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(user))
-	if err != nil {
+func (u *UserUseCase) UserUpdate(ctx context.Context, newUser *userdto.UserUpdateReq) (*userdto.UserUpdateReq, error) {
+	if err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(newUser)); err != nil {
 		if errors.Is(err, postgres.ErrUserNotFound) {
 			return nil, err
 		}
@@ -59,7 +58,7 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, user *userdto.UserUpdateRe
 			zap.Error(err),
 		)
 	}
-	return usermap.UserUpdateToDTO(data), nil
+	return newUser, nil
 }
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {

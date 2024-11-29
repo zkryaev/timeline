@@ -29,7 +29,7 @@ type CodeRepository interface {
 }
 
 type UserRepository interface {
-	UserUpdate(ctx context.Context, new *models.UserInfo) (*models.UserInfo, error)
+	UserUpdate(ctx context.Context, new *models.UserInfo) error
 	UserSave(ctx context.Context, user *models.UserRegister) (int, error)
 	UserByID(ctx context.Context, userID int) (*models.UserInfo, error)
 }
@@ -43,7 +43,8 @@ type OrgRepository interface {
 	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, int, error)
 	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)
 
-	OrgUpdate(ctx context.Context, new *models.OrgUpdate) (*models.OrgUpdate, error)
+	OrgTimetableUpdate(ctx context.Context, id int, new []*models.OpenHours) error
+	OrgUpdate(ctx context.Context, new *models.OrgUpdate) error
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД
