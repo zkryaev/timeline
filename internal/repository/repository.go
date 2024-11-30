@@ -45,6 +45,28 @@ type OrgRepository interface {
 
 	OrgTimetableUpdate(ctx context.Context, id int, new []*models.OpenHours) error
 	OrgUpdate(ctx context.Context, new *models.OrgUpdate) error
+
+	WorkerRepository
+	ServiceRepository
+}
+
+type WorkerRepository interface {
+	Worker(ctx context.Context, WorkerID, OrgID int) (*models.Worker, error)
+	WorkerAdd(ctx context.Context, worker *models.Worker) (int, error)
+	WorkerUpdate(ctx context.Context, worker *models.Worker) error
+	WorkerAssignService(ctx context.Context, assignInfo *models.WorkerAssign) error
+	WorkerUnAssignService(ctx context.Context, assignInfo *models.WorkerAssign) error
+	WorkerList(ctx context.Context, OrgID int) ([]*models.Worker, error)
+	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
+}
+
+type ServiceRepository interface {
+	Service(ctx context.Context, ServiceID, OrgID int) (*models.Service, error)
+	ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*models.Worker, error)
+	ServiceAdd(ctx context.Context, service *models.Service) (int, error)
+	ServiceUpdate(ctx context.Context, service *models.Service) error
+	ServiceList(ctx context.Context, OrgID int) ([]*models.Service, error)
+	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД

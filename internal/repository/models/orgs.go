@@ -28,7 +28,7 @@ type OrgInfo struct {
 	Lat       float64 `db:"lat"`
 	Long      float64 `db:"long"`
 	About     string  `db:"about"`
-	Timetable []*OpenHours
+	OpenHours
 }
 
 type OrgSummary struct {

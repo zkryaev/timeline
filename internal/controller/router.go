@@ -40,11 +40,22 @@ const (
 	userGetInfo    = "/info/{id}"
 )
 
+// Org
 const (
 	orgPrefix          = "/orgs"
 	orgGetInfo         = "/info/{id}"
 	orgUpdate          = "/update"
 	orgUpdateTimetable = "/{id}/timetable"
+	// Workers
+	worker       = "/workers"
+	workerID     = "/{orgID}/workers/{workerID}"
+	workerList   = "/{orgID}/workers"
+	workerAssign = "/workers/service"
+	// Services
+	service        = "/services"
+	serviceID      = "/{orgID}/services/{serviceID}"
+	serviceWorkers = "/{orgID}/services/{serviceID}/workers"
+	serviceList    = "/{orgID}/services"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -85,6 +96,21 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	orgRouter.HandleFunc(orgGetInfo, org.GetOrgByID).Methods("GET")
 	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
 	orgRouter.HandleFunc(orgUpdateTimetable, org.UpdateOrgTimetable).Methods("PUT")
+	// Workers
+	orgRouter.HandleFunc(worker, org.WorkerAdd).Methods("POST")
+	orgRouter.HandleFunc(worker, org.WorkerUpdate).Methods("PUT")
+	orgRouter.HandleFunc(workerID, org.WorkerDelete).Methods("DELETE")
+	orgRouter.HandleFunc(workerID, org.Worker).Methods("GET")
+	orgRouter.HandleFunc(workerList, org.WorkerList).Methods("GET")
+	orgRouter.HandleFunc(workerAssign, org.WorkerAssignService).Methods("POST")
+	orgRouter.HandleFunc(workerAssign, org.WorkerUnAssignService).Methods("DELETE")
+	// Services
+	orgRouter.HandleFunc(service, org.ServiceAdd).Methods("POST")
+	orgRouter.HandleFunc(service, org.ServiceUpdate).Methods("PUT")
+	orgRouter.HandleFunc(serviceID, org.Service).Methods("GET")
+	orgRouter.HandleFunc(serviceID, org.ServiceDelete).Methods("DELETE")
+	orgRouter.HandleFunc(serviceWorkers, org.ServiceWorkerList).Methods("GET")
+	orgRouter.HandleFunc(serviceList, org.ServiceList).Methods("GET")
 
 	return r
 }

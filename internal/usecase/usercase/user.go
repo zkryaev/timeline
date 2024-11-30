@@ -72,11 +72,8 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (
 		return nil, err
 	}
 	resp := &general.SearchResp{
-		Pages: 1,
+		Found: found,
 		Orgs:  make([]*orgdto.Organization, 0, len(data)),
-	}
-	if found > sreq.Limit {
-		resp.Pages = (found + 1) / sreq.Limit
 	}
 	for _, v := range data {
 		resp.Orgs = append(resp.Orgs, orgmap.OrgInfoToDTO(v))

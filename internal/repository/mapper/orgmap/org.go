@@ -49,7 +49,7 @@ func OrgInfoToEntity(model *models.OrgInfo) *entity.OrgInfo {
 		Telephone: model.Telephone,
 		City:      model.City,
 		About:     model.About,
-		Timetable: TimetableToEntity(model.Timetable),
+		Timetable: OpenHoursToDTO(&model.OpenHours),
 	}
 	return resp
 }

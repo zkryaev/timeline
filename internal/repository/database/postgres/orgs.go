@@ -36,7 +36,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (in
 	`
 	orgID := 0
 
-	err = tx.QueryRowContext(ctx, query,
+	if err = tx.QueryRowContext(ctx, query,
 		org.HashCreds.Email,
 		org.HashCreds.PasswdHash,
 		org.Name,
@@ -47,8 +47,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (in
 		org.Lat,
 		org.Long,
 		org.About,
-	).Scan(&orgID)
-	if err != nil {
+	).Scan(&orgID); err != nil {
 		// TODO: пока отдаем фулл ошибку, а вообще нельзя внутренние ошибки отдавать наружу
 		return 0, fmt.Errorf("failed to save org: %w", err)
 	}
@@ -116,8 +115,9 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.OrgInfo, er
 		SELECT weekday, open, close, break_start, break_end
 		FROM timetables
 		WHERE org_id = $1
+		AND weekday = EXTRACT(ISODOW FROM CURRENT_DATE);
 	`
-	if err := tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
+	if err := tx.GetContext(ctx, &org.OpenHours, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
@@ -211,11 +211,24 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchPa
 		return nil, 0, fmt.Errorf("failed orgs searching: %w", err)
 	}
 	query = `SELECT 
-			org_id, name, rating, type, city, address, telephone, lat, long, about 
-		FROM orgs
+			o.org_id,
+			o.name,
+			o.rating,
+			o.type,
+			o.lat,
+			o.long,
+			t.weekday,
+			t.open,   
+			t.close,
+			t.break_start, 
+			t.break_end
+		FROM orgs o
+		LEFT JOIN timetables t
+		ON t.org_id = o.org_id
+		AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
 		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%')
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
-		LIMIT $3 
+		LIMIT $3
 		OFFSET $4;
 	`
 	orgList := make([]*models.OrgInfo, 0, params.Limit)
