@@ -66,11 +66,17 @@ CREATE TABLE IF NOT EXISTS services (
 CREATE TABLE IF NOT EXISTS workers (
     worker_id SERIAL PRIMARY KEY,
     org_id INT,  -- Запятая добавлена
-    service_id INT,  -- Запятая добавлена
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255),
     position VARCHAR(300),
     degree VARCHAR(300),
-    FOREIGN KEY (service_id) REFERENCES services(service_id),
     FOREIGN KEY (org_id) REFERENCES orgs(org_id)
+);
+
+CREATE TABLE IF NOT EXISTS worker_services (
+    worker_id INT,
+    service_id INT,
+    PRIMARY KEY (worker_id, service_id),
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE
 );
