@@ -13,7 +13,7 @@ type SearchReq struct {
 }
 
 type SearchResp struct {
-	Pages int                    `json:"pages"`
+	Found int                    `json:"found"`
 	Orgs  []*orgdto.Organization `json:"orgs"`
 }
 
