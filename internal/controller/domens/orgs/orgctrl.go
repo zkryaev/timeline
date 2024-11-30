@@ -16,6 +16,8 @@ type Org interface {
 	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
 	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error)
 	OrgTimetableUpdate(ctx context.Context, newTimetable *orgdto.TimetableUpdate) (*orgdto.TimetableUpdate, error)
+	Workers
+	Services
 }
 
 type OrgCtrl struct {
