@@ -7,11 +7,9 @@ import (
 	"strings"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
-	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/repository"
 	"timeline/internal/repository/database/postgres"
-	"timeline/internal/repository/mapper/facemap"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
 
@@ -63,7 +61,7 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, newUser *userdto.UserUpdat
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
-	data, found, err := u.org.OrgsBySearch(ctx, facemap.SearchToModel(sreq))
+	data, found, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
 			return nil, ErrNoOrgs
@@ -73,16 +71,16 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (
 	}
 	resp := &general.SearchResp{
 		Found: found,
-		Orgs:  make([]*orgdto.Organization, 0, len(data)),
+		Orgs:  make([]*entity.OrgsBySearch, 0, len(data)),
 	}
 	for _, v := range data {
-		resp.Orgs = append(resp.Orgs, orgmap.OrgInfoToDTO(v))
+		resp.Orgs = append(resp.Orgs, orgmap.OrgsBySearchToDTO(v))
 	}
 	return resp, nil
 }
 
 func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error) {
-	data, err := u.org.OrgsInArea(ctx, facemap.AreaToModel(area))
+	data, err := u.org.OrgsInArea(ctx, orgmap.AreaToModel(area))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
 			return nil, ErrNoOrgs
@@ -91,7 +89,8 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) 
 		return nil, err
 	}
 	resp := &general.OrgAreaResp{
-		Orgs: make([]*entity.MapOrgInfo, 0, len(data)),
+		Found: len(data),
+		Orgs:  make([]*entity.MapOrgInfo, 0, len(data)),
 	}
 	for _, v := range data {
 		resp.Orgs = append(resp.Orgs, orgmap.OrgSummaryToDTO(v))

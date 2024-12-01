@@ -12,7 +12,7 @@ type TokenMetadata struct {
 	IsOrg bool   `json:"is_org"` // Является ли это организациями (true - организация, false - пользователь)
 }
 
-type MapPoint struct {
+type Coordinates struct {
 	Lat  float64 `json:"lat" validate:"required,latitude"`
 	Long float64 `json:"long" validate:"required,longitude"`
 }

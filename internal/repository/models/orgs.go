@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-type Coordinate struct {
+type Coordinates struct {
 	Lat  float64 `db:"lat"`
 	Long float64 `db:"long"`
 }
@@ -25,32 +25,32 @@ type OrgInfo struct {
 	City      string  `db:"city"`
 	Address   string  `db:"address"`
 	Telephone string  `db:"telephone"`
-	Lat       float64 `db:"lat"`
-	Long      float64 `db:"long"`
 	About     string  `db:"about"`
-	OpenHours
+	Coordinates
 }
 
-type OrgSummary struct {
+type Organization struct {
+	OrgInfo
+	Timetable []*OpenHours
+}
+
+type OrgsBySearch struct {
+	OrgID   int     `db:"org_id"`
+	Name    string  `db:"name"`
+	Rating  float64 `db:"rating"`
+	Type    string  `db:"type"`
+	Address string  `db:"address"`
+	OpenHours
+	Coordinates
+}
+
+type OrgByArea struct {
 	OrgID  int     `db:"org_id"`
 	Name   string  `db:"name"`
 	Rating float64 `db:"rating"`
 	Type   string  `db:"type"`
 	OpenHours
-	Coordinate
-}
-
-type OrgUpdate struct {
-	OrgID     int     `db:"org_id"`
-	Name      string  `db:"name"`
-	Type      string  `db:"type"`
-	City      string  `db:"city"`
-	Address   string  `db:"address"`
-	Telephone string  `db:"telephone"`
-	Lat       float64 `db:"lat"`
-	Long      float64 `db:"long"`
-	About     string  `db:"about"`
-	Timetable []*OpenHours
+	Coordinates
 }
 
 type OrgRegister struct {

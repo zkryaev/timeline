@@ -2,7 +2,6 @@ package general
 
 import (
 	"timeline/internal/entity"
-	"timeline/internal/entity/dto/orgdto"
 )
 
 type SearchReq struct {
@@ -14,12 +13,12 @@ type SearchReq struct {
 
 type SearchResp struct {
 	Found int                    `json:"found"`
-	Orgs  []*orgdto.Organization `json:"orgs"`
+	Orgs  []*entity.OrgsBySearch `json:"orgs"`
 }
 
 type OrgAreaReq struct {
-	LeftLowerCorner  entity.MapPoint `json:"left_lower_corner"`
-	RightUpperCorner entity.MapPoint `json:"right_upper_corner"`
+	LeftLowerCorner  entity.Coordinates `json:"left_lower_corner"`
+	RightUpperCorner entity.Coordinates `json:"right_upper_corner"`
 }
 
 type OrgAreaResp struct {

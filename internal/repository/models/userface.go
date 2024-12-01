@@ -9,6 +9,6 @@ type SearchParams struct {
 }
 
 type AreaParams struct {
-	Left  Coordinate
-	Right Coordinate
+	Left  Coordinates
+	Right Coordinates
 }

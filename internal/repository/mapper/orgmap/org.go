@@ -5,6 +5,7 @@ import (
 	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
+	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/repository/models"
 )
@@ -18,39 +19,102 @@ func RegisterReqToModel(dto *authdto.OrgRegisterReq) *models.OrgRegister {
 			PasswdHash: dto.Password,
 		},
 		OrgInfo: models.OrgInfo{
-			Name:      dto.Name,
-			Rating:    dto.Rating,
-			Type:      dto.Type,
-			City:      dto.City,
-			Address:   dto.Address,
-			Telephone: dto.Telephone,
-			Long:      dto.Long,
-			Lat:       dto.Lat,
-			About:     dto.About,
+			Name:        dto.Name,
+			Rating:      dto.Rating,
+			Type:        dto.Type,
+			City:        dto.City,
+			Address:     dto.Address,
+			Telephone:   dto.Telephone,
+			Coordinates: *CoordsToModel(&dto.Coordinates),
+			About:       dto.About,
 		},
 	}
 }
 
-func OrgInfoToDTO(model *models.OrgInfo) *orgdto.Organization {
+func CoordsToEntity(model *models.Coordinates) *entity.Coordinates {
+	return &entity.Coordinates{
+		Lat:  model.Lat,
+		Long: model.Long,
+	}
+}
+
+func CoordsToModel(dto *entity.Coordinates) *models.Coordinates {
+	return &models.Coordinates{
+		Lat:  dto.Lat,
+		Long: dto.Long,
+	}
+}
+
+func OrganizationToDTO(model *models.Organization) *orgdto.Organization {
 	return &orgdto.Organization{
-		OrgID: model.OrgID,
-		Info:  OrgInfoToEntity(model),
+		OrgID:     model.OrgID,
+		Info:      OrgInfoToEntity(&model.OrgInfo),
+		Timetable: TimetableToEntity(model.Timetable),
+	}
+}
+
+func OrgsBySearchToDTO(model *models.OrgsBySearch) *entity.OrgsBySearch {
+	return &entity.OrgsBySearch{
+		OrgID:         model.OrgID,
+		Name:          model.Name,
+		Rating:        model.Rating,
+		Type:          model.Type,
+		Address:       model.Address,
+		Coords:        CoordsToEntity(&model.Coordinates),
+		TodaySchedule: OpenHoursToDTO(&model.OpenHours),
 	}
 }
 
 func OrgInfoToEntity(model *models.OrgInfo) *entity.OrgInfo {
 	resp := &entity.OrgInfo{
-		Name:      model.Name,
-		Rating:    model.Rating,
-		Address:   model.Address,
-		Long:      model.Long,
-		Lat:       model.Lat,
-		Type:      model.Type,
-		Telephone: model.Telephone,
-		City:      model.City,
-		About:     model.About,
-		Timetable: OpenHoursToDTO(&model.OpenHours),
+		Name:        model.Name,
+		Rating:      model.Rating,
+		Address:     model.Address,
+		Coordinates: *CoordsToEntity(&model.Coordinates),
+		Type:        model.Type,
+		Telephone:   model.Telephone,
+		City:        model.City,
+		About:       model.About,
 	}
+	return resp
+}
+
+func SearchToModel(dto *general.SearchReq) *models.SearchParams {
+	return &models.SearchParams{
+		Page:   dto.Page,
+		Limit:  dto.Limit,
+		Offset: (dto.Page - 1) * dto.Limit,
+		Name:   dto.Name,
+		Type:   dto.Type,
+	}
+}
+
+func AreaToModel(dto *general.OrgAreaReq) *models.AreaParams {
+	return &models.AreaParams{
+		Left:  *CoordsToModel(&dto.LeftLowerCorner),
+		Right: *CoordsToModel(&dto.RightUpperCorner),
+	}
+}
+
+func OrgInfoToModel(model *entity.OrgInfo) *models.OrgInfo {
+	resp := &models.OrgInfo{
+		Name:        model.Name,
+		Rating:      model.Rating,
+		Address:     model.Address,
+		Coordinates: *CoordsToModel(&model.Coordinates),
+		Type:        model.Type,
+		Telephone:   model.Telephone,
+		City:        model.City,
+		About:       model.About,
+	}
+	return resp
+}
+
+func OrgUpdateToModel(dto *orgdto.OrgUpdateReq) *models.Organization {
+	resp := &models.Organization{}
+	resp.OrgID = dto.OrgID
+	resp.OrgInfo = *OrgInfoToModel(&dto.OrgInfo)
+	resp.Timetable = TimetableToModel(dto.Timetable)
 	return resp
 }
 
@@ -104,18 +168,18 @@ func OpenHoursToDTO(day *models.OpenHours) *entity.OpenHours {
 	}
 }
 
-func MapOrgInfoToModel(dto *entity.MapOrgInfo) *models.OrgSummary {
-	return &models.OrgSummary{
-		OrgID:      dto.OrgID,
-		Name:       dto.Name,
-		Rating:     dto.Rating,
-		Type:       dto.Type,
-		OpenHours:  *OpenHoursToModel(dto.TodaySchedule),
-		Coordinate: models.Coordinate{Lat: dto.Coords.Lat, Long: dto.Coords.Long},
+func MapOrgInfoToModel(dto *entity.MapOrgInfo) *models.OrgByArea {
+	return &models.OrgByArea{
+		OrgID:       dto.OrgID,
+		Name:        dto.Name,
+		Rating:      dto.Rating,
+		Type:        dto.Type,
+		OpenHours:   *OpenHoursToModel(dto.TodaySchedule),
+		Coordinates: *CoordsToModel(&dto.Coords),
 	}
 }
 
-func OrgSummaryToDTO(model *models.OrgSummary) *entity.MapOrgInfo {
+func OrgSummaryToDTO(model *models.OrgByArea) *entity.MapOrgInfo {
 	return &entity.MapOrgInfo{
 		OrgID:  model.OrgID,
 		Name:   model.Name,
@@ -130,36 +194,6 @@ func OrgSummaryToDTO(model *models.OrgSummary) *entity.MapOrgInfo {
 				BreakEnd:   model.BreakEnd,
 			},
 		),
-		Coords: entity.MapPoint{Lat: model.Coordinate.Lat, Long: model.Coordinate.Long},
+		Coords: *CoordsToEntity(&model.Coordinates),
 	}
 }
-
-func UpdateToModel(dto *orgdto.OrgUpdateReq) *models.OrgUpdate {
-	return &models.OrgUpdate{
-		OrgID:     dto.OrgID,
-		Name:      dto.Name,
-		Type:      dto.Type,
-		City:      dto.City,
-		Address:   dto.Address,
-		Telephone: dto.Telephone,
-		Lat:       dto.Lat,
-		Long:      dto.Long,
-		About:     dto.About,
-		Timetable: TimetableToModel(dto.Timetable),
-	}
-}
-
-// func UpdateToDTO(model *models.OrgUpdate) *orgdto.OrgUpdateResp {
-// 	return &orgdto.OrgUpdateResp{
-// 		OrgID:     model.OrgID,
-// 		Name:      model.Name,
-// 		Type:      model.Type,
-// 		City:      model.City,
-// 		Address:   model.Address,
-// 		Telephone: model.Telephone,
-// 		Lat:       model.Lat,
-// 		Long:      model.Long,
-// 		About:     model.About,
-// 		Timetable: TimetableToEntity(model.Timetable),
-// 	}
-// }

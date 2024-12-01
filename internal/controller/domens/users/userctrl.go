@@ -154,11 +154,11 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	maxLat, _ := strconv.ParseFloat(r.URL.Query().Get("max_lat"), 64)
 	maxLong, _ := strconv.ParseFloat(r.URL.Query().Get("max_long"), 64)
 	req := general.OrgAreaReq{
-		LeftLowerCorner: entity.MapPoint{
+		LeftLowerCorner: entity.Coordinates{
 			Lat:  minLat,
 			Long: minLong,
 		},
-		RightUpperCorner: entity.MapPoint{
+		RightUpperCorner: entity.Coordinates{
 			Lat:  maxLat,
 			Long: maxLong,
 		},

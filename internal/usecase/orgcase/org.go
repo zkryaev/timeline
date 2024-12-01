@@ -38,11 +38,11 @@ func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organiza
 		)
 		return nil, err
 	}
-	return orgmap.OrgInfoToDTO(data), nil
+	return orgmap.OrganizationToDTO(data), nil
 }
 
 func (o *OrgUseCase) OrgUpdate(ctx context.Context, newOrg *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error) {
-	if err := o.org.OrgUpdate(ctx, orgmap.UpdateToModel(newOrg)); err != nil {
+	if err := o.org.OrgUpdate(ctx, orgmap.OrgUpdateToModel(newOrg)); err != nil {
 		if errors.Is(err, postgres.ErrUserNotFound) {
 			return nil, err
 		}

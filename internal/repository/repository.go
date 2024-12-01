@@ -38,13 +38,13 @@ type OrgRepository interface {
 	OrgSave(ctx context.Context, org *models.OrgRegister) (int, error)
 
 	OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error)
-	OrgByID(ctx context.Context, id int) (*models.OrgInfo, error)
+	OrgByID(ctx context.Context, id int) (*models.Organization, error)
 
-	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgInfo, int, error)
-	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgSummary, error)
+	OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgsBySearch, int, error)
+	OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgByArea, error)
 
 	OrgTimetableUpdate(ctx context.Context, id int, new []*models.OpenHours) error
-	OrgUpdate(ctx context.Context, new *models.OrgUpdate) error
+	OrgUpdate(ctx context.Context, new *models.Organization) error
 
 	WorkerRepository
 	ServiceRepository
