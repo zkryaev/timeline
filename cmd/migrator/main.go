@@ -36,7 +36,7 @@ func main() {
 			dsn,
 		)
 		if err != nil {
-			log.Printf("failed to apply migrate at %d attempt\n", maxRetries-try+1)
+			log.Printf("migrator: database is unavailable. Left %d attemps\n", try)
 			time.Sleep(2 * time.Second)
 		} else {
 			break
