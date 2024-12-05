@@ -62,18 +62,11 @@ tasks:
     desc: "Start docker-compose"
     cmds:
       - docker-compose up -d
-      - |
-        echo "Waiting for database to be ready..."
-        until nc -z -v -w30 localhost {{.DB_PORT}}; do
-          echo "Waiting for database connection..."
-        done
-        echo "Database is up and running!"
   docker-rm:
     desc: "Stop and clean running containers"
     cmds:
       - docker-compose down
-      - sleep 0.5
-      
+
   gen-api:
     desc: "Generate Swagger docs"
     cmds:
@@ -98,10 +91,10 @@ tasks:
 
   deploy:
     desc: "env-checks -> docker -> migrations -> build application -> run"
-    deps: [env_setup_check, docker-up, migrate-deploy, build]
+    deps: [env_setup_check, docker-up, migrate-up, build]
     cmds:
-      - defer: { task: docker-rm }
       - ./{{.OUTPUT_BINARY}}
+
 
   run:
     desc: "build application -> run"
