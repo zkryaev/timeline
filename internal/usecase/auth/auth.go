@@ -128,9 +128,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		)
 		return nil, err
 	}
-	// TODO: подумать над этим еще
-	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
-	go a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
+	go a.codeProccessing(&authdto.VerifyCodeReq{
 		ID:    userID,
 		Email: req.Email,
 		Code:  code,
@@ -144,15 +142,16 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 // Чтобы не флудить логгами, отображаются только Error и Warn.
 // Error - явная ошибка либо в используемом сервисе почты, либо в БД.
 // Warn - истечение таймаута = неизвестная, неявная ошибка.
-func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *authdto.VerifyCodeReq) {
+func (a *AuthUseCase) codeProccessing(metaInfo *authdto.VerifyCodeReq) {
+	ctx, cancel := context.WithTimeout(context.Background(), SendEmailTimeout)
 	maxRetries := 2
 	retryDelay := 500 * time.Millisecond
 	done := make(chan error, 1)
 	defer close(done)
+	defer cancel()
 	go func() {
 		var err error
 		for try := maxRetries; try > 0; try-- {
-			// start := time.Now()
 			select {
 			case <-ctx.Done():
 				err = ctx.Err()
@@ -160,13 +159,11 @@ func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *authdto.Ver
 			default:
 				err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code)
 			}
-			// log.Println("Send code to email took", time.Now().Sub(start), try)
 			if err == nil {
 				break
 			}
 			time.Sleep(retryDelay)
 		} // TODO: Что насчет error groups?
-		// start := time.Now()
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
@@ -176,7 +173,6 @@ func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *authdto.Ver
 				done <- err
 				return
 			} else if err = a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err == nil {
-				// log.Println("Save code to DB took", time.Now().Sub(start))
 				done <- nil
 				return
 			} else {
@@ -185,7 +181,6 @@ func (a *AuthUseCase) codeProccessing(ctx context.Context, metaInfo *authdto.Ver
 			}
 		}
 	}()
-
 	select {
 	case <-ctx.Done():
 		a.Logger.Warn(
@@ -230,8 +225,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 		)
 		return nil, err
 	}
-	ctxOnSend, _ := context.WithTimeout(context.Background(), SendEmailTimeout)
-	go a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
+	go a.codeProccessing(&authdto.VerifyCodeReq{
 		ID:    orgID,
 		Email: req.Email,
 		Code:  code,
@@ -250,8 +244,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeRe
 		)
 		return
 	}
-	ctxOnSend, _ := context.WithTimeout(context.Background(), 4*time.Second)
-	a.codeProccessing(ctxOnSend, &authdto.VerifyCodeReq{
+	a.codeProccessing(&authdto.VerifyCodeReq{
 		ID:    req.ID,
 		Email: req.Email,
 		IsOrg: req.IsOrg,
