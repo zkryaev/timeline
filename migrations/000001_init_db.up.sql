@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS timetables (
     close TIMESTAMP NOT NULL,
     break_start TIMESTAMP NOT NULL,
     break_end TIMESTAMP NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
+    CONSTRAINT unique_org_weekday UNIQUE(org_id, weekday)
 );
 
 CREATE TABLE IF NOT EXISTS orgs_verify (
@@ -61,16 +62,17 @@ CREATE TABLE IF NOT EXISTS services (
     name VARCHAR(300) NOT NULL,
     cost NUMERIC(15,2) NOT NULL,
     description VARCHAR(400),
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id)
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS workers (
     worker_id SERIAL PRIMARY KEY,
-    org_id INT,  -- Запятая добавлена
+    org_id INT, 
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255),
     position VARCHAR(300),
+    session_duration INT,
     degree VARCHAR(300),
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id)
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS worker_services (
@@ -79,4 +81,28 @@ CREATE TABLE IF NOT EXISTS worker_services (
     PRIMARY KEY (worker_id, service_id),
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS worker_schedules (
+    worker_schedule_id SERIAL PRIMARY KEY,
+    org_id INT,
+    worker_id INT,
+    weekday INT,
+    start TIMESTAMP,
+    over TIMESTAMP,
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
+    CONSTRAINT unique_worker_weekday UNIQUE (worker_id, weekday)
+);
+
+CREATE TABLE IF NOT EXISTS slots (
+    slot_id SERIAL PRIMARY KEY,
+    worker_schedule_id INT,
+    worker_id INT,
+    date DATE,
+    session_begin TIMESTAMP,
+    session_end TIMESTAMP,
+    busy BOOLEAN,
+    FOREIGN KEY (worker_schedule_id) REFERENCES worker_schedules(worker_schedule_id) ON DELETE CASCADE,
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
 );

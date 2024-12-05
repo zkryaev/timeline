@@ -25,12 +25,52 @@ INSERT INTO services (org_id, name, cost, description) VALUES
 (3, 'Аренда книги', 50.00, 'Почасовая аренда редких книг из библиотеки.');
 
 -- Then insert data into `workers`
-INSERT INTO workers (org_id, first_name, last_name, position, degree) VALUES
-(1, 'Анна', 'Кузнецова', 'Терапевт', 'Кандидат медицинских наук'),
-(2, 'Дмитрий', 'Смирнов', 'Тренер', 'Мастер спорта международного класса'),
-(3, 'Мария', 'Васильева', 'Библиотекарь', 'Доктор филологических наук');
+INSERT INTO workers (org_id, first_name, last_name, position, session_duration, degree) VALUES
+(1, 'Анна', 'Кузнецова', 'Терапевт', 60, 'Кандидат медицинских наук'),
+(2, 'Дмитрий', 'Смирнов', 'Тренер', 60, 'Мастер спорта международного класса'),
+(3, 'Мария', 'Васильева', 'Библиотекарь', 60, 'Доктор филологических наук');
 
 INSERT INTO worker_services (worker_id, service_id) VALUES
 (1, 1), -- Анна Кузнецова предоставляет услугу "Общий осмотр"
 (2, 2), -- Дмитрий Смирнов предоставляет услугу "Персональная тренировка"
 (3, 3); -- Мария Васильева предоставляет услугу "Аренда книги"
+
+-- Insert data into `worker_schedules`
+INSERT INTO worker_schedules (org_id, worker_id, weekday, start, over) VALUES
+(1, 1, 1, '2024-11-28 08:00:00', '2024-11-28 20:00:00'), -- Анна Кузнецова (Терапевт) на понедельник
+(1, 1, 2, '2024-11-29 08:00:00', '2024-11-29 20:00:00'), -- Анна Кузнецова (Терапевт) на вторник
+(2, 2, 1, '2024-11-28 06:00:00', '2024-11-28 22:00:00'), -- Дмитрий Смирнов (Тренер) на понедельник
+(2, 2, 2, '2024-11-29 06:00:00', '2024-11-29 22:00:00'), -- Дмитрий Смирнов (Тренер) на вторник
+(3, 3, 1, '2024-11-28 10:00:00', '2024-11-28 18:00:00'), -- Мария Васильева (Библиотекарь) на понедельник
+(3, 3, 2, '2024-11-29 10:00:00', '2024-11-29 18:00:00'); -- Мария Васильева (Библиотекарь) на вторник
+
+-- Insert data into `slots`
+INSERT INTO slots (worker_schedule_id, worker_id, date, session_begin, session_end, busy) VALUES
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '08:00:00', CURRENT_DATE + TIME '09:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '09:00:00', CURRENT_DATE + TIME '10:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '13:00:00', CURRENT_DATE + TIME '14:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '15:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '15:00:00', CURRENT_DATE + TIME '16:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '16:00:00', CURRENT_DATE + TIME '17:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '17:00:00', CURRENT_DATE + TIME '18:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '18:00:00', CURRENT_DATE + TIME '19:00:00', false),
+(1, 1, CURRENT_DATE, CURRENT_DATE + TIME '19:00:00', CURRENT_DATE + TIME '20:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '06:00:00', CURRENT_DATE + TIME '07:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '07:00:00', CURRENT_DATE + TIME '08:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '08:00:00', CURRENT_DATE + TIME '09:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '09:00:00', CURRENT_DATE + TIME '10:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '12:00:00', CURRENT_DATE + TIME '13:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '13:00:00', CURRENT_DATE + TIME '14:00:00', false),
+(2, 2, CURRENT_DATE, CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '15:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '12:00:00', CURRENT_DATE + TIME '13:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '13:00:00', CURRENT_DATE + TIME '14:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '14:00:00', CURRENT_DATE + TIME '15:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '15:00:00', CURRENT_DATE + TIME '16:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '16:00:00', CURRENT_DATE + TIME '17:00:00', false),
+(3, 3, CURRENT_DATE, CURRENT_DATE + TIME '17:00:00', CURRENT_DATE + TIME '18:00:00', false);
