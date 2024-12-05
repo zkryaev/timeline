@@ -46,7 +46,7 @@ func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoni
 
 // @Summary Login
 // @Description Authorizes a user and returns a token pair
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce json
 // @Param   request body authdto.LoginReq true "Login Request"
@@ -76,14 +76,14 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if a.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
 
 // @Summary Register User
 // @Description Registers a user and returns a token pair
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.UserRegisterReq true "User Register Request"
@@ -115,14 +115,14 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	if err = a.json.NewEncoder(w).Encode(&data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
 
 // @Summary Register Organization
 // @Description Registers an organization and returns a token pair
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.OrgRegisterReq true "Organization Register Request"
@@ -159,7 +159,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Send Code Retry
 // @Description Sends a code retry request
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.SendCodeReq true "Send Code Request"
@@ -187,7 +187,7 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Verify Code
 // @Description Verifies the code and returns a token pair
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.VerifyCodeReq true "Verify Code Request"
@@ -225,7 +225,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Update Access Token
 // @Description Updates the access token using a refresh token
-// @Tags auth
+// @Tags Auth
 // @Accept  json
 // @Produce  json
 // @Param   refresh_token header string true "Refresh Token"
@@ -263,7 +263,7 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 
 	// Отправляем JSON-ответ
 	if err := a.json.NewEncoder(w).Encode(refreshedAccessToken); err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
