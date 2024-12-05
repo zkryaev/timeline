@@ -42,10 +42,12 @@ const (
 
 // Org
 const (
-	orgPrefix          = "/orgs"
-	orgGetInfo         = "/info/{id}"
-	orgUpdate          = "/update"
-	orgUpdateTimetable = "/{id}/timetable"
+	orgPrefix  = "/orgs"
+	orgGetInfo = "/info/{id}"
+	orgUpdate  = "/update"
+	// Timetables
+	timetable       = "/timetable"
+	timetableDelete = "/timetable/{orgID}"
 	// Workers
 	worker       = "/workers"
 	workerID     = "/{orgID}/workers/{workerID}"
@@ -56,6 +58,13 @@ const (
 	serviceID      = "/{orgID}/services/{serviceID}"
 	serviceWorkers = "/{orgID}/services/{serviceID}/workers"
 	serviceList    = "/{orgID}/services"
+	// Schedule
+	schedule       = "/schedules"
+	scheduleWorker = "/{orgID}/schedules/{workerID}"
+
+	// Slots
+	slots       = "/slots"
+	slotsWorker = "/slots/{workerID}"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -95,7 +104,10 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// orgRouter.Use(auth.Middleware.IsTokenValid)
 	orgRouter.HandleFunc(orgGetInfo, org.GetOrgByID).Methods("GET")
 	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
-	orgRouter.HandleFunc(orgUpdateTimetable, org.UpdateOrgTimetable).Methods("PUT")
+	// Timetable
+	orgRouter.HandleFunc(timetable, org.TimetableAdd).Methods("POST")
+	orgRouter.HandleFunc(timetable, org.TimetableUpdate).Methods("PUT")
+	orgRouter.HandleFunc(timetableDelete, org.TimetableDelete).Methods("DELETE")
 	// Workers
 	orgRouter.HandleFunc(worker, org.WorkerAdd).Methods("POST")
 	orgRouter.HandleFunc(worker, org.WorkerUpdate).Methods("PUT")
@@ -111,6 +123,13 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	orgRouter.HandleFunc(serviceID, org.ServiceDelete).Methods("DELETE")
 	orgRouter.HandleFunc(serviceWorkers, org.ServiceWorkerList).Methods("GET")
 	orgRouter.HandleFunc(serviceList, org.ServiceList).Methods("GET")
-
+	// Schedule
+	orgRouter.HandleFunc(schedule, org.AddWorkerSchedule).Methods("POST")
+	orgRouter.HandleFunc(schedule, org.UpdateWorkerSchedule).Methods("PUT")
+	orgRouter.HandleFunc(scheduleWorker, org.WorkerSchedule).Methods("GET")
+	orgRouter.HandleFunc(scheduleWorker, org.DeleteWorkerSchedule).Methods("DELETE")
+	// Slots
+	orgRouter.HandleFunc(slotsWorker, org.Slots).Methods("GET")
+	orgRouter.HandleFunc(slots, org.UpdateSlot).Methods("PUT")
 	return r
 }
