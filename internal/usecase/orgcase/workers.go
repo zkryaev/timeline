@@ -32,16 +32,28 @@ func (o *OrgUseCase) WorkerAdd(ctx context.Context, worker *orgdto.AddWorkerReq)
 		WorkerID: workerID,
 	}, nil
 }
-func (o *OrgUseCase) WorkerUpdate(ctx context.Context, worker *orgdto.UpdateWorkerReq) (*orgdto.UpdateWorkerReq, error) {
+func (o *OrgUseCase) WorkerUpdate(ctx context.Context, worker *orgdto.UpdateWorkerReq) error {
 	if err := o.org.WorkerUpdate(ctx, orgmap.UpdateWorkerToModel(worker)); err != nil {
 		o.Logger.Error(
 			"failed to update worker",
 			zap.Error(err),
 		)
-		return nil, err
+		return err
 	}
-	return worker, nil
+	return nil
 }
+
+func (o *OrgUseCase) WorkerPatch(ctx context.Context, worker *orgdto.UpdateWorkerReq) error {
+	if err := o.org.WorkerPatch(ctx, orgmap.UpdateWorkerToModel(worker)); err != nil {
+		o.Logger.Error(
+			"failed to update worker",
+			zap.Error(err),
+		)
+		return err
+	}
+	return nil
+}
+
 func (o *OrgUseCase) WorkerAssignService(ctx context.Context, assignInfo *orgdto.AssignWorkerReq) error {
 	if err := o.org.WorkerAssignService(ctx, orgmap.AssignWorkerToModel(assignInfo)); err != nil {
 		o.Logger.Error(

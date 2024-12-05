@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/orgmodel"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 )
 
 // Добавление организации предоставляемой услуги
-func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *models.Service) (int, error) {
+func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *orgmodel.Service) (int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -44,7 +44,7 @@ func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *models.Service) 
 }
 
 // Обновление информации о предоставляемой услуге
-func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *models.Service) error {
+func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Service) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -78,7 +78,7 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *models.Servic
 	return nil
 }
 
-func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*models.Service, error) {
+func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgmodel.Service, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -94,7 +94,7 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*mode
 		WHERE service_id = $1
 		AND org_id = $2;
 	`
-	var Service models.Service
+	var Service orgmodel.Service
 	if err = tx.GetContext(ctx, &Service, query, &ServiceID, &OrgID); err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*mode
 }
 
 // Получение списка услуг, предоставляемых организацией
-func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int) ([]*models.Service, error) {
+func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int) ([]*orgmodel.Service, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -120,7 +120,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int) ([]*models.Se
 		FROM services
 		WHERE org_id = $1;
 	`
-	Services := make([]*models.Service, 0, 3)
+	Services := make([]*orgmodel.Service, 0, 3)
 	if err = tx.SelectContext(ctx, &Services, query, &OrgID); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 	return nil
 }
 
-func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*models.Worker, error) {
+func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgmodel.Worker, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -180,7 +180,7 @@ func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID i
 							WHERE service_id = $1)
 		AND org_id = $2;
 	`
-	Workers := make([]*models.Worker, 0, 1)
+	Workers := make([]*orgmodel.Worker, 0, 1)
 	if err = tx.SelectContext(ctx, &Workers, query, &ServiceID, &OrgID); err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ import (
 type User interface {
 	SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error)
 	OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
-	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) (*userdto.UserUpdateReq, error)
+	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) error
 	User(ctx context.Context, id int) (*userdto.UserGetResp, error)
 }
 
@@ -49,28 +49,20 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 // @Failure 500
 // @Router /users/update [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	var req userdto.UserUpdateReq
-	if u.json.NewDecoder(r.Body).Decode(&req) != nil {
+	req := &userdto.UserUpdateReq{}
+	if u.json.NewDecoder(r.Body).Decode(req) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
 	}
-	var err error
-	if err = u.validator.Struct(&req); err != nil {
+	if err := u.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := u.usecase.UserUpdate(ctx, &req)
-	if err != nil {
+	if err := u.usecase.UserUpdate(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
-		return
-	}
 }
 
 // @Summary Organization Searching
@@ -87,40 +79,39 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
-	params := map[string]bool{
+	query := map[string]bool{
 		"limit": true,
 		"page":  true,
 		"name":  false,
 		"type":  false,
 	}
-	if !validation.IsQueryValid(r, params) {
+	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
 	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
 	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
 
-	req := general.SearchReq{
+	req := &general.SearchReq{
 		Page:  int(page),
 		Limit: int(limit),
 		Name:  r.URL.Query().Get("name"),
 		Type:  r.URL.Query().Get("type"),
 	}
-	if err := u.validator.Struct(&req); err != nil {
+	if err := u.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	ctx := r.Context()
-	data, err := u.usecase.SearchOrgs(ctx, &req)
+	data, err := u.usecase.SearchOrgs(ctx, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+	if u.json.NewEncoder(w).Encode(data) != nil {
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -139,13 +130,13 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/map/orgs [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
-	params := map[string]bool{
+	query := map[string]bool{
 		"min_lat":  true,
 		"min_long": true,
 		"max_lat":  true,
 		"max_long": true,
 	}
-	if !validation.IsQueryValid(r, params) {
+	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
@@ -153,7 +144,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	minLong, _ := strconv.ParseFloat(r.URL.Query().Get("min_long"), 64)
 	maxLat, _ := strconv.ParseFloat(r.URL.Query().Get("max_lat"), 64)
 	maxLong, _ := strconv.ParseFloat(r.URL.Query().Get("max_long"), 64)
-	req := general.OrgAreaReq{
+	req := &general.OrgAreaReq{
 		LeftLowerCorner: entity.Coordinates{
 			Lat:  minLat,
 			Long: minLong,
@@ -164,12 +155,11 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	// валидация полей
-	if err := u.validator.Struct(&req); err != nil {
+	if err := u.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := u.usecase.OrgsInArea(ctx, &req)
+	data, err := u.usecase.OrgsInArea(r.Context(), req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -177,8 +167,8 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	// отдаем токен
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+	if u.json.NewEncoder(w).Encode(data) != nil {
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -194,27 +184,20 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/info/{id} [get]
 func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	idString, ok := params["id"]
-	if !ok {
-		http.Error(w, "No user id provided", http.StatusBadRequest)
-		return
-	}
-	id, err := strconv.Atoi(idString)
+	params, err := validation.FetchSpecifiedID(mux.Vars(r), "id")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := u.usecase.User(ctx, id)
+	data, err := u.usecase.User(r.Context(), params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+	if u.json.NewEncoder(w).Encode(data) != nil {
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 

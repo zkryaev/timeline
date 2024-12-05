@@ -3,7 +3,7 @@ package orgs
 import (
 	"context"
 	"net/http"
-	"strconv"
+	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
 	"github.com/go-playground/validator"
@@ -14,10 +14,12 @@ import (
 
 type Org interface {
 	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
-	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error)
-	OrgTimetableUpdate(ctx context.Context, newTimetable *orgdto.TimetableUpdate) (*orgdto.TimetableUpdate, error)
+	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) error
+	Timetable
 	Workers
 	Services
+	Slots
+	Schedule
 }
 
 type OrgCtrl struct {
@@ -45,26 +47,19 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 // @Failure 500
 // @Router /orgs/info/{id} [get]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	idString, ok := params["id"]
-	if !ok {
-		http.Error(w, "No org id provided", http.StatusBadRequest)
-		return
-	}
-	id, err := strconv.Atoi(idString)
+	params, err := validation.FetchSpecifiedID(mux.Vars(r), "id")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := o.usecase.Organization(ctx, id)
+	data, err := o.usecase.Organization(r.Context(), params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
+		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -73,68 +68,24 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Description Update organization information
 // @Tags Organization
 // @Accept  json
-// @Produce json
 // @Param   request body orgdto.OrgUpdateReq true "New org info"
-// @Success 200 {object} orgdto.OrgUpdateReq
+// @Success 200
 // @Failure 400
 // @Failure 500
 // @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
-	var req orgdto.OrgUpdateReq
-	if o.json.NewDecoder(r.Body).Decode(&req) != nil {
+	req := &orgdto.OrgUpdateReq{}
+	if o.json.NewDecoder(r.Body).Decode(req) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
 	}
-	var err error
-	if err = o.validator.Struct(&req); err != nil {
+	if err := o.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := o.usecase.OrgUpdate(ctx, &req)
-	if err != nil {
+	if err := o.usecase.OrgUpdate(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
-		return
-	}
-}
-
-// @Summary Update timetable
-// @Description Update organization timetable
-// @Tags Organization
-// @Accept  json
-// @Produce json
-// @Param   request body orgdto.TimetableUpdate true "New org info"
-// @Success 200 {object} orgdto.TimetableUpdate
-// @Failure 400
-// @Failure 500
-// @Router /orgs/{id}/timetable [put]
-func (o *OrgCtrl) UpdateOrgTimetable(w http.ResponseWriter, r *http.Request) {
-	var req orgdto.TimetableUpdate
-	if o.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	var err error
-	if err = o.validator.Struct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	ctx := r.Context()
-	data, err := o.usecase.OrgTimetableUpdate(ctx, &req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusInternalServerError)
-		return
-	}
 }

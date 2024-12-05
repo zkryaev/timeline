@@ -33,7 +33,7 @@ func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organiza
 	data, err := o.org.OrgByID(ctx, id)
 	if err != nil {
 		o.Logger.Error(
-			"failed get organization",
+			"failed to get org",
 			zap.Error(err),
 		)
 		return nil, err
@@ -41,28 +41,16 @@ func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organiza
 	return orgmap.OrganizationToDTO(data), nil
 }
 
-func (o *OrgUseCase) OrgUpdate(ctx context.Context, newOrg *orgdto.OrgUpdateReq) (*orgdto.OrgUpdateReq, error) {
+func (o *OrgUseCase) OrgUpdate(ctx context.Context, newOrg *orgdto.OrgUpdateReq) error {
 	if err := o.org.OrgUpdate(ctx, orgmap.OrgUpdateToModel(newOrg)); err != nil {
-		if errors.Is(err, postgres.ErrUserNotFound) {
-			return nil, err
+		if errors.Is(err, postgres.ErrOrgNotFound) {
+			return err
 		}
 		o.Logger.Error(
-			"failed org update",
+			"failed to update org",
 			zap.Error(err),
 		)
+		return err
 	}
-	return newOrg, nil
-}
-
-func (o *OrgUseCase) OrgTimetableUpdate(ctx context.Context, newTimetable *orgdto.TimetableUpdate) (*orgdto.TimetableUpdate, error) {
-	if err := o.org.OrgTimetableUpdate(ctx, newTimetable.OrgID, orgmap.TimetableToModel(newTimetable.Timetable)); err != nil {
-		if errors.Is(err, postgres.ErrUserNotFound) {
-			return nil, err
-		}
-		o.Logger.Error(
-			"failed org timetable update",
-			zap.Error(err),
-		)
-	}
-	return newTimetable, nil
+	return nil
 }

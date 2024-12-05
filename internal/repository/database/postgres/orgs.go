@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/orgmodel"
 
 	pgx "github.com/jackc/pgx/v5"
 )
@@ -17,7 +17,7 @@ var (
 
 // Сохраняет в БД инфу об организации. Отдает org_id при успешном сохранении
 // Вернет ошибку если такой пользователь уже существует
-func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (int, error) {
+func (p *PostgresRepo) OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -58,7 +58,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *models.OrgRegister) (in
 }
 
 // Unused!
-func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.OrgInfo, error) {
+func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*orgmodel.OrgInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -75,7 +75,7 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.Or
 		FROM orgs
         WHERE email = $1;
 	`
-	var org models.OrgInfo
+	var org orgmodel.OrgInfo
 	if err := tx.GetContext(ctx, &org, query, email); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
@@ -89,7 +89,7 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*models.Or
 	return &org, nil
 }
 
-func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.Organization, error) {
+func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organization, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -104,7 +104,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.Organizatio
 		FROM orgs
         WHERE org_id = $1;
 	`
-	var org models.Organization
+	var org orgmodel.Organization
 	if err = tx.GetContext(ctx, &org, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
@@ -129,7 +129,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*models.Organizatio
 }
 
 // Принимает две точки на карте по диагонале. Возвращает список организаций лежащий в диапазоне этих двух точек
-func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) ([]*models.OrgByArea, error) {
+func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -161,7 +161,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 	`
 
 	// Результирующий список
-	orgList := make([]*models.OrgByArea, 0, 1)
+	orgList := make([]*orgmodel.OrgByArea, 0, 1)
 	if err = tx.SelectContext(
 		ctx,
 		&orgList,
@@ -186,7 +186,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *models.AreaParams) 
 }
 
 // Принимает пагинацию, имя и тип организации. Возвращает соответствующие организации, число найденных
-func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchParams) ([]*models.OrgsBySearch, int, error) {
+func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
@@ -231,7 +231,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchPa
 		LIMIT $3
 		OFFSET $4;
 	`
-	orgList := make([]*models.OrgsBySearch, 0, params.Limit)
+	orgList := make([]*orgmodel.OrgsBySearch, 0, params.Limit)
 	if err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, ErrOrgsNotFound
@@ -244,51 +244,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *models.SearchPa
 	return orgList, found, nil
 }
 
-// Принимает org_id и расписание организации. Если
-func (p *PostgresRepo) OrgTimetableUpdate(ctx context.Context, id int, new []*models.OpenHours) error {
-	tx, err := p.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-	query := `UPDATE timetables
-		SET 
-			weekday = $1, 
-			open = $2,
-			close = $3,
-			break_start = $4,
-			break_end = $5
-		WHERE org_id = $6;
-	`
-	for _, hours := range new {
-		res, err := tx.ExecContext(ctx, query,
-			hours.Weekday,
-			hours.Open,
-			hours.Close,
-			hours.BreakStart,
-			hours.BreakEnd,
-			id,
-		)
-		if err != nil {
-			return err
-		}
-		if res != nil {
-			if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
-				return ErrOrgNotFound
-			}
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit tx: %w", err)
-	}
-	return nil
-}
-
-func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *models.Organization) error {
+func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)

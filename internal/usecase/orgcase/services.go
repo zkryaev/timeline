@@ -36,29 +36,27 @@ func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int
 
 	return workers, nil
 }
-func (o *OrgUseCase) ServiceAdd(ctx context.Context, Service *orgdto.AddServiceReq) (*orgdto.ServiceResp, error) {
-	serviceID, err := o.org.ServiceAdd(ctx, orgmap.AddServiceToModel(Service))
+func (o *OrgUseCase) ServiceAdd(ctx context.Context, Service *orgdto.AddServiceReq) error {
+	_, err := o.org.ServiceAdd(ctx, orgmap.AddServiceToModel(Service))
 	if err != nil {
 		o.Logger.Error(
 			"failed to add service",
 			zap.Error(err),
 		)
-		return nil, nil
+		return err
 	}
-	return &orgdto.ServiceResp{
-		ServiceID: serviceID,
-	}, nil
+	return nil
 }
 
-func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateServiceReq) (*orgdto.UpdateServiceReq, error) {
+func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateServiceReq) error {
 	if err := o.org.ServiceUpdate(ctx, orgmap.UpdateService(Service)); err != nil {
 		o.Logger.Error(
 			"failed to update service",
 			zap.Error(err),
 		)
-		return nil, nil
+		return err
 	}
-	return Service, nil
+	return nil
 }
 
 func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int) ([]*orgdto.ServiceResp, error) {

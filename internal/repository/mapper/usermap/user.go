@@ -5,15 +5,16 @@ import (
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/usermodel"
 )
 
-func UserRegisterToModel(dto *authdto.UserRegisterReq) *models.UserRegister {
-	return &models.UserRegister{
+func UserRegisterToModel(dto *authdto.UserRegisterReq) *usermodel.UserRegister {
+	return &usermodel.UserRegister{
 		HashCreds: models.HashCreds{
 			Email:      dto.Email,
 			PasswdHash: dto.Password,
 		},
-		UserInfo: models.UserInfo{
+		UserInfo: usermodel.UserInfo{
 			FirstName: dto.FirstName,
 			LastName:  dto.LastName,
 			Telephone: dto.Telephone,
@@ -23,7 +24,7 @@ func UserRegisterToModel(dto *authdto.UserRegisterReq) *models.UserRegister {
 	}
 }
 
-func UserInfoToGetResp(model *models.UserInfo) *userdto.UserGetResp {
+func UserInfoToGetResp(model *usermodel.UserInfo) *userdto.UserGetResp {
 	return &userdto.UserGetResp{
 		UserID: model.UserID,
 		UserInfo: entity.UserInfo{
@@ -36,8 +37,8 @@ func UserInfoToGetResp(model *models.UserInfo) *userdto.UserGetResp {
 	}
 }
 
-func UserUpdateToModel(dto *userdto.UserUpdateReq) *models.UserInfo {
-	return &models.UserInfo{
+func UserUpdateToModel(dto *userdto.UserUpdateReq) *usermodel.UserInfo {
+	return &usermodel.UserInfo{
 		UserID:    dto.UserID,
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
@@ -46,14 +47,3 @@ func UserUpdateToModel(dto *userdto.UserUpdateReq) *models.UserInfo {
 		About:     dto.About,
 	}
 }
-
-// func UserUpdateToDTO(model *models.UserInfo) *userdto.UserUpdateResp {
-// 	return &userdto.UserUpdateResp{
-// 		UserID:    model.UserID,
-// 		FirstName: model.FirstName,
-// 		LastName:  model.LastName,
-// 		Telephone: model.Telephone,
-// 		City:      model.City,
-// 		About:     model.About,
-// 	}
-// }

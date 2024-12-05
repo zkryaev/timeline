@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/usermodel"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -16,7 +16,7 @@ var (
 
 // Принимает всю регистрационную инфу. Возвращает user_id
 // Если такой пользователь уже существует -> ошибка
-func (p *PostgresRepo) UserSave(ctx context.Context, user *models.UserRegister) (int, error) {
+func (p *PostgresRepo) UserSave(ctx context.Context, user *usermodel.UserRegister) (int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -53,7 +53,7 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *models.UserRegister) 
 	return UserID, nil
 }
 
-func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserInfo, error) {
+func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.UserInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -67,7 +67,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserIn
 		SELECT user_id, first_name, last_name, city, telephone, about FROM users
 		WHERE user_id = $1;
 	`
-	var user models.UserInfo
+	var user usermodel.UserInfo
 	if err = tx.GetContext(ctx, &user, query, UserID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -80,7 +80,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*models.UserIn
 	return &user, nil
 }
 
-func (p *PostgresRepo) UserUpdate(ctx context.Context, new *models.UserInfo) error {
+func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)

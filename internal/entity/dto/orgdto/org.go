@@ -13,8 +13,3 @@ type OrgUpdateReq struct {
 	entity.OrgInfo
 	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
 }
-
-type TimetableUpdate struct {
-	OrgID     int                 `json:"org_id" validate:"required"`
-	Timetable []*entity.OpenHours `json:"timetable" validate:"required"`
-}

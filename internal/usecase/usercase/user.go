@@ -46,17 +46,18 @@ func (u *UserUseCase) User(ctx context.Context, id int) (*userdto.UserGetResp, e
 	return resp, nil
 }
 
-func (u *UserUseCase) UserUpdate(ctx context.Context, newUser *userdto.UserUpdateReq) (*userdto.UserUpdateReq, error) {
+func (u *UserUseCase) UserUpdate(ctx context.Context, newUser *userdto.UserUpdateReq) error {
 	if err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(newUser)); err != nil {
 		if errors.Is(err, postgres.ErrUserNotFound) {
-			return nil, err
+			return err
 		}
 		u.Logger.Error(
 			"failed user update",
 			zap.Error(err),
 		)
+		return err
 	}
-	return newUser, nil
+	return nil
 }
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {

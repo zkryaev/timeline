@@ -3,11 +3,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/orgmodel"
 )
 
 // Добавление работника к организации
-func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *models.Worker) (int, error) {
+func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
@@ -19,8 +19,8 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *models.Worker) (in
 	}()
 	query := `
 		INSERT INTO workers
-		(org_id, first_name, last_name, position, degree)
-		VALUES($1, $2, $3, $4, $5)
+		(org_id, first_name, last_name, position, degree, session_duration)
+		VALUES($1, $2, $3, $4, $5, $6)
 		RETURNING worker_id;
 	`
 	var workerID int
@@ -30,6 +30,7 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *models.Worker) (in
 		worker.LastName,
 		worker.Position,
 		worker.Degree,
+		worker.SessionDuration,
 	).Scan(&workerID); err != nil {
 		return 0, fmt.Errorf("failed to add worker to org: %w", err)
 	}
@@ -39,7 +40,7 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *models.Worker) (in
 	return workerID, nil
 }
 
-func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*models.Worker, error) {
+func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*orgmodel.Worker, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -50,12 +51,12 @@ func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*models
 		}
 	}()
 	query := `
-		SELECT worker_id, org_id, first_name, last_name, position, degree
+		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
 		WHERE worker_id = $1
 		AND org_id = $2;
 	`
-	var Worker models.Worker
+	var Worker orgmodel.Worker
 	if err = tx.GetContext(ctx, &Worker, query, &WorkerID, &OrgID); err != nil {
 		return nil, fmt.Errorf("failed to get worker: %w", err)
 	}
@@ -66,7 +67,7 @@ func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*models
 }
 
 // Обновление информации работника организации
-func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *models.Worker) error {
+func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -83,14 +84,55 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *models.Worker) 
 			last_name = $2,
 			position = $3,
 			degree = $4
-		WHERE worker_id = $5
-		AND org_id = $6;
+			session_duration = $5
+		WHERE worker_id = $6
+		AND org_id = $7;
 	`
 	if err = tx.QueryRowContext(ctx, query,
 		worker.FirstName,
 		worker.LastName,
 		worker.Position,
 		worker.Degree,
+		worker.SessionDuration,
+		worker.WorkerID,
+		worker.OrgID,
+	).Err(); err != nil {
+		return fmt.Errorf("failed to update worker: %w", err)
+	}
+	if tx.Commit() != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+// Частичное обновление информации работника организации
+func (p *PostgresRepo) WorkerPatch(ctx context.Context, worker *orgmodel.Worker) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		UPDATE workers
+		SET
+			first_name = COALESCE(NULLIF($1, ''), first_name),
+			last_name = COALESCE(NULLIF($2, ''), last_name),
+			position = COALESCE(NULLIF($3, ''), position),
+			degree = COALESCE(NULLIF($4, ''), degree),
+			session_duration = COALESCE(NULLIF($5, 0), session_duration)
+		WHERE worker_id = $6
+		AND org_id = $7;
+	`
+	if err = tx.QueryRowContext(ctx, query,
+		worker.FirstName,
+		worker.LastName,
+		worker.Position,
+		worker.Degree,
+		worker.SessionDuration,
 		worker.WorkerID,
 		worker.OrgID,
 	).Err(); err != nil {
@@ -103,7 +145,7 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *models.Worker) 
 }
 
 // Добавляет работника в предоставляемую услугу
-func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *models.WorkerAssign) error {
+func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -144,7 +186,7 @@ func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *mode
 	return nil
 }
 
-func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *models.WorkerAssign) error {
+func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -183,7 +225,7 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *mo
 }
 
 // Получение списка работников организации
-func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID int) ([]*models.Worker, error) {
+func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID int) ([]*orgmodel.Worker, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -194,11 +236,11 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID int) ([]*models.Wor
 		}
 	}()
 	query := `
-		SELECT worker_id, org_id, first_name, last_name, position, degree
+		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
 		WHERE org_id = $1;
 	`
-	Workers := make([]*models.Worker, 0, 3)
+	Workers := make([]*orgmodel.Worker, 0, 3)
 	if err = tx.SelectContext(ctx, &Workers, query, &OrgID); err != nil {
 		return nil, fmt.Errorf("failed to get worker list: %w", err)
 	}

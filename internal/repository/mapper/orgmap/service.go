@@ -3,10 +3,10 @@ package orgmap
 import (
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/repository/models"
+	"timeline/internal/repository/models/orgmodel"
 )
 
-func ServiceToDTO(model *models.Service) *orgdto.ServiceResp {
+func ServiceToDTO(model *orgmodel.Service) *orgdto.ServiceResp {
 	return &orgdto.ServiceResp{
 		ServiceID:   model.ServiceID,
 		OrgID:       model.OrgID,
@@ -14,8 +14,8 @@ func ServiceToDTO(model *models.Service) *orgdto.ServiceResp {
 	}
 }
 
-func AddServiceToModel(dto *orgdto.AddServiceReq) *models.Service {
-	return &models.Service{
+func AddServiceToModel(dto *orgdto.AddServiceReq) *orgmodel.Service {
+	return &orgmodel.Service{
 		ServiceID:   0, // zeroval
 		OrgID:       dto.OrgID,
 		Name:        dto.ServiceInfo.Name,
@@ -24,8 +24,8 @@ func AddServiceToModel(dto *orgdto.AddServiceReq) *models.Service {
 	}
 }
 
-func UpdateService(dto *orgdto.UpdateServiceReq) *models.Service {
-	return &models.Service{
+func UpdateService(dto *orgdto.UpdateServiceReq) *orgmodel.Service {
+	return &orgmodel.Service{
 		ServiceID:   dto.ServiceID,
 		OrgID:       dto.OrgID,
 		Name:        dto.ServiceInfo.Name,
@@ -34,7 +34,7 @@ func UpdateService(dto *orgdto.UpdateServiceReq) *models.Service {
 	}
 }
 
-func serviceToEntity(model *models.Service) *entity.Service {
+func serviceToEntity(model *orgmodel.Service) *entity.Service {
 	return &entity.Service{
 		Name:        model.Name,
 		Cost:        model.Cost,
