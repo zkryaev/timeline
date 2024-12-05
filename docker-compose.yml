@@ -9,12 +9,17 @@ services:
         POSTGRES_PASSWORD: ${DB_PASSWD}
         POSTGRES_DB: ${DB_NAME}
       ports:
-        - "${DB_PORT}:5432" # Подключаем внешний порт из переменной окружения
+        - "${DB_PORT}:5432"         
       #volumes:
-      #  - ./db_init_user/:/docker-entrypoint-initdb.d/ # монтируем инициализационные скрипты
+      #  - ./db_init_user/:/docker-entrypoint-initdb.d/ 
       # - pgdata:/var/lib/postgresql/data
       networks:
         - default
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+        interval: 10s        
+        timeout: 5s          
+        retries: 5
 
 #volumes:
 #  pgdata:
