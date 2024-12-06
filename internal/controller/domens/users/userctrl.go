@@ -19,7 +19,7 @@ type User interface {
 	SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error)
 	OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
 	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) error
-	User(ctx context.Context, id int) (*userdto.UserGetResp, error)
+	User(ctx context.Context, id int) (*entity.User, error)
 }
 
 type UserCtrl struct {
@@ -179,7 +179,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "user_id"
-// @Success 200 {object} userdto.UserGetResp
+// @Success 200 {object} entity.User
 // @Failure 400
 // @Failure 500
 // @Router /users/info/{id} [get]

@@ -83,7 +83,7 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 			first_name = $1,
 			last_name = $2,
 			position = $3,
-			degree = $4
+			degree = $4,
 			session_duration = $5
 		WHERE worker_id = $6
 		AND org_id = $7;

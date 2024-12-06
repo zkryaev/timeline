@@ -10,7 +10,7 @@ func ServiceToDTO(model *orgmodel.Service) *orgdto.ServiceResp {
 	return &orgdto.ServiceResp{
 		ServiceID:   model.ServiceID,
 		OrgID:       model.OrgID,
-		ServiceInfo: serviceToEntity(model),
+		ServiceInfo: ServiceToEntity(model),
 	}
 }
 
@@ -34,7 +34,7 @@ func UpdateService(dto *orgdto.UpdateServiceReq) *orgmodel.Service {
 	}
 }
 
-func serviceToEntity(model *orgmodel.Service) *entity.Service {
+func ServiceToEntity(model *orgmodel.Service) *entity.Service {
 	return &entity.Service{
 		Name:        model.Name,
 		Cost:        model.Cost,

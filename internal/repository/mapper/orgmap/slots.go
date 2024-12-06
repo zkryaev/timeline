@@ -8,8 +8,8 @@ import (
 
 func SlotToDTO(model *orgmodel.Slot) *orgdto.SlotResp {
 	return &orgdto.SlotResp{
-		SlotID:   model.SlotID,
-		SlotInfo: *SlotInfoToDTO(model),
+		SlotID: model.SlotID,
+		Slot:   *SlotInfoToDTO(model),
 	}
 }
 
@@ -29,8 +29,8 @@ func SlotUpdateToModel(dto *orgdto.SlotUpdate) *orgmodel.SlotsMeta {
 	}
 }
 
-func SlotInfoToDTO(model *orgmodel.Slot) *orgdto.SlotInfo {
-	return &orgdto.SlotInfo{
+func SlotInfoToDTO(model *orgmodel.Slot) *orgdto.Slot {
+	return &orgdto.Slot{
 		WorkerScheduleID: model.WorkerScheduleID,
 		WorkerID:         model.WorkerID,
 		Date:             strings.Fields(model.Date.String())[0],

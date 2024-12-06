@@ -8,6 +8,7 @@ import (
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
 	"timeline/internal/controller/domens/orgs"
+	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/libs/secret"
@@ -16,6 +17,7 @@ import (
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
 	"timeline/internal/usecase/orgcase"
+	"timeline/internal/usecase/recordcase"
 	"timeline/internal/usecase/usercase"
 
 	jsoniter "github.com/json-iterator/go"
@@ -105,10 +107,25 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		validator,
 	)
 
+	usecaseRecord := recordcase.New(
+		storage,
+		storage,
+		storage,
+		a.log,
+	)
+
+	recordAPI := records.NewRecordCtrl(
+		usecaseRecord,
+		a.log,
+		json,
+		validator,
+	)
+
 	controllerSet := &controller.Controllers{
-		Auth: authAPI,
-		User: userAPI,
-		Org:  orgAPI,
+		Auth:   authAPI,
+		User:   userAPI,
+		Org:    orgAPI,
+		Record: recordAPI,
 	}
 
 	a.httpServer.Handler = controller.InitRouter(controllerSet)

@@ -13,6 +13,6 @@ type TokenMetadata struct {
 }
 
 type Coordinates struct {
-	Lat  float64 `json:"lat" validate:"required,latitude"`
-	Long float64 `json:"long" validate:"required,longitude"`
+	Lat  float64 `json:"lat,omitempty" validate:"required,latitude"`
+	Long float64 `json:"long,omitempty" validate:"required,longitude"`
 }

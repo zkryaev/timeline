@@ -50,7 +50,8 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	return scheduleList, nil
 }
 
-// Добавить для указанного рабонтика расписание на всю неделю
+// Добавить для указанного рабонтика расписание на 1 день - неделю
+// Обновляет длительность сеанса работника
 func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel.ScheduleList) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
@@ -86,6 +87,22 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 			if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 				return fmt.Errorf("no rows inserted")
 			}
+		}
+	}
+	query = `
+		UPDATE workers
+		SET
+			session_duration = COALESCE(NULLIF($1, 0), session_duration)
+		WHERE
+			worker_id = $2
+	`
+	rows, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
+	if err != nil {
+		return err
+	}
+	if rows != nil {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
+			return fmt.Errorf("no rows inserted")
 		}
 	}
 	if tx.Commit() != nil {

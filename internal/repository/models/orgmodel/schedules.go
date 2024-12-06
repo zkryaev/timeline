@@ -5,7 +5,9 @@ import "time"
 type ScheduleList struct {
 	WorkerID int `db:"worker_id"`
 	OrgID    int `db:"org_id"`
+	SessionDuration int  `db:"session_duration"`
 	Schedule []*Schedule
+
 }
 
 type Schedule struct {

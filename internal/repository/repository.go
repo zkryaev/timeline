@@ -8,6 +8,7 @@ import (
 	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/models"
 	"timeline/internal/repository/models/orgmodel"
+	"timeline/internal/repository/models/recordmodel"
 	"timeline/internal/repository/models/usermodel"
 )
 
@@ -21,6 +22,7 @@ type Repository interface {
 	CodeRepository
 	UserRepository
 	OrgRepository
+	RecordRepository
 }
 
 type CodeRepository interface {
@@ -51,6 +53,15 @@ type OrgRepository interface {
 	ServiceRepository
 	SlotRepository
 	ScheduleRepository
+}
+
+type RecordRepository interface {
+	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
+	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, error)
+	RecordAdd(ctx context.Context, req *recordmodel.Record) error
+	RecordPatch(ctx context.Context, req *recordmodel.Record) error
+	RecordDelete(ctx context.Context, req *recordmodel.Record) error
+	FeedbackRepository
 }
 
 type TimetableRepository interface {
@@ -91,6 +102,13 @@ type ScheduleRepository interface {
 	AddWorkerSchedule(ctx context.Context, Schedule *orgmodel.ScheduleList) error
 	UpdateWorkerSchedule(ctx context.Context, Schedule *orgmodel.ScheduleList) error
 	DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error
+}
+
+type FeedbackRepository interface {
+	Feedback(ctx context.Context, params *recordmodel.FeedbackParams) (*recordmodel.Feedback, error)
+	FeedbackSet(ctx context.Context, feedback *recordmodel.Feedback) error
+	FeedbackUpdate(ctx context.Context, feedback *recordmodel.Feedback) error
+	FeedbackDelete(ctx context.Context, params *recordmodel.FeedbackParams) error
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД

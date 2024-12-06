@@ -90,7 +90,7 @@ func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(&req); err != nil {
+	if err := o.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

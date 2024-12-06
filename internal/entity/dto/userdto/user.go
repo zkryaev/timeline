@@ -1,12 +1,5 @@
 package userdto
 
-import "timeline/internal/entity"
-
-type UserGetResp struct {
-	UserID int `json:"user_id"`
-	entity.UserInfo
-}
-
 type UserUpdateReq struct {
 	UserID    int    `json:"id"`
 	FirstName string `json:"first_name" validate:"min=3,max=100"`

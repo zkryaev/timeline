@@ -3,15 +3,17 @@ package controller
 import (
 	"timeline/internal/controller/auth"
 	"timeline/internal/controller/domens/orgs"
+	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 
 	"github.com/gorilla/mux"
 )
 
 type Controllers struct {
-	Auth *auth.AuthCtrl
-	User *users.UserCtrl
-	Org  *orgs.OrgCtrl
+	Auth   *auth.AuthCtrl
+	User   *users.UserCtrl
+	Org    *orgs.OrgCtrl
+	Record *records.RecordCtrl
 }
 
 // General
@@ -67,6 +69,17 @@ const (
 	slotsWorker = "/slots/{workerID}"
 )
 
+// Record
+const (
+	record     = "/records"
+	recordAdd  = "/creation"
+	recordID   = "/info/{recordID}"
+	recordList = "/list"
+	// Feedback
+	feedback   = "/feedbacks"
+	feedbackID = "/feedbacks/{recordID}"
+)
+
 func InitRouter(controllersSet *Controllers) *mux.Router {
 	r := mux.NewRouter()
 
@@ -74,6 +87,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	auth := controllersSet.Auth
 	user := controllersSet.User
 	org := controllersSet.Org
+	rec := controllersSet.Record
 
 	r.Use(auth.Middleware.HandlerLogs)
 	r.HandleFunc(health, HealthCheck)
@@ -131,5 +145,17 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// Slots
 	orgRouter.HandleFunc(slotsWorker, org.Slots).Methods("GET")
 	orgRouter.HandleFunc(slots, org.UpdateSlot).Methods("PUT")
+
+	// Records
+	recRouter := v1.NewRoute().PathPrefix(record).Subrouter()
+	recRouter.HandleFunc(recordAdd, rec.RecordAdd).Methods("POST")
+	recRouter.HandleFunc(recordID, rec.Record).Methods("GET")
+	recRouter.HandleFunc(recordList, rec.RecordList).Methods("GET")
+	recRouter.HandleFunc(recordID, rec.RecordDelete).Methods("DELETE")
+	// Feedbacks
+	recRouter.HandleFunc(feedback, rec.FeedbackSet).Methods("POST")
+	recRouter.HandleFunc(feedback, rec.FeedbackUpdate).Methods("PUT")
+	recRouter.HandleFunc(feedbackID, rec.Feedback).Methods("GET")
+	recRouter.HandleFunc(feedbackID, rec.FeedbackDelete).Methods("DELETE")
 	return r
 }

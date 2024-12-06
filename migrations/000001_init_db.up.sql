@@ -103,6 +103,30 @@ CREATE TABLE IF NOT EXISTS slots (
     session_begin TIMESTAMP,
     session_end TIMESTAMP,
     busy BOOLEAN,
-    FOREIGN KEY (worker_schedule_id) REFERENCES worker_schedules(worker_schedule_id) ON DELETE CASCADE,
-    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
+    FOREIGN KEY (worker_schedule_id) REFERENCES worker_schedules(worker_schedule_id),
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id)
+);
+
+CREATE TABLE IF NOT EXISTS records (
+    record_id SERIAL PRIMARY KEY,
+    reviewed BOOLEAN,
+    slot_id INT,
+    service_id INT,
+    worker_id INT,
+    user_id INT,
+    org_id INT,
+    FOREIGN KEY (slot_id) REFERENCES slots(slot_id),
+    FOREIGN KEY (service_id) REFERENCES services(service_id),
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id)
+);
+
+CREATE TABLE IF NOT EXISTS feedbacks (
+    feedback_id SERIAL,
+    record_id INT,
+    stars INT,
+    feedback TEXT,
+    FOREIGN KEY (record_id) REFERENCES records(record_id) ON DELETE CASCADE,
+    CONSTRAINT unique_record_id UNIQUE(record_id)
 );

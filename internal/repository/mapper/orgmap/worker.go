@@ -34,11 +34,11 @@ func WorkerToDTO(model *orgmodel.Worker) *orgdto.WorkerResp {
 	return &orgdto.WorkerResp{
 		WorkerID:   model.WorkerID,
 		OrgID:      model.OrgID,
-		WorkerInfo: workerToEntity(model),
+		WorkerInfo: WorkerToEntity(model),
 	}
 }
 
-func workerToEntity(model *orgmodel.Worker) *entity.Worker {
+func WorkerToEntity(model *orgmodel.Worker) *entity.Worker {
 	return &entity.Worker{
 		FirstName:       model.FirstName,
 		LastName:        model.LastName,

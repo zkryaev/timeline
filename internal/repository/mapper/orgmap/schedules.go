@@ -8,9 +8,10 @@ import (
 
 func ScheduleListToModel(dto *orgdto.ScheduleList) *orgmodel.ScheduleList {
 	resp := &orgmodel.ScheduleList{
-		WorkerID: dto.WorkerID,
-		OrgID:    dto.OrgID,
-		Schedule: make([]*orgmodel.Schedule, 0, len(dto.Schedule)),
+		WorkerID:        dto.WorkerID,
+		OrgID:           dto.OrgID,
+		SessionDuration: dto.SessionDuration,
+		Schedule:        make([]*orgmodel.Schedule, 0, len(dto.Schedule)),
 	}
 	for _, v := range dto.Schedule {
 		resp.Schedule = append(resp.Schedule, scheduleToModel(v))
@@ -20,9 +21,10 @@ func ScheduleListToModel(dto *orgdto.ScheduleList) *orgmodel.ScheduleList {
 
 func ScheduleListToDTO(model *orgmodel.ScheduleList) *orgdto.ScheduleList {
 	resp := &orgdto.ScheduleList{
-		WorkerID: model.WorkerID,
-		OrgID:    model.OrgID,
-		Schedule: make([]*orgdto.Schedule, 0, len(model.Schedule)),
+		WorkerID:        model.WorkerID,
+		OrgID:           model.OrgID,
+		SessionDuration: model.SessionDuration,
+		Schedule:        make([]*orgdto.Schedule, 0, len(model.Schedule)),
 	}
 	for _, v := range model.Schedule {
 		resp.Schedule = append(resp.Schedule, scheduleToDTO(v))

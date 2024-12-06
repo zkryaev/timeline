@@ -1,12 +1,12 @@
 package entity
 
 type OrgInfo struct {
-	Name      string  `json:"name" validate:"min=3,max=100"`
+	Name      string  `json:"name,omitempty" validate:"min=3,max=100"`
 	Rating    float64 `json:"rating,omitempty"`
 	Address   string  `json:"address,omitempty" validate:"required"`
-	Type      string  `json:"type" validate:"required"`
-	Telephone string  `json:"telephone" validate:"e164"`
-	City      string  `json:"city" validate:"required"`
+	Type      string  `json:"type,omitempty" validate:"required"`
+	Telephone string  `json:"telephone,omitempty" validate:"e164"`
+	City      string  `json:"city,omitempty" validate:"required"`
 	About     string  `json:"about,omitempty" validate:"max=1500"`
 	Coordinates
 }

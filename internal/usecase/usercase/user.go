@@ -34,7 +34,7 @@ func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, l
 	}
 }
 
-func (u *UserUseCase) User(ctx context.Context, id int) (*userdto.UserGetResp, error) {
+func (u *UserUseCase) User(ctx context.Context, id int) (*entity.User, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("Id must be > 0")
 	}
@@ -42,7 +42,7 @@ func (u *UserUseCase) User(ctx context.Context, id int) (*userdto.UserGetResp, e
 	if err != nil {
 		return nil, err
 	}
-	resp := usermap.UserInfoToGetResp(data)
+	resp := usermap.UserInfoToDTO(data)
 	return resp, nil
 }
 

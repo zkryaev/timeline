@@ -47,7 +47,13 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 	query = `
 		INSERT INTO slots
 		(date, session_begin, session_end, busy, worker_schedule_id, worker_id)
-		VALUES(CURRENT_DATE + (7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1 + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7), $2, $3, $4, $5, $6);
+		VALUES
+		(CURRENT_DATE + (7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1 + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7), 
+		$2 - INTERVAL '3 hours', 
+		$3 - INTERVAL '3 hours', 
+		$4, 
+		$5, 
+		$6);
 	`
 	busy := false
 	for _, v := range workers {

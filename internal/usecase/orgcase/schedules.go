@@ -44,16 +44,6 @@ func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.Sch
 			return fmt.Errorf("some of the provided time is incorrect")
 		}
 	}
-	worker := &orgdto.UpdateWorkerReq{
-		WorkerID: schedule.WorkerID,
-		OrgID:    schedule.OrgID,
-		WorkerInfo: entity.Worker{
-			SessionDuration: schedule.SessionDuration,
-		},
-	}
-	if err := o.WorkerPatch(ctx, worker); err != nil {
-		return err
-	}
 	if err := o.org.AddWorkerSchedule(ctx, orgmap.ScheduleListToModel(schedule)); err != nil {
 		o.Logger.Error(
 			"failed to get worker schedule",

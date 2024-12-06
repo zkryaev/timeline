@@ -29,7 +29,7 @@ func main() {
 	var m *migrate.Migrate
 	var err error
 	// Две попытки между которыми 1 секунда
-	maxRetries := 5
+	maxRetries := 10
 	for try := maxRetries; try > 0; try-- {
 		m, err = migrate.New(
 			"file://"+migrationsPath,

@@ -28,7 +28,7 @@ type LoginReq struct {
 
 type UserRegisterReq struct {
 	Credentials
-	entity.UserInfo
+	entity.User
 }
 
 type RegisterResp struct {

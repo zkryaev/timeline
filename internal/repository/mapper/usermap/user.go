@@ -24,19 +24,6 @@ func UserRegisterToModel(dto *authdto.UserRegisterReq) *usermodel.UserRegister {
 	}
 }
 
-func UserInfoToGetResp(model *usermodel.UserInfo) *userdto.UserGetResp {
-	return &userdto.UserGetResp{
-		UserID: model.UserID,
-		UserInfo: entity.UserInfo{
-			FirstName: model.FirstName,
-			LastName:  model.LastName,
-			Telephone: model.Telephone,
-			City:      model.City,
-			About:     model.About,
-		},
-	}
-}
-
 func UserUpdateToModel(dto *userdto.UserUpdateReq) *usermodel.UserInfo {
 	return &usermodel.UserInfo{
 		UserID:    dto.UserID,
@@ -45,5 +32,27 @@ func UserUpdateToModel(dto *userdto.UserUpdateReq) *usermodel.UserInfo {
 		Telephone: dto.Telephone,
 		City:      dto.City,
 		About:     dto.About,
+	}
+}
+
+func UserInfoToEntity(dto *entity.User) *usermodel.UserInfo {
+	return &usermodel.UserInfo{
+		UserID:    dto.UserID,
+		FirstName: dto.FirstName,
+		LastName:  dto.LastName,
+		Telephone: dto.Telephone,
+		City:      dto.City,
+		About:     dto.About,
+	}
+}
+
+func UserInfoToDTO(model *usermodel.UserInfo) *entity.User {
+	return &entity.User{
+		UserID:    model.UserID,
+		FirstName: model.FirstName,
+		LastName:  model.LastName,
+		Telephone: model.Telephone,
+		City:      model.City,
+		About:     model.About,
 	}
 }

@@ -1,16 +1,11 @@
--- Insert data into `users`
 INSERT INTO users (email, passwd_hash, first_name, last_name, telephone, city, about, verified) VALUES
 ('ivan.ivanov@example.com', 'hashed_password1', 'Иван', 'Иванов', '+73431234567', 'Москва', 'Люблю путешествовать и заниматься спортом.', true),
 ('elena.petrova@example.com', 'hashed_password2', 'Елена', 'Петрова', '+73431234568', 'Санкт-Петербург', 'Работаю в IT и увлекаюсь фотографией.', true),
 ('sergey.sidorov@example.com', 'hashed_password3', 'Сергей', 'Сидоров', '+73431234569', 'Новосибирск', 'Инженер-электронщик с 10-летним опытом.', true);
-
--- Insert data into `orgs`
 INSERT INTO orgs (email, passwd_hash, name, rating, type, city, address, telephone, lat, long, about, verified) VALUES
 ('clinic.moscow@example.com', 'hashed_password4', 'Клиника здоровья', 4.8, 'Медицинская клиника', 'Москва', 'ул. Ленина, д. 10', '+73431234570', 55.7558, 37.6173, 'Оказываем услуги диагностики и лечения.', true),
 ('gym.spb@example.com', 'hashed_password5', 'Фитнес-центр Спорт', 4.6, 'Фитнес-центр', 'Санкт-Петербург', 'пр. Невский, д. 20', '+73431234571', 59.9343, 30.3351, 'Современное оборудование и профессиональные тренеры.', true),
 ('library.nsk@example.com', 'hashed_password6', 'Библиотека знаний', 4.9, 'Библиотека', 'Новосибирск', 'ул. Красный проспект, д. 5', '+73431234572', 55.0084, 82.9357, 'Крупнейшая библиотека региона с богатым фондом.', true);
-
--- Insert data into `timetables`
 INSERT INTO timetables (org_id, weekday, open, close, break_start, break_end) VALUES
 (1, 1, '2024-11-28 08:00:00', '2024-11-28 20:00:00', '2024-11-28 12:00:00', '2024-11-28 13:00:00'),
 (1, 2, '2024-11-28 08:00:00', '2024-11-28 20:00:00', '2024-11-28 12:00:00', '2024-11-28 13:00:00'),
@@ -24,7 +19,6 @@ INSERT INTO services (org_id, name, cost, description) VALUES
 (2, 'Персональная тренировка', 1500.00, 'Индивидуальные занятия с профессиональным тренером.'),
 (3, 'Аренда книги', 50.00, 'Почасовая аренда редких книг из библиотеки.');
 
--- Then insert data into `workers`
 INSERT INTO workers (org_id, first_name, last_name, position, session_duration, degree) VALUES
 (1, 'Анна', 'Кузнецова', 'Терапевт', 60, 'Кандидат медицинских наук'),
 (2, 'Дмитрий', 'Смирнов', 'Тренер', 60, 'Мастер спорта международного класса'),
@@ -35,7 +29,6 @@ INSERT INTO worker_services (worker_id, service_id) VALUES
 (2, 2), -- Дмитрий Смирнов предоставляет услугу "Персональная тренировка"
 (3, 3); -- Мария Васильева предоставляет услугу "Аренда книги"
 
--- Insert data into `worker_schedules`
 INSERT INTO worker_schedules (org_id, worker_id, weekday, start, over) VALUES
 (1, 1, 1, '2024-11-28 08:00:00', '2024-11-28 20:00:00'), -- Анна Кузнецова (Терапевт) на понедельник
 (1, 1, 2, '2024-11-29 08:00:00', '2024-11-29 20:00:00'), -- Анна Кузнецова (Терапевт) на вторник
@@ -44,9 +37,9 @@ INSERT INTO worker_schedules (org_id, worker_id, weekday, start, over) VALUES
 (3, 3, 1, '2024-11-28 10:00:00', '2024-11-28 18:00:00'), -- Мария Васильева (Библиотекарь) на понедельник
 (3, 3, 2, '2024-11-29 10:00:00', '2024-11-29 18:00:00'); -- Мария Васильева (Библиотекарь) на вторник
 
--- Insert data into `slots`
 INSERT INTO slots (worker_schedule_id, worker_id, date, session_begin, session_end, busy) VALUES
 (1, 1, CURRENT_DATE, CURRENT_DATE + TIME '08:00:00', CURRENT_DATE + TIME '09:00:00', false),
+(1, 1, CURRENT_DATE + INTERVAL '1 day', CURRENT_DATE + INTERVAL '1 day' + TIME '08:00:00', CURRENT_DATE + TIME '09:00:00', false),
 (1, 1, CURRENT_DATE, CURRENT_DATE + TIME '09:00:00', CURRENT_DATE + TIME '10:00:00', false),
 (1, 1, CURRENT_DATE, CURRENT_DATE + TIME '10:00:00', CURRENT_DATE + TIME '11:00:00', false),
 (1, 1, CURRENT_DATE, CURRENT_DATE + TIME '11:00:00', CURRENT_DATE + TIME '12:00:00', false),
@@ -74,3 +67,13 @@ INSERT INTO slots (worker_schedule_id, worker_id, date, session_begin, session_e
 (3, 3, CURRENT_DATE, CURRENT_DATE + TIME '15:00:00', CURRENT_DATE + TIME '16:00:00', false),
 (3, 3, CURRENT_DATE, CURRENT_DATE + TIME '16:00:00', CURRENT_DATE + TIME '17:00:00', false),
 (3, 3, CURRENT_DATE, CURRENT_DATE + TIME '17:00:00', CURRENT_DATE + TIME '18:00:00', false);
+
+INSERT INTO records (reviewed, slot_id, service_id, worker_id, user_id, org_id) VALUES
+(true, 1, 1, 1, 1, 1), 
+(true, 2, 2, 2, 1, 2),
+(true, 3, 3, 3, 3, 3); 
+
+INSERT INTO feedbacks (record_id, stars, feedback) VALUES
+(1, 5, 'Отличный сервис, очень доволен!'),
+(2, 4, 'Хорошая тренировка, но хотелось бы больше внимания.'),
+(3, 5, 'Замечательная библиотека, много интересных книг!');

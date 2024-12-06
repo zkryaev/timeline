@@ -1,12 +1,12 @@
 package orgdto
 
-type SlotInfo struct {
-	WorkerScheduleID int    `json:"worker_schedule_id"`
-	WorkerID         int    `json:"worker_id"`
-	Date             string `json:"date" validate:"date"`
-	Begin            string `json:"begin" validate:"time"`
-	End              string `json:"end" validate:"time"`
-	Busy             bool   `json:"busy"`
+type Slot struct {
+	WorkerScheduleID int    `json:"worker_schedule_id,omitempty"`
+	WorkerID         int    `json:"worker_id,omitempty"`
+	Date             string `json:"date,omitempty" validate:"date"`
+	Begin            string `json:"begin,omitempty" validate:"time"`
+	End              string `json:"end,omitempty" validate:"time"`
+	Busy             bool   `json:"busy,omitempty"`
 }
 
 type SlotReq struct {
@@ -17,7 +17,7 @@ type SlotReq struct {
 
 type SlotResp struct {
 	SlotID int `json:"slot_id"`
-	SlotInfo
+	Slot
 }
 
 type SlotUpdate struct {
