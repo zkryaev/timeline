@@ -64,7 +64,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
@@ -82,7 +82,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
@@ -119,7 +119,7 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
@@ -147,7 +147,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
@@ -165,7 +165,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}

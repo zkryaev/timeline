@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log"
 	"timeline/internal/repository/models/orgmodel"
 	"timeline/internal/repository/models/recordmodel"
 	"timeline/internal/repository/models/usermodel"
@@ -185,7 +184,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) e
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
@@ -230,7 +229,7 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 		return err
 	}
 	if rows != nil {
-		if rowsAffected, err := rows.RowsAffected(); rowsAffected == 0 {
+		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
 			return fmt.Errorf("no rows inserted")
 		}
 	}
