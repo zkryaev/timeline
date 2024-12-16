@@ -19,6 +19,9 @@ type RecordListParams struct {
 	OrgID    int  `db:"org_id"`
 	UserID   int  `db:"user_id"`
 	Reviewed bool `db:"reviewed"`
+	Fresh    int
+	Limit    int
+	Offset   int
 }
 
 type RecordScrap struct {

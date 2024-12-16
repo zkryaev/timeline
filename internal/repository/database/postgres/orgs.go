@@ -288,3 +288,27 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 	}
 	return nil
 }
+
+// [CRON]: удаление стухших юзер аккаунтов
+func (p *PostgresRepo) OrgDeleteExpired(ctx context.Context) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `DELETE FROM orgs
+		WHERE verified IS NOT true
+		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
+	`
+	if _, err := tx.ExecContext(ctx, query); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}

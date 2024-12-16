@@ -15,5 +15,5 @@ type Slot struct {
 type SlotsMeta struct {
 	SlotID           int `db:"slot_id"`
 	WorkerID         int `db:"worker_id"`
-	WorkerScheduleID int `db:"worker_schedule_id"`
+	//WorkerScheduleID int `db:"worker_schedule_id"`
 }

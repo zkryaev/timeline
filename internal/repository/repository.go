@@ -30,24 +30,24 @@ type CodeRepository interface {
 	VerifyCode(ctx context.Context, info *models.CodeInfo) (time.Time, error)
 	ActivateAccount(ctx context.Context, id int, isOrg bool) error
 	AccountExpiration(ctx context.Context, email string, isOrg bool) (*models.ExpInfo, error)
+	DeleteExpiredCodes(ctx context.Context) error
 }
 
 type UserRepository interface {
 	UserUpdate(ctx context.Context, new *usermodel.UserInfo) error
 	UserSave(ctx context.Context, user *usermodel.UserRegister) (int, error)
 	UserByID(ctx context.Context, userID int) (*usermodel.UserInfo, error)
+	UserDeleteExpired(ctx context.Context) error
 }
 
 type OrgRepository interface {
 	OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (int, error)
 	OrgUpdate(ctx context.Context, new *orgmodel.Organization) error
-
 	OrgByEmail(ctx context.Context, email string) (*orgmodel.OrgInfo, error)
 	OrgByID(ctx context.Context, id int) (*orgmodel.Organization, error)
-
 	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
-
+	OrgDeleteExpired(ctx context.Context) error
 	TimetableRepository
 	WorkerRepository
 	ServiceRepository
@@ -57,7 +57,7 @@ type OrgRepository interface {
 
 type RecordRepository interface {
 	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
-	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, error)
+	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error)
 	RecordAdd(ctx context.Context, req *recordmodel.Record) error
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, req *recordmodel.Record) error

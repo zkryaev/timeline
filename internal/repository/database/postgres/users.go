@@ -120,3 +120,27 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) 
 	}
 	return nil
 }
+
+// [CRON]: удаление стухших юзер аккаунтов
+func (p *PostgresRepo) UserDeleteExpired(ctx context.Context) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `DELETE FROM users
+		WHERE verified IS NOT true
+		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
+	`
+	if _, err := tx.ExecContext(ctx, query); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}

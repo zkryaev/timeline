@@ -5,12 +5,15 @@ type ScheduleList struct {
 	OrgID           int         `json:"org_id"`
 	SessionDuration int         `json:"session_duration,omitempty"`
 	Schedule        []*Schedule `json:"schedule"`
+	Found           int         `json:"found"`
 }
 
 type ScheduleParams struct {
 	WorkerID int `json:"worker_id"`
 	OrgID    int `json:"org_id"`
 	Weekday  int `json:"weekday"`
+	Limit    int
+	Page     int
 }
 
 type Schedule struct {

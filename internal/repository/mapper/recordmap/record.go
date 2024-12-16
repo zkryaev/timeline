@@ -52,12 +52,10 @@ func RecordScrapToDTO(model *recordmodel.RecordScrap) *recordto.RecordScrap {
 	}
 }
 
-func RecordListToDTO(model []*recordmodel.RecordScrap) *recordto.RecordList {
-	resp := &recordto.RecordList{
-		List: make([]*recordto.RecordScrap, 0, len(model)),
-	}
+func RecordListToDTO(model []*recordmodel.RecordScrap) []*recordto.RecordScrap {
+	list := make([]*recordto.RecordScrap, 0, len(model))
 	for _, v := range model {
-		resp.List = append(resp.List, RecordScrapToDTO(v))
+		list = append(list, RecordScrapToDTO(v))
 	}
-	return resp
+	return list
 }

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"timeline/internal/repository/models/orgmodel"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -24,25 +26,49 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			tx.Rollback()
 		}
 	}()
-	query := `
+	query := `SELECT 
+			COUNT(*)
+		FROM worker_schedules
+		WHERE org_id = $1;
+	`
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, metainfo.OrgID).Scan(&found); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrScheduleNotFound
+		}
+		return nil, fmt.Errorf("failed to get org's service list: %w", err)
+	}
+	query = `
 		SELECT 
 			worker_schedule_id,
 			weekday, 
 			start, 
 			over
 		FROM worker_schedules
-        WHERE worker_id = $1 
+        WHERE ($1 <= 0 OR worker_id = $1) 
 		AND org_id = $2
-		AND ($3 <= 0 OR weekday = $3);
+		AND ($3 <= 0 OR weekday = $3)
+		LIMIT $4
+		OFFSET $5;
 	`
 	schedule := make([]*orgmodel.Schedule, 0, 7) // 7 = число дней в неделе
-	if err = tx.SelectContext(ctx, &schedule, query, metainfo.WorkerID, metainfo.OrgID, metainfo.Weekday); err != nil {
+	if err = tx.SelectContext(
+		ctx,
+		&schedule,
+		query,
+		metainfo.WorkerID,
+		metainfo.OrgID,
+		metainfo.Weekday,
+		metainfo.Limit,
+		metainfo.Offset,
+	); err != nil {
 		return nil, err
 	}
 	scheduleList := &orgmodel.ScheduleList{
 		WorkerID: metainfo.WorkerID,
 		OrgID:    metainfo.OrgID,
 		Schedule: schedule,
+		Found:    found,
 	}
 	if tx.Commit() != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)

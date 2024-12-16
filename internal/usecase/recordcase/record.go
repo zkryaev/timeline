@@ -38,7 +38,7 @@ func (r *RecordUseCase) Record(ctx context.Context, recordID int) (*recordto.Rec
 }
 
 func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordListParams) (*recordto.RecordList, error) {
-	data, err := r.records.RecordList(ctx, recordmap.RecordParamsToModel(params))
+	data, found, err := r.records.RecordList(ctx, recordmap.RecordParamsToModel(params))
 	if err != nil {
 		r.Logger.Error(
 			"failed to get record list",
@@ -46,7 +46,11 @@ func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordL
 		)
 		return nil, err
 	}
-	return recordmap.RecordListToDTO(data), nil
+	resp := &recordto.RecordList{
+		List:  recordmap.RecordListToDTO(data),
+		Found: found,
+	}
+	return resp, nil
 }
 
 func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) error {

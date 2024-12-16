@@ -48,8 +48,8 @@ const (
 	orgGetInfo = "/info/{id}"
 	orgUpdate  = "/update"
 	// Timetables
-	timetable       = "/timetable"
-	timetableDelete = "/timetable/{orgID}"
+	timetable   = "/timetable"
+	timetableID = "/{orgID}/timetable"
 	// Workers
 	worker       = "/workers"
 	workerID     = "/{orgID}/workers/{workerID}"
@@ -61,8 +61,9 @@ const (
 	serviceWorkers = "/{orgID}/services/{serviceID}/workers"
 	serviceList    = "/{orgID}/services"
 	// Schedule
-	schedule       = "/schedules"
-	scheduleWorker = "/{orgID}/schedules/{workerID}"
+	schedule        = "/schedules"
+	scheduleWorkers = "/{orgID}/schedules"
+	scheduleDelete  = "/{orgID}/schedules/{workerID}"
 
 	// Slots
 	slots       = "/slots"
@@ -73,11 +74,11 @@ const (
 const (
 	record     = "/records"
 	recordAdd  = "/creation"
-	recordID   = "/info/{recordID}"
+	recordID   = "/{recordID}"
 	recordList = "/list"
 	// Feedback
 	feedback   = "/feedbacks"
-	feedbackID = "/feedbacks/{recordID}"
+	feedbackID = "/feedbacks/info"
 )
 
 func InitRouter(controllersSet *Controllers) *mux.Router {
@@ -121,7 +122,9 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// Timetable
 	orgRouter.HandleFunc(timetable, org.TimetableAdd).Methods("POST")
 	orgRouter.HandleFunc(timetable, org.TimetableUpdate).Methods("PUT")
-	orgRouter.HandleFunc(timetableDelete, org.TimetableDelete).Methods("DELETE")
+	orgRouter.HandleFunc(timetableID, org.Timetable).Methods("GET")
+	orgRouter.HandleFunc(timetableID, org.TimetableDelete).Methods("DELETE")
+
 	// Workers
 	orgRouter.HandleFunc(worker, org.WorkerAdd).Methods("POST")
 	orgRouter.HandleFunc(worker, org.WorkerUpdate).Methods("PUT")
@@ -140,8 +143,8 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// Schedule
 	orgRouter.HandleFunc(schedule, org.AddWorkerSchedule).Methods("POST")
 	orgRouter.HandleFunc(schedule, org.UpdateWorkerSchedule).Methods("PUT")
-	orgRouter.HandleFunc(scheduleWorker, org.WorkerSchedule).Methods("GET")
-	orgRouter.HandleFunc(scheduleWorker, org.DeleteWorkerSchedule).Methods("DELETE")
+	orgRouter.HandleFunc(scheduleWorkers, org.WorkerSchedule).Methods("GET")
+	orgRouter.HandleFunc(scheduleDelete, org.DeleteWorkerSchedule).Methods("DELETE")
 	// Slots
 	orgRouter.HandleFunc(slotsWorker, org.Slots).Methods("GET")
 	orgRouter.HandleFunc(slots, org.UpdateSlot).Methods("PUT")
@@ -155,7 +158,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	// Feedbacks
 	recRouter.HandleFunc(feedback, rec.FeedbackSet).Methods("POST")
 	recRouter.HandleFunc(feedback, rec.FeedbackUpdate).Methods("PUT")
-	recRouter.HandleFunc(feedbackID, rec.Feedback).Methods("GET")
+	recRouter.HandleFunc(feedbackID, rec.Feedbacks).Methods("GET")
 	recRouter.HandleFunc(feedbackID, rec.FeedbackDelete).Methods("DELETE")
 	return r
 }

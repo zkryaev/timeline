@@ -29,7 +29,7 @@ type Feedback interface {
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks/info [get]
-func (rec *RecordCtrl) Feedback(w http.ResponseWriter, r *http.Request) {
+func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 	query := map[string]bool{
 		"limit":     true,
 		"page":      true,

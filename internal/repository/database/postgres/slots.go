@@ -159,7 +159,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		AND ($2 <= 0 OR worker_schedule_id = $2);
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
-	if err := tx.SelectContext(ctx, &slots, query, params.WorkerID, params.WorkerScheduleID); err != nil {
+	if err := tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
 		return nil, err
 	}
 	if tx.Commit() != nil {

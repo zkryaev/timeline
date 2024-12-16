@@ -18,6 +18,7 @@ type Record struct {
 type RecordListParams struct {
 	OrgID    int  `json:"org_id"`
 	UserID   int  `json:"user_id"`
+	Fresh    bool `json:"fresh"`
 	Reviewed bool `json:"reviewed"`
 }
 
@@ -33,5 +34,6 @@ type RecordScrap struct {
 }
 
 type RecordList struct {
-	List []*RecordScrap
+	List  []*RecordScrap `json:"record_list"`
+	Found int            `json:"found"`
 }

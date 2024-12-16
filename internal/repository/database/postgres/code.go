@@ -167,3 +167,34 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOr
 
 	return &Data, nil
 }
+
+// [CRON]: удаление стухших кодов
+func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query := `
+		DELETE
+		FROM users_verify
+		WHERE expires_at <= (CURRENT_TIMESTAMP - INTERVAL '5 minute');
+
+		DELETE
+		FROM orgs_verify
+		WHERE expires_at <= (CURRENT_TIMESTAMP - INTERVAL '5 minute');
+		`
+	if _, err = tx.ExecContext(ctx, query); err != nil {
+		return fmt.Errorf("failed to delete expired codes: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}

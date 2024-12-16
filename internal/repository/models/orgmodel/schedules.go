@@ -3,11 +3,11 @@ package orgmodel
 import "time"
 
 type ScheduleList struct {
-	WorkerID int `db:"worker_id"`
-	OrgID    int `db:"org_id"`
-	SessionDuration int  `db:"session_duration"`
-	Schedule []*Schedule
-
+	WorkerID        int `db:"worker_id"`
+	OrgID           int `db:"org_id"`
+	SessionDuration int `db:"session_duration"`
+	Schedule        []*Schedule
+	Found           int
 }
 
 type Schedule struct {
@@ -21,4 +21,6 @@ type ScheduleParams struct {
 	WorkerID int `db:"worker_id"`
 	OrgID    int `db:"org_id"`
 	Weekday  int `db:"weekday"`
+	Limit    int
+	Offset   int
 }

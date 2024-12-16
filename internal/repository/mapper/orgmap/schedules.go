@@ -25,6 +25,7 @@ func ScheduleListToDTO(model *orgmodel.ScheduleList) *orgdto.ScheduleList {
 		OrgID:           model.OrgID,
 		SessionDuration: model.SessionDuration,
 		Schedule:        make([]*orgdto.Schedule, 0, len(model.Schedule)),
+		Found:           model.Found,
 	}
 	for _, v := range model.Schedule {
 		resp.Schedule = append(resp.Schedule, scheduleToDTO(v))
@@ -37,6 +38,8 @@ func ScheduleParamsToModel(dto *orgdto.ScheduleParams) *orgmodel.ScheduleParams 
 		WorkerID: dto.WorkerID,
 		OrgID:    dto.OrgID,
 		Weekday:  dto.Weekday,
+		Limit:    dto.Limit,
+		Offset:   (dto.Page - 1) * dto.Limit,
 	}
 }
 

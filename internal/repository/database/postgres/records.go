@@ -2,10 +2,17 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"timeline/internal/repository/models/orgmodel"
 	"timeline/internal/repository/models/recordmodel"
 	"timeline/internal/repository/models/usermodel"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrRecordsNotFound = errors.New("records not found")
 )
 
 func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error) {
@@ -74,17 +81,38 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 	return rec, nil
 }
 
-func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, error) {
+func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	query := `
+	query := `SELECT
+		COUNT(*)
+	FROM records r
+	JOIN slots s ON r.slot_id = s.slot_id
+	JOIN orgs o ON r.org_id = o.org_id
+	JOIN users u ON r.user_id = u.user_id
+	JOIN services srvc ON r.service_id = srvc.service_id
+	JOIN workers w ON r.worker_id = w.worker_id
+	LEFT JOIN feedbacks f ON r.record_id = f.record_id
+	WHERE ($1 <= 0 OR r.user_id = $1)
+	AND ($2 <= 0 OR r.org_id = $2)
+	AND ($3 = true AND date >= CURRENT_DATE) 
+    OR ($3 = false AND date < CURRENT_DATE);
+	`
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, req.UserID, req.OrgID, req.Fresh).Scan(&found); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrRecordsNotFound
+		}
+		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
+	}
+	query = `
 		SELECT 
 		srvc.name AS service_name, 
 		srvc.cost, 
@@ -107,14 +135,18 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	JOIN services srvc ON r.service_id = srvc.service_id
 	JOIN workers w ON r.worker_id = w.worker_id
 	LEFT JOIN feedbacks f ON r.record_id = f.record_id
-	WHERE r.user_id = $1
-	OR r.org_id = $2;
+	WHERE ($1 <= 0 OR r.user_id = $1)
+	AND ($2 <= 0 OR r.org_id = $2)
+	AND ($3 = true AND date >= CURRENT_DATE) 
+    OR ($3 = false AND date < CURRENT_DATE)
+	LIMIT $4
+	OFFSET $5;
 	`
 	recs := make([]*recordmodel.RecordScrap, 0, 2)
-	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID)
+	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
 	defer rows.Close()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	rec := &recordmodel.RecordScrap{
 		Org:      &orgmodel.OrgInfo{},
@@ -142,17 +174,17 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			&rec.RecordID,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		recs = append(recs, rec)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return recs, nil
+	return recs, found, nil
 }
 
 func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) error {
@@ -268,7 +300,7 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 	}
 	if rows != nil {
 		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
+			return fmt.Errorf("no rows inserted") // TODO: везде вот такую строку лучше отдавать, т.к err.Error() бывает пустая в таком случае
 		}
 	}
 	if err = tx.Commit(); err != nil {

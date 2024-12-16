@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"timeline/internal/app"
 	"timeline/internal/config"
+	"timeline/internal/libs/cronjob"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail/notify"
 	"timeline/pkg/logger"
@@ -50,7 +51,6 @@ func main() {
 	}
 	Logs.Info("Successfuly connected to", zap.String("Database", os.Getenv("DB")))
 	defer db.Close()
-	// TODO: Redis
 
 	// Поднимаем почтовый сервис
 	mail := notify.New(cfg.Mail)
@@ -64,6 +64,10 @@ func main() {
 			zap.Error(err),
 		)
 	}
+
+	s := cronjob.InitCronScheduler(db)
+	defer s.Shutdown()
+	s.Start()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	quit := make(chan os.Signal, 1)

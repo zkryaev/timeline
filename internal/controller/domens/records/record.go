@@ -3,9 +3,9 @@ package records
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
+	"timeline/internal/libs/custom"
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
@@ -44,7 +44,7 @@ func NewRecordCtrl(usecase Record, logger *zap.Logger, jsoniter jsoniter.API, va
 // @Success 200 {object} recordto.RecordScrap
 // @Failure 400
 // @Failure 500
-// @Router /records/info/{recordID} [get]
+// @Router /records/{recordID} [get]
 func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 	params, err := validation.FetchSpecifiedID(mux.Vars(r), "recordID")
 	if err != nil {
@@ -72,7 +72,8 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 // @Tags Records
 // @Param   userID query int true "user_id"
 // @Param   orgID query int true "org_id"
-// @Success 200 {object} recordto.RecordScrap
+// @Param   fresh query bool false "Decide which records must be returned. True - only current & future records. False/NotGiven - olds"
+// @Success 200 {object} recordto.RecordList
 // @Failure 400
 // @Failure 500
 // @Router /records/list [get]
@@ -80,23 +81,26 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	query := map[string]bool{
 		"user_id": false,
 		"org_id":  false,
+		"fresh":  false,
 	}
 	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
-	userIDString := r.URL.Query().Get("user_id")
-	orgIDString := r.URL.Query().Get("org_id")
-	var userID, orgID int
-	if userIDString != "" {
-		userID, _ = strconv.Atoi(userIDString)
+	params := map[string]string{
+		"user_id": "int",
+		"org_id":  "int",
+		"fresh":  "bool",
 	}
-	if orgIDString != "" {
-		orgID, _ = strconv.Atoi(orgIDString)
+	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
+	if err != nil {
+		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
+		return
 	}
 	req := &recordto.RecordListParams{
-		UserID: userID,
-		OrgID:  orgID,
+		UserID: queryParams["user_id"].(int),
+		OrgID:  queryParams["org_id"].(int),
+		Fresh:  queryParams["fresh"].(bool),
 	}
 	if err := rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -147,7 +151,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /records/info/{recordID} [get]
+// @Router /records/{recordID} [delete]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordDelete(w http.ResponseWriter, r *http.Request) {
 	params, err := validation.FetchSpecifiedID(mux.Vars(r), "recordID")
