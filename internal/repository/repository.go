@@ -65,6 +65,7 @@ type RecordRepository interface {
 }
 
 type TimetableRepository interface {
+	Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error)
 	TimetableAdd(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
 	TimetableUpdate(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
 	TimetableDelete(ctx context.Context, orgID, weekday int) error
@@ -105,7 +106,7 @@ type ScheduleRepository interface {
 }
 
 type FeedbackRepository interface {
-	Feedback(ctx context.Context, params *recordmodel.FeedbackParams) (*recordmodel.Feedback, error)
+	FeedbackList(ctx context.Context, params *recordmodel.FeedbackParams) ([]*recordmodel.Feedback, int, error)
 	FeedbackSet(ctx context.Context, feedback *recordmodel.Feedback) error
 	FeedbackUpdate(ctx context.Context, feedback *recordmodel.Feedback) error
 	FeedbackDelete(ctx context.Context, params *recordmodel.FeedbackParams) error
