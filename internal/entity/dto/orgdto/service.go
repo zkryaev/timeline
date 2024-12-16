@@ -18,3 +18,8 @@ type ServiceResp struct {
 	OrgID       int             `json:"org_id,omitempty"`
 	ServiceInfo *entity.Service `json:"service_info,omitempty"`
 }
+
+type ServiceList struct {
+	List []*ServiceResp `json:"service_list"`
+	Found int `json:"found"`
+}

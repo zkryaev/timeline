@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"timeline/internal/repository/models/orgmodel"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -105,29 +107,44 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgm
 }
 
 // Получение списка услуг, предоставляемых организацией
-func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int) ([]*orgmodel.Service, error) {
+func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Page int) ([]*orgmodel.Service, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	query := `
-		SELECT service_id, org_id, name, cost, description
-		FROM services
+	query := `SELECT 
+			COUNT(*)
+		FROM services 
 		WHERE org_id = $1;
 	`
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, OrgID).Scan(&found); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrServiceNotFound
+		}
+		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
+	}
+	Offset := (Page - 1) * Limit
+	query = `
+		SELECT service_id, org_id, name, cost, description
+		FROM services
+		WHERE org_id = $1
+		LIMIT $2
+		OFFSET $3;
+	`
 	Services := make([]*orgmodel.Service, 0, 3)
-	if err = tx.SelectContext(ctx, &Services, query, &OrgID); err != nil {
-		return nil, err
+	if err = tx.SelectContext(ctx, &Services, query, &OrgID, Limit, Offset); err != nil {
+		return nil, 0, err
 	}
 	if tx.Commit() != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return Services, nil
+	return Services, 0, nil
 }
 
 // Удаление услуги, предоставляемой организации и удаление связи с работниками

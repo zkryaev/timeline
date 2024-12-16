@@ -3,6 +3,7 @@ package orgs
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
@@ -14,7 +15,7 @@ type Services interface {
 	ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgdto.WorkerResp, error)
 	ServiceAdd(ctx context.Context, Service *orgdto.AddServiceReq) error
 	ServiceUpdate(ctx context.Context, Service *orgdto.UpdateServiceReq) error
-	ServiceList(ctx context.Context, OrgID int) ([]*orgdto.ServiceResp, error)
+	ServiceList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.ServiceList, error)
 	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
 }
 
@@ -130,7 +131,9 @@ func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags organization/services
 // @Produce json
 // @Param   orgID path int true "org_id"
-// @Success 200 {array} orgdto.ServiceResp
+// @Param limit query int true "Limit the number of results"
+// @Param page query int true "Page number for pagination"
+// @Success 200 {array} orgdto.ServiceList
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/services [get]
@@ -140,7 +143,17 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.ServiceList(r.Context(), path["orgID"])
+	query := map[string]bool{
+		"limit": true,
+		"page":  true,
+	}
+	if !validation.IsQueryValid(r, query) {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	data, err := o.usecase.ServiceList(r.Context(), path["orgID"], limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}

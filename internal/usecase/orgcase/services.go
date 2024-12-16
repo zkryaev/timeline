@@ -59,8 +59,8 @@ func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateSe
 	return nil
 }
 
-func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int) ([]*orgdto.ServiceResp, error) {
-	data, err := o.org.ServiceList(ctx, OrgID)
+func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int, Limit int, Page int) (*orgdto.ServiceList, error) {
+	data, found, err := o.org.ServiceList(ctx, OrgID, Limit, Page)
 	if err != nil {
 		o.Logger.Error(
 			"failed to retrieve list of services",
@@ -72,7 +72,11 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int) ([]*orgdto.Serv
 	for _, v := range data {
 		serviceList = append(serviceList, orgmap.ServiceToDTO(v))
 	}
-	return serviceList, nil
+	resp := &orgdto.ServiceList{
+		List:  serviceList,
+		Found: found,
+	}
+	return resp, nil
 }
 
 func (o *OrgUseCase) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
