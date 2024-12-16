@@ -24,3 +24,8 @@ type WorkerResp struct {
 	OrgID      int            `json:"org_id,omitempty"`
 	WorkerInfo *entity.Worker `json:"worker_info,omitempty"`
 }
+
+type WorkerList struct {
+	List  []*WorkerResp `json:"worker_list"`
+	Found int           `json:"found"`
+}

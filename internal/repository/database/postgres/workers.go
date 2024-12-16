@@ -2,8 +2,15 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"timeline/internal/repository/models/orgmodel"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrWorkerNotFound = errors.New("worker not found")
 )
 
 // Добавление работника к организации
@@ -225,29 +232,43 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *or
 }
 
 // Получение списка работников организации
-func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID int) ([]*orgmodel.Worker, error) {
+func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int) ([]*orgmodel.Worker, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	query := `
-		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
-		FROM workers
+	query := `SELECT 
+			COUNT(*)
+		FROM workers 
 		WHERE org_id = $1;
 	`
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, OrgID).Scan(&found); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrWorkerNotFound
+		}
+		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
+	}
+	query = `
+		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
+		FROM workers
+		WHERE org_id = $1
+		LIMIT $2
+		OFFSET $3;
+	`
 	Workers := make([]*orgmodel.Worker, 0, 3)
-	if err = tx.SelectContext(ctx, &Workers, query, &OrgID); err != nil {
-		return nil, fmt.Errorf("failed to get worker list: %w", err)
+	if err = tx.SelectContext(ctx, &Workers, query, OrgID, Limit, Offset); err != nil {
+		return nil, 0, fmt.Errorf("failed to get worker list: %w", err)
 	}
 	if tx.Commit() != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return Workers, nil
+	return Workers, found, nil
 }
 
 // Удаляет работника из организации, а также связи с предоставляемыми услугами

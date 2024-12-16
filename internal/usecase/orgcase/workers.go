@@ -76,8 +76,9 @@ func (o *OrgUseCase) WorkerUnAssignService(ctx context.Context, assignInfo *orgd
 	return nil
 }
 
-func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID int) ([]*orgdto.WorkerResp, error) {
-	data, err := o.org.WorkerList(ctx, OrgID)
+func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.WorkerList, error) {
+	Offset := (Page - 1) * Limit
+	data, found, err := o.org.WorkerList(ctx, OrgID, Limit, Offset)
 	if err != nil {
 		o.Logger.Error(
 			"failed to get worker list",
@@ -89,7 +90,11 @@ func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID int) ([]*orgdto.Worke
 	for _, v := range data {
 		workerList = append(workerList, orgmap.WorkerToDTO(v))
 	}
-	return workerList, nil
+	resp := &orgdto.WorkerList{
+		List: workerList,
+		Found: found,
+	}
+	return resp, nil
 }
 func (o *OrgUseCase) WorkerDelete(ctx context.Context, WorkerID, OrgID int) error {
 	if err := o.org.WorkerDelete(ctx, WorkerID, OrgID); err != nil {

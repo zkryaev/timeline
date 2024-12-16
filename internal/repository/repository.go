@@ -77,7 +77,7 @@ type WorkerRepository interface {
 	WorkerPatch(ctx context.Context, worker *orgmodel.Worker) error
 	WorkerAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error
 	WorkerUnAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error
-	WorkerList(ctx context.Context, OrgID int) ([]*orgmodel.Worker, error)
+	WorkerList(ctx context.Context, OrgID, Limit, Offset int) ([]*orgmodel.Worker, int, error)
 	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
 }
 
@@ -86,7 +86,7 @@ type ServiceRepository interface {
 	ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgmodel.Worker, error)
 	ServiceAdd(ctx context.Context, service *orgmodel.Service) (int, error)
 	ServiceUpdate(ctx context.Context, service *orgmodel.Service) error
-	ServiceList(ctx context.Context, OrgID int, Limit, Page int) ([]*orgmodel.Service, int, error)
+	ServiceList(ctx context.Context, OrgID int, Limit, Offset int) ([]*orgmodel.Service, int, error)
 	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
 }
 
