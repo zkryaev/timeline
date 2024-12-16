@@ -12,6 +12,7 @@ import (
 )
 
 func (o *OrgUseCase) TimetableAdd(ctx context.Context, newTimetable *orgdto.Timetable) error {
+	// Валидация начала и конца работы организации
 	for i := range newTimetable.Timetable {
 		if !workPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
 			o.Logger.Error(
