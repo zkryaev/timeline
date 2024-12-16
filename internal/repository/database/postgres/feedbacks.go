@@ -6,37 +6,59 @@ import (
 	"errors"
 	"fmt"
 	"timeline/internal/repository/models/recordmodel"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
 	ErrFeedbackNotFound = errors.New("feedback not found")
 )
 
-func (p *PostgresRepo) Feedback(ctx context.Context, params *recordmodel.FeedbackParams) (*recordmodel.Feedback, error) {
+func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.FeedbackParams) ([]*recordmodel.Feedback, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT record_id, stars, feedback
-		FROM feedbacks
-		WHERE record_id = $1		
+	query := `SELECT 
+			COUNT(*)
+		FROM records r
+		JOIN feedbacks f
+		ON r.record_id = f.record_id AND reviewed = true
+		WHERE ($1 <= 0 OR f.record_id = $1)
+		AND ($2 <= 0 OR r.user_id = $2)
+		AND ($3 <= 0 OR r.org_id = $3);
 	`
-	feedback := &recordmodel.Feedback{}
-	if err := tx.GetContext(ctx, feedback, query, params.RecordID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrFeedbackNotFound
+	var found int
+	if err = tx.QueryRowxContext(ctx, query, params.RecordID, params.UserID, params.OrgID).Scan(&found); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrServiceNotFound
 		}
-		return nil, err
+		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
+	}
+	query = `SELECT f.record_id, f.stars, f.feedback
+		FROM feedbacks f
+		JOIN records r
+		ON r.record_id = f.record_id AND r.reviewed = true
+		WHERE ($1 <= 0 OR f.record_id = $1)
+		AND ($2 <= 0 OR r.user_id = $2)
+		AND ($3 <= 0 OR r.org_id = $3);
+	`
+	feedbacks := make([]*recordmodel.Feedback, 0, 1)
+	if err := tx.SelectContext(ctx, &feedbacks, query, params.RecordID, params.UserID, params.OrgID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, 0, ErrFeedbackNotFound
+		}
+		return nil, 0, err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return feedback, nil
+	return feedbacks, 0, nil
 }
 
 func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Feedback) error {

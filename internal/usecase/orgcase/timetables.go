@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/mapper/orgmap"
@@ -68,4 +69,26 @@ func (o *OrgUseCase) TimetableDelete(ctx context.Context, orgID, weekday int) er
 		return err
 	}
 	return nil
+}
+
+func (o *OrgUseCase) Timetable(ctx context.Context, orgID int) (*orgdto.Timetable, error) {
+	timetable, err := o.org.Timetable(ctx, orgID)
+	if err != nil {
+		if errors.Is(err, postgres.ErrOrgNotFound) {
+			return nil, err
+		}
+		o.Logger.Error(
+			"failed to get org timetable",
+			zap.Error(err),
+		)
+		return nil, err
+	}
+	resp := &orgdto.Timetable{
+		OrgID:     orgID,
+		Timetable: make([]*entity.OpenHours, 0, len(timetable)),
+	}
+	for _, v := range timetable {
+		resp.Timetable = append(resp.Timetable, orgmap.OpenHoursToDTO(v))
+	}
+	return resp, nil
 }

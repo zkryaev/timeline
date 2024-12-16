@@ -12,4 +12,8 @@ type Feedback struct {
 type FeedbackParams struct {
 	FeedbackID int `db:"feedback_id"`
 	RecordID   int `db:"record_id"`
+	UserID     int `db:"user_id"`
+	OrgID      int `db:"org_id"`
+	Limit      int
+	Offset     int
 }

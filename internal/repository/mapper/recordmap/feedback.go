@@ -31,5 +31,9 @@ func FeedParamsToModel(dto *recordto.FeedbackParams) *recordmodel.FeedbackParams
 	return &recordmodel.FeedbackParams{
 		FeedbackID: dto.FeedbackID,
 		RecordID:   dto.RecordID,
+		UserID:     dto.UserID,
+		OrgID:      dto.OrgID,
+		Limit:      dto.Limit,
+		Offset:     (dto.Page - 1) * dto.Limit,
 	}
 }

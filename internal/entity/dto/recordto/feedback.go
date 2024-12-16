@@ -7,7 +7,16 @@ type Feedback struct {
 	Feedback   string `json:"feedback,omitempty"`
 }
 
+type FeedbackList struct {
+	List []*Feedback `json:"feedback_list"`
+	Found int `json:"found"`
+}
+
 type FeedbackParams struct {
 	FeedbackID int `json:"feedback_id"`
 	RecordID   int `json:"record_id"`
+	UserID     int
+	OrgID      int
+	Limit      int
+	Page       int
 }

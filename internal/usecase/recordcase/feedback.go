@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (r *RecordUseCase) Feedback(ctx context.Context, params *recordto.FeedbackParams) (*recordto.Feedback, error) {
-	data, err := r.records.Feedback(ctx, recordmap.FeedParamsToModel(params))
+func (r *RecordUseCase) FeedbackList(ctx context.Context, params *recordto.FeedbackParams) (*recordto.FeedbackList, error) {
+	data, found, err := r.records.FeedbackList(ctx, recordmap.FeedParamsToModel(params))
 	if err != nil {
 		if errors.Is(err, postgres.ErrFeedbackNotFound) {
 			return nil, err
@@ -22,7 +22,15 @@ func (r *RecordUseCase) Feedback(ctx context.Context, params *recordto.FeedbackP
 		)
 		return nil, err
 	}
-	return recordmap.FeedbackToDTO(data), nil
+	feedbackList := make([]*recordto.Feedback, 0, 1)
+	for i := range data {
+		feedbackList = append(feedbackList, recordmap.FeedbackToDTO(data[i]))
+	}
+	resp := &recordto.FeedbackList{
+		List:  feedbackList,
+		Found: found,
+	}
+	return resp, nil
 }
 
 func (r *RecordUseCase) FeedbackSet(ctx context.Context, feedback *recordto.Feedback) error {

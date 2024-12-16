@@ -7,6 +7,31 @@ import (
 	"timeline/internal/repository/models/orgmodel"
 )
 
+func (p *PostgresRepo) Timetable(ctx context.Context, OrgID int) ([]*orgmodel.OpenHours, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		SELECT weekday, open, close, break_start, break_end, org_id
+		FROM timetables
+		WHERE org_id = $1;
+	`
+	timetable := make([]*orgmodel.OpenHours, 0, 1)
+	if err = tx.SelectContext(ctx, &timetable, query, OrgID); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return timetable, nil
+}
+
 func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
