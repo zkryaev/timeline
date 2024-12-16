@@ -107,7 +107,7 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgm
 }
 
 // Получение списка услуг, предоставляемых организацией
-func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Page int) ([]*orgmodel.Service, int, error) {
+func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Offset int) ([]*orgmodel.Service, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
@@ -129,7 +129,6 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Pa
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
 	}
-	Offset := (Page - 1) * Limit
 	query = `
 		SELECT service_id, org_id, name, cost, description
 		FROM services

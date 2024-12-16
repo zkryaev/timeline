@@ -60,7 +60,8 @@ func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateSe
 }
 
 func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int, Limit int, Page int) (*orgdto.ServiceList, error) {
-	data, found, err := o.org.ServiceList(ctx, OrgID, Limit, Page)
+	Offset := (Page - 1) * Limit
+	data, found, err := o.org.ServiceList(ctx, OrgID, Limit, Offset)
 	if err != nil {
 		o.Logger.Error(
 			"failed to retrieve list of services",
