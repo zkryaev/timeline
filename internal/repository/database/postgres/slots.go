@@ -19,12 +19,11 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 			tx.Rollback()
 		}
 	}()
-	// Берем массив session_duration и worker_id, org_id работников
 	query := `
-		SELECT ws.worker_schedule_id, ws.worker_id, ws.org_id, ws.weekday, ws.start, ws.over, w.session_duration
+		SELECT ws.worker_schedule_id, ws.worker_id, ws.org_id, ws.weekday, ws.start, ws.over, w.session_duration, t.break_start, t.break_end
 		FROM worker_schedules ws
 		JOIN workers w ON w.worker_id = ws.worker_id
-		AND w.org_id = ws.org_id;
+		JOIN timetables t ON t.org_id = ws.org_id AND ws.weekday = t.weekday;
 	`
 	workers := make([]*struct {
 		WorkerScheduleID int       `db:"worker_schedule_id"`
@@ -34,6 +33,8 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		Start            time.Time `db:"start"`
 		Over             time.Time `db:"over"`
 		SessionDuration  int       `db:"session_duration"`
+		BreakStart       time.Time `db:"break_start"`
+		BreakEnd         time.Time `db:"break_end"`
 	}, 0, 10)
 	if err := tx.SelectContext(ctx, &workers, query); err != nil {
 		return err
@@ -49,8 +50,8 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		(date, session_begin, session_end, busy, worker_schedule_id, worker_id)
 		VALUES
 		(CURRENT_DATE + (7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1 + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7), 
-		$2 - INTERVAL '3 hours', 
-		$3 - INTERVAL '3 hours', 
+		$2, 
+		$3, 
 		$4, 
 		$5, 
 		$6);
@@ -61,7 +62,11 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		for i := 0; i < periods; i++ {
 			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
 			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute) // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
-			_, err = tx.ExecContext(ctx, query, v.Weekday, begin, end, busy, v.WorkerScheduleID, v.WorkerID)
+			// Если время начала сеанса лежит в перерыве слот не создается
+			if begin.Compare(v.BreakStart) >= 0 && begin.Compare(v.BreakStart) <= 0 {
+				continue
+			}
+			_, err = tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
 			if err != nil {
 				return err
 			}
