@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"timeline/internal/libs/custom"
 	"timeline/internal/repository/models/orgmodel"
 )
 
@@ -63,7 +64,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
 			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute) // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
 			// Если время начала сеанса лежит в перерыве слот не создается
-			if begin.Compare(v.BreakStart) >= 0 && begin.Compare(v.BreakStart) <= 0 {
+			if custom.CompareTime(begin, v.BreakStart) >= 0 && custom.CompareTime(begin, v.BreakStart) <= 0 {
 				continue
 			}
 			_, err = tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
