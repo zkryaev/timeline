@@ -16,7 +16,7 @@
 [Валидация полей структур: validator](https://github.com/go-playground/validator) <br>
 [Работа с переменными окружения: godotenv](https://github.com/joho/godotenv) <br>
 [Генерация Swagger документаци: swaggo](https://github.com/swaggo/swag) <br>
-
+[Фоновые задачи через CRON: gocron](https://pkg.go.dev/github.com/go-co-op/gocron/v2) <br>
 
 
 
