@@ -24,7 +24,7 @@ type Slots interface {
 // @Failure 500
 // @Router /orgs/slots/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "workerID")
+	params, err := validation.FetchPathID(mux.Vars(r), "workerID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

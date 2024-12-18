@@ -52,9 +52,11 @@ func main() {
 	Logs.Info("Successfuly connected to", zap.String("Database", os.Getenv("DB")))
 	defer db.Close()
 
-	// Поднимаем почтовый сервис
-	mail := notify.New(cfg.Mail)
+	// Поднимаем почтовый сервис параметрами по умолчанию
+	mail := notify.New(cfg.Mail, Logs, 0, 0, 0)
+	mail.Start()
 	Logs.Info("Successfuly connected to", zap.String("Mail server", os.Getenv("MAIL_HOST")))
+	defer mail.Shutdown()
 
 	App := app.New(cfg.App, Logs)
 	err = App.SetupControllers(cfg.Token, db, mail)

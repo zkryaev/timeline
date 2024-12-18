@@ -30,7 +30,7 @@ type Services interface {
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID} [get]
 func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "serviceID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "serviceID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -58,7 +58,7 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID}/workers [get]
 func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "serviceID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "serviceID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -138,7 +138,7 @@ func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/services [get]
 func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -175,7 +175,7 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID} [delete]
 func (o *OrgCtrl) ServiceDelete(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "serviceID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "serviceID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

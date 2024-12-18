@@ -44,9 +44,9 @@ func NewRecordCtrl(usecase Record, logger *zap.Logger, jsoniter jsoniter.API, va
 // @Success 200 {object} recordto.RecordScrap
 // @Failure 400
 // @Failure 500
-// @Router /records/{recordID} [get]
+// @Router /records/info/{recordID} [get]
 func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "recordID")
+	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -81,7 +81,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	query := map[string]bool{
 		"user_id": false,
 		"org_id":  false,
-		"fresh":  false,
+		"fresh":   false,
 	}
 	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
@@ -90,7 +90,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	params := map[string]string{
 		"user_id": "int",
 		"org_id":  "int",
-		"fresh":  "bool",
+		"fresh":   "bool",
 	}
 	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
 	if err != nil {
@@ -154,7 +154,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /records/{recordID} [delete]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordDelete(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "recordID")
+	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

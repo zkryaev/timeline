@@ -51,10 +51,11 @@ const (
 	timetable   = "/timetable"
 	timetableID = "/{orgID}/timetable"
 	// Workers
-	worker       = "/workers"
-	workerID     = "/{orgID}/workers/{workerID}"
-	workerList   = "/{orgID}/workers"
-	workerAssign = "/workers/service"
+	worker         = "/workers"
+	workerID       = "/{orgID}/workers/{workerID}"
+	workerList     = "/{orgID}/workers"
+	workerAssign   = "/workers/service"
+	workerUnAssign = "{orgID}/workers/{workerID}/service/{serviceID}"
 	// Services
 	service        = "/services"
 	serviceID      = "/{orgID}/services/{serviceID}"
@@ -74,7 +75,7 @@ const (
 const (
 	record     = "/records"
 	recordAdd  = "/creation"
-	recordID   = "/{recordID}"
+	recordID   = "/info/{recordID}"
 	recordList = "/list"
 	// Feedback
 	feedback   = "/feedbacks"

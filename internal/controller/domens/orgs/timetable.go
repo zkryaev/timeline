@@ -27,16 +27,9 @@ type Timetable interface {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [get]
 func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	query := map[string]bool{
-		"org_id": true,
-	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.Timetable(r.Context(), path["orgID"])
@@ -116,7 +109,7 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [delete]
 func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID")
+	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

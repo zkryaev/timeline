@@ -10,7 +10,10 @@ import (
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/repository"
 	"timeline/internal/repository/database/postgres"
+	"timeline/internal/repository/mail"
+	"timeline/internal/repository/mail/notify"
 	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/repository/mapper/recordmap"
 	"timeline/internal/repository/mapper/usermap"
 
 	"go.uber.org/zap"
@@ -21,12 +24,14 @@ var (
 )
 
 type UserUseCase struct {
-	user   repository.UserRepository
-	org    repository.OrgRepository
-	Logger *zap.Logger
+	user    repository.UserRepository
+	org     repository.OrgRepository
+	records repository.RecordRepository
+	mail    notify.Mail
+	Logger  *zap.Logger
 }
 
-func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, logger *zap.Logger) *UserUseCase {
+func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, recRepo repository.RecordRepository, logger *zap.Logger) *UserUseCase {
 	return &UserUseCase{
 		user:   userRepo,
 		org:    orgRepo,
@@ -97,4 +102,30 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) 
 		resp.Orgs = append(resp.Orgs, orgmap.OrgSummaryToDTO(v))
 	}
 	return resp, nil
+}
+
+func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
+	data, err := u.records.UpcomingRecords(ctx)
+	if err != nil {
+		u.Logger.Error(
+			"failed user update",
+			zap.Error(err),
+		)
+		return err
+	}
+	for i := range data {
+		msg := &mail.Message{
+			Email: data[i].UserEmail,
+			Type:  notify.ReminderType,
+			Value: recordmap.RecordToReminder(data[i]),
+		}
+		if err := u.mail.SendMsg(msg); err != nil {
+			u.Logger.Error(
+				"failed to notify users",
+				zap.Error(err),
+			)
+			return err
+		}
+	}
+	return nil
 }

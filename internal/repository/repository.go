@@ -61,6 +61,7 @@ type RecordRepository interface {
 	RecordAdd(ctx context.Context, req *recordmodel.Record) error
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, req *recordmodel.Record) error
+	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)
 	FeedbackRepository
 }
 
@@ -100,8 +101,8 @@ type SlotRepository interface {
 
 type ScheduleRepository interface {
 	WorkerSchedule(ctx context.Context, params *orgmodel.ScheduleParams) (*orgmodel.ScheduleList, error)
-	AddWorkerSchedule(ctx context.Context, Schedule *orgmodel.ScheduleList) error
-	UpdateWorkerSchedule(ctx context.Context, Schedule *orgmodel.ScheduleList) error
+	AddWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
+	UpdateWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
 	DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error
 }
 

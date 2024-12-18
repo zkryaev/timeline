@@ -2,12 +2,16 @@ package orgmodel
 
 import "time"
 
-type ScheduleList struct {
+type WorkerSchedule struct {
 	WorkerID        int `db:"worker_id"`
 	OrgID           int `db:"org_id"`
 	SessionDuration int `db:"session_duration"`
 	Schedule        []*Schedule
-	Found           int
+}
+
+type ScheduleList struct {
+	Workers []*WorkerSchedule
+	Found   int
 }
 
 type Schedule struct {

@@ -1,6 +1,7 @@
 package recordmodel
 
 import (
+	"time"
 	"timeline/internal/repository/models/orgmodel"
 	"timeline/internal/repository/models/usermodel"
 )
@@ -19,7 +20,7 @@ type RecordListParams struct {
 	OrgID    int  `db:"org_id"`
 	UserID   int  `db:"user_id"`
 	Reviewed bool `db:"reviewed"`
-	Fresh    int
+	Fresh    bool
 	Limit    int
 	Offset   int
 }
@@ -33,4 +34,13 @@ type RecordScrap struct {
 	Service  *orgmodel.Service
 	Worker   *orgmodel.Worker
 	Feedback *Feedback
+}
+
+type ReminderRecord struct {
+	UserEmail   string
+	OrgName     string
+	ServiceName string
+	Date        time.Time
+	Begin       time.Time
+	End         time.Time
 }

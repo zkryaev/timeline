@@ -184,7 +184,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/info/{id} [get]
 func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "id")
+	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -83,6 +83,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 	usecaseUser := usercase.New(
 		storage,
 		storage,
+		storage,
 		a.log,
 	)
 

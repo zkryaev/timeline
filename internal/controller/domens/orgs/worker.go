@@ -31,7 +31,7 @@ type Workers interface {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [get]
 func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "workerID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -132,24 +132,27 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Unassign worker from
-// @Description Assign a service to a specified worker in the specified organization
+// @Description Unassign worker from specified organization service
 // @Tags organization/workers
 // @Accept json
 // @Produce json
-// @Param   request body orgdto.AssignWorkerReq true "assignment info"
+// @Param   orgID path int true "org_id"
+// @Param   workerID path int true "worker_id"
+// @Param   serviceID path int true "service_id"
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /orgs/workers/service [delete]
+// @Router /orgs/{orgID}/workers/{workerID}/service/{serviceID} [delete]
 func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) {
-	req := &orgdto.AssignWorkerReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := o.validator.Struct(req); err != nil {
+	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID", "serviceID")
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	req := &orgdto.AssignWorkerReq{
+		ServiceID: params["serviceID"],
+		OrgID:     params["orgID"],
+		WorkerID:  params["workerID"],
 	}
 	if err := o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -169,7 +172,7 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 // @Failure 500
 // @Router /orgs/{orgID}/workers [get]
 func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -206,7 +209,7 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [delete]
 func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
-	path, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "workerID")
+	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

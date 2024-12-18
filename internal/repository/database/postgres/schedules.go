@@ -26,24 +26,25 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT 
+	// Пагинация - found
+	query := `SELECT
 			COUNT(*)
-		FROM worker_schedules
-		WHERE org_id = $1;
+		FROM workers
+		WHERE ($1 <= 0 OR worker_id = $1) 
+		AND org_id = $1
+		AND ($2 <= 0 OR worker_id = $2);
 	`
 	var found int
-	if err = tx.QueryRowxContext(ctx, query, metainfo.OrgID).Scan(&found); err != nil {
+	if err = tx.QueryRowxContext(ctx, query, metainfo.OrgID, metainfo.WorkerID).Scan(&found); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrScheduleNotFound
 		}
 		return nil, fmt.Errorf("failed to get org's service list: %w", err)
 	}
+	// Список id воркеров
 	query = `
 		SELECT 
-			worker_schedule_id,
-			weekday, 
-			start, 
-			over
+			worker_id
 		FROM worker_schedules
         WHERE ($1 <= 0 OR worker_id = $1) 
 		AND org_id = $2
@@ -51,10 +52,10 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		LIMIT $4
 		OFFSET $5;
 	`
-	schedule := make([]*orgmodel.Schedule, 0, 7) // 7 = число дней в неделе
+	workerIDList := make([]int, 0, metainfo.Limit)
 	if err = tx.SelectContext(
 		ctx,
-		&schedule,
+		&workerIDList,
 		query,
 		metainfo.WorkerID,
 		metainfo.OrgID,
@@ -64,21 +65,51 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	); err != nil {
 		return nil, err
 	}
-	scheduleList := &orgmodel.ScheduleList{
-		WorkerID: metainfo.WorkerID,
-		OrgID:    metainfo.OrgID,
-		Schedule: schedule,
-		Found:    found,
+	// Получение для каждого воркера его расписания
+	query = `
+		SELECT 
+			worker_schedule_id,
+			weekday, 
+			start, 
+			over
+		FROM worker_schedules
+        WHERE worker_id = $1 
+		AND org_id = $2
+		AND ($3 <= 0 OR weekday = $3)
+	`
+	resp := &orgmodel.ScheduleList{
+		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerIDList)),
+		Found:   found,
+	}
+	var schedule []*orgmodel.Schedule
+	for _, id := range workerIDList {
+		schedule = make([]*orgmodel.Schedule, 0, 7) // 7 = число дней в неделе
+		if err = tx.SelectContext(
+			ctx,
+			&schedule,
+			query,
+			id,
+			metainfo.OrgID,
+			metainfo.Weekday,
+		); err != nil {
+			return nil, err
+		}
+		worker := &orgmodel.WorkerSchedule{
+			WorkerID: metainfo.WorkerID,
+			OrgID:    metainfo.OrgID,
+			Schedule: schedule,
+		}
+		resp.Workers = append(resp.Workers, worker)
 	}
 	if tx.Commit() != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return scheduleList, nil
+	return resp, nil
 }
 
 // Добавить для указанного рабонтика расписание на 1 день - неделю
 // Обновляет длительность сеанса работника
-func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel.ScheduleList) error {
+func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel.WorkerSchedule) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -138,7 +169,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 }
 
 // Обновление расписания работника на всю неделю
-func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmodel.ScheduleList) error {
+func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmodel.WorkerSchedule) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)

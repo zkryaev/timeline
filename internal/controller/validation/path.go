@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func FetchSpecifiedID(pathsID map[string]string, specified ...string) (map[string]int, error) {
+func FetchPathID(pathsID map[string]string, specified ...string) (map[string]int, error) {
 	if len(pathsID) == 0 {
 		return nil, fmt.Errorf("nothing to parse")
 	}

@@ -47,7 +47,7 @@ func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validato
 // @Failure 500
 // @Router /orgs/info/{id} [get]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "id")
+	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

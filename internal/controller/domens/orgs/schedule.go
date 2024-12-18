@@ -13,8 +13,8 @@ import (
 
 type Schedule interface {
 	WorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error)
-	AddWorkerSchedule(ctx context.Context, schedule *orgdto.ScheduleList) error
-	UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.ScheduleList) error
+	AddWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
+	UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
 	DeleteWorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) error
 }
 
@@ -32,7 +32,7 @@ type Schedule interface {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules [get]
 func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID")
+	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -84,7 +84,7 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules/{workerID} [delete]
 func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "orgID", "workerID")
+	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -118,13 +118,13 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Description Update the schedule for a specific worker in an organization
 // @Tags organization/schedule
 // @Accept json
-// @Param   schedule body orgdto.ScheduleList true "Schedule data"
+// @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
 // @Success 200
 // @Failure 400
 // @Failure 500
 // @Router /orgs/schedules [put]
 func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	req := &orgdto.ScheduleList{}
+	req := &orgdto.WorkerSchedule{}
 	if o.json.NewDecoder(r.Body).Decode(req) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
@@ -145,13 +145,13 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Tags organization/schedule
 // @Accept json
 // @Produce json
-// @Param   schedule body orgdto.ScheduleList true "Schedule data"
+// @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
 // @Success 200
 // @Failure 400
 // @Failure 500
 // @Router /orgs/schedules [post]
 func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	req := &orgdto.ScheduleList{}
+	req := &orgdto.WorkerSchedule{}
 	if err := o.json.NewDecoder(r.Body).Decode(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

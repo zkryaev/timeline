@@ -24,7 +24,7 @@ func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int
 	data, err := o.org.ServiceWorkerList(ctx, ServiceID, OrgID)
 	if err != nil {
 		o.Logger.Error(
-			"failed to get service",
+			"failed to get worker service list",
 			zap.Error(err),
 		)
 		return nil, err

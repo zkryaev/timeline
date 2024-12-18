@@ -1,11 +1,15 @@
 package orgdto
 
-type ScheduleList struct {
+type WorkerSchedule struct {
 	WorkerID        int         `json:"worker_id"`
 	OrgID           int         `json:"org_id"`
 	SessionDuration int         `json:"session_duration,omitempty"`
 	Schedule        []*Schedule `json:"schedule"`
-	Found           int         `json:"found"`
+}
+
+type ScheduleList struct {
+	Workers []*WorkerSchedule `json:"workers"`
+	Found     int               `json:"found"`
 }
 
 type ScheduleParams struct {

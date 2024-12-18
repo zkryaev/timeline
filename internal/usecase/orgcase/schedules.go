@@ -35,7 +35,7 @@ func (o *OrgUseCase) WorkerSchedule(ctx context.Context, params *orgdto.Schedule
 	return orgmap.ScheduleListToDTO(data), nil
 }
 
-func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.ScheduleList) error {
+func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error {
 	for i := range schedule.Schedule {
 		if !workPeriodValid(schedule.Schedule[i].Start, schedule.Schedule[i].Over) {
 			o.Logger.Error(
@@ -44,7 +44,7 @@ func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.Sch
 			return fmt.Errorf("some of the provided time is incorrect")
 		}
 	}
-	if err := o.org.AddWorkerSchedule(ctx, orgmap.ScheduleListToModel(schedule)); err != nil {
+	if err := o.org.AddWorkerSchedule(ctx, orgmap.WorkerScheduleToModel(schedule)); err != nil {
 		o.Logger.Error(
 			"failed to get worker schedule",
 			zap.Error(err),
@@ -54,7 +54,7 @@ func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.Sch
 	return nil
 }
 
-func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.ScheduleList) error {
+func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error {
 	worker := &orgdto.UpdateWorkerReq{
 		WorkerID: schedule.WorkerID,
 		OrgID:    schedule.OrgID,
@@ -65,7 +65,7 @@ func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.
 	if err := o.WorkerPatch(ctx, worker); err != nil {
 		return err
 	}
-	if err := o.org.UpdateWorkerSchedule(ctx, orgmap.ScheduleListToModel(schedule)); err != nil {
+	if err := o.org.UpdateWorkerSchedule(ctx, orgmap.WorkerScheduleToModel(schedule)); err != nil {
 		o.Logger.Error(
 			"failed to get worker schedule",
 			zap.Error(err),

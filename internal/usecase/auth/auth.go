@@ -13,6 +13,7 @@ import (
 	"timeline/internal/libs/passwd"
 	"timeline/internal/libs/verification"
 	"timeline/internal/repository"
+	"timeline/internal/repository/mail"
 	"timeline/internal/repository/mail/notify"
 	"timeline/internal/repository/mapper/codemap"
 	"timeline/internal/repository/mapper/orgmap"
@@ -58,7 +59,6 @@ func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo reposi
 }
 
 func (a *AuthUseCase) Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error) {
-	// TODO: Пока так, а вообще CRON по идее будет чистить сгоревшие аккаунты
 	exp, err := a.code.AccountExpiration(ctx, req.Email, req.IsOrg)
 	if err != nil {
 		a.Logger.Error(
@@ -128,75 +128,80 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		)
 		return nil, err
 	}
-	go a.codeProccessing(&authdto.VerifyCodeReq{
-		ID:    userID,
+	a.mail.SendMsg(&mail.Message{
 		Email: req.Email,
-		Code:  code,
-		IsOrg: false,
+		Type:  notify.VerificationType,
+		Value: code,
 	})
+	// go a.codeProccessing(&authdto.VerifyCodeReq{
+	// 	ID:    userID,
+	// 	Email: req.Email,
+	// 	Code:  code,
+	// 	IsOrg: false,
+	// })
 	return &authdto.RegisterResp{Id: userID}, nil
 }
 
+// DEPRICATED
 // (Experimental)
 // Выполняет отправку кода на почту и сохранение кода в БД.
 // Чтобы не флудить логгами, отображаются только Error и Warn.
 // Error - явная ошибка либо в используемом сервисе почты, либо в БД.
 // Warn - истечение таймаута = неизвестная, неявная ошибка.
-func (a *AuthUseCase) codeProccessing(metaInfo *authdto.VerifyCodeReq) {
-	ctx, cancel := context.WithTimeout(context.Background(), SendEmailTimeout)
-	maxRetries := 2
-	retryDelay := 500 * time.Millisecond
-	done := make(chan error, 1)
-	defer close(done)
-	defer cancel()
-	go func() {
-		var err error
-		for try := maxRetries; try > 0; try-- {
-			select {
-			case <-ctx.Done():
-				err = ctx.Err()
-				return
-			default:
-				err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code)
-			}
-			if err == nil {
-				break
-			}
-			time.Sleep(retryDelay)
-		} // TODO: Что насчет error groups?
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-			return
-		default:
-			if err != nil {
-				done <- err
-				return
-			} else if err = a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err == nil {
-				done <- nil
-				return
-			} else {
-				done <- err
-				return
-			}
-		}
-	}()
-	select {
-	case <-ctx.Done():
-		a.Logger.Warn(
-			"processing code failed due to timeout",
-			zap.String("email", metaInfo.Email),
-		)
-		return
-	case err := <-done:
-		if err != nil {
-			a.Logger.Error("failed to send code to email", zap.Error(err))
-		}
-		return
-	}
-}
+// func (a *AuthUseCase) codeProccessing(metaInfo *authdto.VerifyCodeReq) {
+// 	ctx, cancel := context.WithTimeout(context.Background(), SendEmailTimeout)
+// 	maxRetries := 2
+// 	retryDelay := 500 * time.Millisecond
+// 	done := make(chan error, 1)
+// 	defer close(done)
+// 	defer cancel()
+// 	go func() {
+// 		var err error
+// 		for try := maxRetries; try > 0; try-- {
+// 			select {
+// 			case <-ctx.Done():
+// 				err = ctx.Err()
+// 				return
+// 			default:
+// 				err = a.mail.SendVerifyCode(metaInfo.Email, metaInfo.Code)
+// 			}
+// 			if err == nil {
+// 				break
+// 			}
+// 			time.Sleep(retryDelay)
+// 		}
+// 		select {
+// 		case <-ctx.Done():
+// 			err = ctx.Err()
+// 			return
+// 		default:
+// 			if err != nil {
+// 				done <- err
+// 				return
+// 			} else if err = a.code.SaveVerifyCode(ctx, codemap.ToModel(metaInfo)); err == nil {
+// 				done <- nil
+// 				return
+// 			} else {
+// 				done <- err
+// 				return
+// 			}
+// 		}
+// 	}()
+// 	select {
+// 	case <-ctx.Done():
+// 		a.Logger.Warn(
+// 			"processing code failed due to timeout",
+// 			zap.String("email", metaInfo.Email),
+// 		)
+// 		return
+// 	case err := <-done:
+// 		if err != nil {
+// 			a.Logger.Error("failed to send code to email", zap.Error(err))
+// 		}
+// 		return
+// 	}
+// }
 
-// Аналогично работе с пользователем
 func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
@@ -225,12 +230,17 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 		)
 		return nil, err
 	}
-	go a.codeProccessing(&authdto.VerifyCodeReq{
-		ID:    orgID,
+	a.mail.SendMsg(&mail.Message{
 		Email: req.Email,
-		Code:  code,
-		IsOrg: true,
+		Type:  notify.VerificationType,
+		Value: code,
 	})
+	// go a.codeProccessing(&authdto.VerifyCodeReq{
+	// 	ID:    orgID,
+	// 	Email: req.Email,
+	// 	Code:  code,
+	// 	IsOrg: true,
+	// })
 	return &authdto.RegisterResp{Id: orgID}, nil
 }
 
@@ -244,12 +254,17 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeRe
 		)
 		return
 	}
-	a.codeProccessing(&authdto.VerifyCodeReq{
-		ID:    req.ID,
+	a.mail.SendMsg(&mail.Message{
 		Email: req.Email,
-		IsOrg: req.IsOrg,
-		Code:  code,
+		Type:  notify.VerificationType,
+		Value: code,
 	})
+	// a.codeProccessing(&authdto.VerifyCodeReq{
+	// 	ID:    req.ID,
+	// 	Email: req.Email,
+	// 	IsOrg: req.IsOrg,
+	// 	Code:  code,
+	// })
 }
 
 func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {

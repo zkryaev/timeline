@@ -110,7 +110,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, ErrRecordsNotFound
 		}
-		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
+		return nil, 0, fmt.Errorf("failed to retrieve found: %w", err)
 	}
 	query = `
 		SELECT 
@@ -307,4 +307,60 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
 	return nil
+}
+
+func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		SELECT 
+		u.email AS user_email,
+		srvc.name AS service_name, 
+		o.name AS org_name,
+		s.date,
+		s.session_begin,
+		s.session_end
+	FROM records r
+	JOIN slots s ON r.slot_id = s.slot_id
+	JOIN orgs o ON r.org_id = o.org_id
+	JOIN users u ON r.user_id = u.user_id
+	JOIN services srvc ON r.service_id = srvc.service_id
+	WHERE s.date = CURRENT_DATE
+		AND CURRENT_TIME >= (session_begin::time - INTERVAL '2 hour')
+		AND CURRENT_TIME < session_begin::time;
+	`
+	recs := make([]*recordmodel.ReminderRecord, 0, 2)
+	rows, err := tx.QueryContext(ctx, query)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	rec := &recordmodel.ReminderRecord{}
+	for rows.Next() {
+		err := rows.Scan(
+			rec.ServiceName,
+			rec.OrgName,
+			rec.Date,
+			rec.Begin,
+			rec.End,
+		)
+		if err != nil {
+			return nil, err
+		}
+		recs = append(recs, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return recs, nil
 }

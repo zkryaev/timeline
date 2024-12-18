@@ -2,6 +2,7 @@ package recordmap
 
 import (
 	"timeline/internal/entity/dto/recordto"
+	"timeline/internal/repository/mail"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
 	"timeline/internal/repository/models/recordmodel"
@@ -36,6 +37,7 @@ func RecordParamsToModel(dto *recordto.RecordListParams) *recordmodel.RecordList
 		OrgID:    dto.OrgID,
 		UserID:   dto.UserID,
 		Reviewed: dto.Reviewed,
+		Fresh:    dto.Fresh,
 	}
 }
 
@@ -58,4 +60,13 @@ func RecordListToDTO(model []*recordmodel.RecordScrap) []*recordto.RecordScrap {
 		list = append(list, RecordScrapToDTO(v))
 	}
 	return list
+}
+
+func RecordToReminder(model *recordmodel.ReminderRecord) *mail.ReminderFields {
+	return &mail.ReminderFields{
+		Organization: model.OrgName,
+		Service:      model.ServiceName,
+		SessionDate:  model.Date.Format("01-01-2001"),
+		SessionTime:  model.Begin.Format("15:04") + model.End.Format("15:04"),
+	}
 }

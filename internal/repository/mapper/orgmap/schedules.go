@@ -6,8 +6,8 @@ import (
 	"timeline/internal/repository/models/orgmodel"
 )
 
-func ScheduleListToModel(dto *orgdto.ScheduleList) *orgmodel.ScheduleList {
-	resp := &orgmodel.ScheduleList{
+func WorkerScheduleToModel(dto *orgdto.WorkerSchedule) *orgmodel.WorkerSchedule {
+	resp := &orgmodel.WorkerSchedule{
 		WorkerID:        dto.WorkerID,
 		OrgID:           dto.OrgID,
 		SessionDuration: dto.SessionDuration,
@@ -19,16 +19,26 @@ func ScheduleListToModel(dto *orgdto.ScheduleList) *orgmodel.ScheduleList {
 	return resp
 }
 
-func ScheduleListToDTO(model *orgmodel.ScheduleList) *orgdto.ScheduleList {
-	resp := &orgdto.ScheduleList{
+func WorkerScheduleToDTO(model *orgmodel.WorkerSchedule) *orgdto.WorkerSchedule {
+	resp := &orgdto.WorkerSchedule{
 		WorkerID:        model.WorkerID,
 		OrgID:           model.OrgID,
 		SessionDuration: model.SessionDuration,
 		Schedule:        make([]*orgdto.Schedule, 0, len(model.Schedule)),
-		Found:           model.Found,
 	}
 	for _, v := range model.Schedule {
 		resp.Schedule = append(resp.Schedule, scheduleToDTO(v))
+	}
+	return resp
+}
+
+func ScheduleListToDTO(model *orgmodel.ScheduleList) *orgdto.ScheduleList {
+	resp := &orgdto.ScheduleList{
+		Workers: make([]*orgdto.WorkerSchedule, 0, len(model.Workers)),
+		Found:   model.Found,
+	}
+	for _, v := range model.Workers {
+		resp.Workers = append(resp.Workers, WorkerScheduleToDTO(v))
 	}
 	return resp
 }
@@ -46,8 +56,6 @@ func ScheduleParamsToModel(dto *orgdto.ScheduleParams) *orgmodel.ScheduleParams 
 func scheduleToModel(dto *orgdto.Schedule) *orgmodel.Schedule {
 	start, _ := time.Parse(timeFormat, dto.Start)
 	over, _ := time.Parse(timeFormat, dto.Over)
-	start = start.AddDate(2001, 0, 0) // Прибавляем 2001 год
-	over = over.AddDate(2001, 0, 0)   // Прибавляем 2001 год
 	return &orgmodel.Schedule{
 		WorkerScheduleID: dto.WorkerScheduleID,
 		Weekday:          dto.Weekday,

@@ -137,7 +137,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks/{recordID} [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchSpecifiedID(mux.Vars(r), "recordID")
+	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
