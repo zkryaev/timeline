@@ -11,7 +11,7 @@ import (
 	"timeline/internal/repository"
 	"timeline/internal/repository/database/postgres"
 	"timeline/internal/repository/mail"
-	"timeline/internal/repository/mail/notify"
+	mailentity "timeline/internal/repository/mail/entity"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/recordmap"
 	"timeline/internal/repository/mapper/usermap"
@@ -27,7 +27,7 @@ type UserUseCase struct {
 	user    repository.UserRepository
 	org     repository.OrgRepository
 	records repository.RecordRepository
-	mail    notify.Mail
+	mail    mail.Post
 	Logger  *zap.Logger
 }
 
@@ -114,10 +114,11 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
 		return err
 	}
 	for i := range data {
-		msg := &mail.Message{
-			Email: data[i].UserEmail,
-			Type:  notify.ReminderType,
-			Value: recordmap.RecordToReminder(data[i]),
+		msg := &mailentity.Message{
+			Email:    data[i].UserEmail,
+			Type:     mail.ReminderType,
+			Value:    recordmap.RecordToReminder(data[i]),
+			IsAttach: true,
 		}
 		if err := u.mail.SendMsg(msg); err != nil {
 			u.Logger.Error(

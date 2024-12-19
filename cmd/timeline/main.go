@@ -12,7 +12,7 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/libs/cronjob"
 	"timeline/internal/repository"
-	"timeline/internal/repository/mail/notify"
+	"timeline/internal/repository/mail"
 	"timeline/pkg/logger"
 
 	"github.com/joho/godotenv"
@@ -53,13 +53,13 @@ func main() {
 	defer db.Close()
 
 	// Поднимаем почтовый сервис параметрами по умолчанию
-	mail := notify.New(cfg.Mail, Logs, 0, 0, 0)
-	mail.Start()
+	post := mail.New(cfg.Mail, Logs, 0, 0, 0)
+	post.Start()
 	Logs.Info("Successfuly connected to", zap.String("Mail server", os.Getenv("MAIL_HOST")))
-	defer mail.Shutdown()
+	defer post.Shutdown()
 
 	App := app.New(cfg.App, Logs)
-	err = App.SetupControllers(cfg.Token, db, mail)
+	err = App.SetupControllers(cfg.Token, db, post)
 	if err != nil {
 		Logs.Fatal(
 			"failed setup controllers",

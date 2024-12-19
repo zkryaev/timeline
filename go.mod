@@ -24,6 +24,7 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/arran4/golang-ical v0.3.1 // indirect
 	github.com/go-co-op/gocron/v2 v2.13.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect

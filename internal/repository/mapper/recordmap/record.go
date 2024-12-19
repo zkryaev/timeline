@@ -1,8 +1,9 @@
 package recordmap
 
 import (
+	"time"
 	"timeline/internal/entity/dto/recordto"
-	"timeline/internal/repository/mail"
+	"timeline/internal/repository/mail/entity"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
 	"timeline/internal/repository/models/recordmodel"
@@ -62,11 +63,14 @@ func RecordListToDTO(model []*recordmodel.RecordScrap) []*recordto.RecordScrap {
 	return list
 }
 
-func RecordToReminder(model *recordmodel.ReminderRecord) *mail.ReminderFields {
-	return &mail.ReminderFields{
+func RecordToReminder(model *recordmodel.ReminderRecord) *entity.ReminderMsg {
+	return &entity.ReminderMsg{
 		Organization: model.OrgName,
 		Service:      model.ServiceName,
-		SessionDate:  model.Date.Format("01-01-2001"),
-		SessionTime:  model.Begin.Format("15:04") + model.End.Format("15:04"),
+		Description:  model.ServiceDescription,
+		Address:      model.OrgAddress,
+		SessionStart: time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(), model.Begin.Hour(), model.Begin.Minute(), model.Begin.Second(), model.Begin.Nanosecond(), model.Begin.UTC().Location()),
+		SessionEnd:   time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(), model.End.Hour(), model.End.Minute(), model.End.Second(), model.End.Nanosecond(), model.End.UTC().Location()),
+		SessionDate:  model.Date,
 	}
 }

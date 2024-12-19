@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"errors"
 	"strings"
-	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
@@ -14,7 +13,7 @@ import (
 	"timeline/internal/libs/verification"
 	"timeline/internal/repository"
 	"timeline/internal/repository/mail"
-	"timeline/internal/repository/mail/notify"
+	mailentity "timeline/internal/repository/mail/entity"
 	"timeline/internal/repository/mapper/codemap"
 	"timeline/internal/repository/mapper/orgmap"
 	"timeline/internal/repository/mapper/usermap"
@@ -30,23 +29,17 @@ var (
 	ErrCodeExpired        = errors.New("code expired")
 )
 
-var (
-	// Получено экспериментальным путем.
-	// Верхняя замеренная граница отправки 10 секунд, в случае сервиса gmail.com
-	SendEmailTimeout = 10 * time.Second
-)
-
 type AuthUseCase struct {
 	secret   *rsa.PrivateKey
 	user     repository.UserRepository
 	org      repository.OrgRepository
 	code     repository.CodeRepository
-	mail     notify.Mail
+	mail     mail.Post
 	TokenCfg config.Token
 	Logger   *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo repository.OrgRepository, codeRepo repository.CodeRepository, mailSrv notify.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo repository.UserRepository, orgRepo repository.OrgRepository, codeRepo repository.CodeRepository, mailSrv mail.Post, cfg config.Token, logger *zap.Logger) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
@@ -128,9 +121,9 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		)
 		return nil, err
 	}
-	a.mail.SendMsg(&mail.Message{
+	a.mail.SendMsg(&mailentity.Message{
 		Email: req.Email,
-		Type:  notify.VerificationType,
+		Type:  mail.VerificationType,
 		Value: code,
 	})
 	// go a.codeProccessing(&authdto.VerifyCodeReq{
@@ -230,9 +223,9 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 		)
 		return nil, err
 	}
-	a.mail.SendMsg(&mail.Message{
+	a.mail.SendMsg(&mailentity.Message{
 		Email: req.Email,
-		Type:  notify.VerificationType,
+		Type:  mail.VerificationType,
 		Value: code,
 	})
 	// go a.codeProccessing(&authdto.VerifyCodeReq{
@@ -254,9 +247,9 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeRe
 		)
 		return
 	}
-	a.mail.SendMsg(&mail.Message{
+	a.mail.SendMsg(&mailentity.Message{
 		Email: req.Email,
-		Type:  notify.VerificationType,
+		Type:  mail.VerificationType,
 		Value: code,
 	})
 	// a.codeProccessing(&authdto.VerifyCodeReq{

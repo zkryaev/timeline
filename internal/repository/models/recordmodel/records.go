@@ -37,10 +37,12 @@ type RecordScrap struct {
 }
 
 type ReminderRecord struct {
-	UserEmail   string
-	OrgName     string
-	ServiceName string
-	Date        time.Time
-	Begin       time.Time
-	End         time.Time
+	UserEmail          string
+	ServiceName        string
+	ServiceDescription string
+	OrgName            string
+	OrgAddress         string
+	Date               time.Time
+	Begin              time.Time
+	End                time.Time
 }

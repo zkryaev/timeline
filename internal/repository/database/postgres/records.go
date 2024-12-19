@@ -198,7 +198,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) e
 		}
 	}()
 	query := `INSERT INTO records
-		(record_id, user_id, org_id, service_id, slot_id, worker_id, reviewed)
+		(record_id, user_id, org_id, service_id, slot_id, worker_id)
 		VALUES($1, $2, $3, $4, $5, $6, $7)
 	`
 	rows, err := tx.ExecContext(
@@ -210,7 +210,6 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) e
 		req.ServiceID,
 		req.SlotID,
 		req.WorkerID,
-		req.Reviewed,
 	)
 	if err != nil {
 		return err
@@ -322,8 +321,10 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	query := `
 		SELECT 
 		u.email AS user_email,
-		srvc.name AS service_name, 
+		srvc.name AS service_name,
+		srvc.description AS service_description
 		o.name AS org_name,
+		o.address AS org_address
 		s.date,
 		s.session_begin,
 		s.session_end
@@ -345,8 +346,11 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	rec := &recordmodel.ReminderRecord{}
 	for rows.Next() {
 		err := rows.Scan(
+			rec.UserEmail,
 			rec.ServiceName,
+			rec.ServiceDescription,
 			rec.OrgName,
+			rec.OrgAddress,
 			rec.Date,
 			rec.Begin,
 			rec.End,

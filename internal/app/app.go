@@ -13,7 +13,7 @@ import (
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/libs/secret"
 	"timeline/internal/repository"
-	"timeline/internal/repository/mail/notify"
+	"timeline/internal/repository/mail"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
 	"timeline/internal/usecase/orgcase"
@@ -53,7 +53,7 @@ func (a *App) Stop(ctx context.Context) {
 	a.httpServer.Shutdown(ctx)
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Repository, mailService notify.Mail /*redis*/) error {
+func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Repository, mailService mail.Post /*redis*/) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
