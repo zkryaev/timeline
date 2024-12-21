@@ -155,8 +155,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		SELECT slot_id, worker_schedule_id, worker_id, date, (session_begin + INTERVAL '3 hours') AS session_begin, (session_end + INTERVAL '3 hours') AS session_end, busy
 		FROM slots
 		WHERE date >= CURRENT_DATE
-		AND ($1 <= 0 OR worker_id = $1)
-		AND ($2 <= 0 OR worker_schedule_id = $2);
+		AND ($1 <= 0 OR worker_id = $1);
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
 	if err := tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
