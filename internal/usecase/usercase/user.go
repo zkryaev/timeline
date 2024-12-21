@@ -118,7 +118,7 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
 			Email:    data[i].UserEmail,
 			Type:     mail.ReminderType,
 			Value:    recordmap.RecordToReminder(data[i]),
-			IsAttach: true,
+			IsAttach: false,
 		}
 		if err := u.mail.SendMsg(msg); err != nil {
 			u.Logger.Error(
