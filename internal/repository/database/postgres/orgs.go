@@ -236,7 +236,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		LIMIT $3
 		OFFSET $4;
 	`
-	orgList := make([]*orgmodel.OrgsBySearch, 0, params.Limit)
+	orgList := make([]*orgmodel.OrgsBySearch, 0, 3)
 	if err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, ErrOrgsNotFound

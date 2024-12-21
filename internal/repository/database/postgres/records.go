@@ -142,7 +142,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	LIMIT $4
 	OFFSET $5;
 	`
-	recs := make([]*recordmodel.RecordScrap, 0, 2)
+	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
 	defer rows.Close()
 	if err != nil {
