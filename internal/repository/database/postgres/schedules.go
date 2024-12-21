@@ -30,7 +30,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	query := `SELECT
 			COUNT(*)
 		FROM workers
-		WHERE ($1 <= 0 OR worker_id = $1) 
+		WHERE ($1 <= 0 OR worker_id = $1)
 		AND org_id = $1
 		AND ($2 <= 0 OR worker_id = $2);
 	`
@@ -48,8 +48,8 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		FROM workers
         WHERE ($1 <= 0 OR worker_id = $1) 
 		AND org_id = $2
-		LIMIT $4
-		OFFSET $5;
+		LIMIT $3
+		OFFSET $4;
 	`
 	workerList := make([]struct {
 		WorkerID        int `db:"worker_id"`
@@ -61,7 +61,6 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		query,
 		metainfo.WorkerID,
 		metainfo.OrgID,
-		metainfo.Weekday,
 		metainfo.Limit,
 		metainfo.Offset,
 	); err != nil {
@@ -77,7 +76,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		FROM worker_schedules
         WHERE worker_id = $1 
 		AND org_id = $2
-		AND ($3 <= 0 OR weekday = $3)
+		AND ($3 <= 0 OR weekday = $3);
 	`
 	resp := &orgmodel.ScheduleList{
 		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerList)),

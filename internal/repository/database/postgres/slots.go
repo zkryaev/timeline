@@ -151,6 +151,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 			tx.Rollback()
 		}
 	}()
+	// TODO: исправить отправляется по UTC
 	query := `
 		SELECT slot_id, worker_schedule_id, worker_id, date, (session_begin + INTERVAL '3 hours') AS session_begin, (session_end + INTERVAL '3 hours') AS session_end, busy
 		FROM slots
