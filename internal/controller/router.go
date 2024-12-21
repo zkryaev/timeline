@@ -67,8 +67,8 @@ const (
 	scheduleDelete  = "/{orgID}/schedules/{workerID}"
 
 	// Slots
-	slots       = "/slots"
-	slotsWorker = "{orgID}/slots/{workerID}"
+	slots       = "/{orgID}/slots"
+	slotsWorker = "/{orgID}/slots/workers/{workerID}"
 )
 
 // Record

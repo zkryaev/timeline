@@ -23,7 +23,7 @@ type Slots interface {
 // @Success 200 {array} orgdto.SlotResp
 // @Failure 400
 // @Failure 500
-// @Router /orgs/{orgID}/slots/{workerID} [get]
+// @Router /orgs/{orgID}/slots/workers/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 	params, err := validation.FetchPathID(mux.Vars(r), "workerID", "orgID")
 	if err != nil {
@@ -56,7 +56,7 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /orgs/slots [put]
+// @Router /orgs/{orgID}/slots [put]
 func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.SlotUpdate{}
 	if o.json.NewDecoder(r.Body).Decode(req) != nil {
