@@ -58,7 +58,7 @@ type OrgRepository interface {
 type RecordRepository interface {
 	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
 	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error)
-	RecordAdd(ctx context.Context, req *recordmodel.Record) error
+	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, error)
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, req *recordmodel.Record) error
 	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)

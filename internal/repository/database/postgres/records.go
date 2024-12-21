@@ -27,27 +27,27 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 	}()
 	query := `
 		SELECT 
-		srvc.name AS service_name, 
-		srvc.cost, 
-		w.first_name AS worker_first_name, 
-		w.last_name AS worker_last_name, 
-		o.name AS org_name,
-		u.first_name AS user_first_name,
-		u.last_name AS user_last_name, 
-		s.date,
-		s.session_begin,
-		s.session_end,
-		f.stars,
-		f.feedback,
-		r.reviewed
-	FROM records r
-	JOIN slots s ON r.slot_id = s.slot_id
-	JOIN orgs o ON r.org_id = o.org_id
-	JOIN users u ON r.user_id = u.user_id
-	JOIN services srvc ON r.service_id = srvc.service_id
-	JOIN workers w ON r.worker_id = w.worker_id
-	LEFT JOIN feedbacks f ON r.record_id = f.record_id
-	WHERE r.record_id = $1;
+			srvc.name AS service_name, 
+			srvc.cost, 
+			w.first_name AS worker_first_name, 
+			w.last_name AS worker_last_name, 
+			o.name AS org_name,
+			u.first_name AS user_first_name,
+			u.last_name AS user_last_name, 
+			s.date,
+			s.session_begin,
+			s.session_end,
+			f.stars,
+			f.feedback,
+			r.reviewed
+		FROM records r
+		JOIN slots s ON r.slot_id = s.slot_id
+		JOIN orgs o ON r.org_id = o.org_id
+		JOIN users u ON r.user_id = u.user_id
+		JOIN services srvc ON r.service_id = srvc.service_id
+		JOIN workers w ON r.worker_id = w.worker_id
+		LEFT JOIN feedbacks f ON r.record_id = f.record_id
+		WHERE r.record_id = $1;
 	`
 	rec := &recordmodel.RecordScrap{
 		RecordID: recordID,
@@ -91,19 +91,20 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			tx.Rollback()
 		}
 	}()
-	query := `SELECT
-		COUNT(*)
-	FROM records r
-	JOIN slots s ON r.slot_id = s.slot_id
-	JOIN orgs o ON r.org_id = o.org_id
-	JOIN users u ON r.user_id = u.user_id
-	JOIN services srvc ON r.service_id = srvc.service_id
-	JOIN workers w ON r.worker_id = w.worker_id
-	LEFT JOIN feedbacks f ON r.record_id = f.record_id
-	WHERE ($1 <= 0 OR r.user_id = $1)
-	AND ($2 <= 0 OR r.org_id = $2)
-	AND ($3 = true AND date >= CURRENT_DATE) 
-    OR ($3 = false AND date < CURRENT_DATE);
+	query := `
+		SELECT
+			COUNT(*)
+		FROM records r
+		JOIN slots s ON r.slot_id = s.slot_id
+		JOIN orgs o ON r.org_id = o.org_id
+		JOIN users u ON r.user_id = u.user_id
+		JOIN services srvc ON r.service_id = srvc.service_id
+		JOIN workers w ON r.worker_id = w.worker_id
+		LEFT JOIN feedbacks f ON r.record_id = f.record_id
+		WHERE ($1 <= 0 OR r.user_id = $1)
+		AND ($2 <= 0 OR r.org_id = $2)
+		AND ($3 = true AND date >= CURRENT_DATE) 
+		OR ($3 = false AND date < CURRENT_DATE);
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, req.UserID, req.OrgID, req.Fresh).Scan(&found); err != nil {
@@ -114,33 +115,33 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	}
 	query = `
 		SELECT 
-		srvc.name AS service_name, 
-		srvc.cost, 
-		w.first_name AS worker_first_name, 
-		w.last_name AS worker_last_name, 
-		o.name AS org_name,
-		u.first_name AS user_first_name,
-		u.last_name AS user_last_name, 
-		s.date,
-		s.session_begin,
-		s.session_end,
-		f.stars,
-		f.feedback,
-		r.reviewed,
-		r.record_id
-	FROM records r
-	JOIN slots s ON r.slot_id = s.slot_id
-	JOIN orgs o ON r.org_id = o.org_id
-	JOIN users u ON r.user_id = u.user_id
-	JOIN services srvc ON r.service_id = srvc.service_id
-	JOIN workers w ON r.worker_id = w.worker_id
-	LEFT JOIN feedbacks f ON r.record_id = f.record_id
-	WHERE ($1 <= 0 OR r.user_id = $1)
-	AND ($2 <= 0 OR r.org_id = $2)
-	AND ($3 = true AND date >= CURRENT_DATE) 
-    OR ($3 = false AND date < CURRENT_DATE)
-	LIMIT $4
-	OFFSET $5;
+			srvc.name AS service_name, 
+			srvc.cost, 
+			w.first_name AS worker_first_name, 
+			w.last_name AS worker_last_name, 
+			o.name AS org_name,
+			u.first_name AS user_first_name,
+			u.last_name AS user_last_name, 
+			s.date,
+			s.session_begin,
+			s.session_end,
+			f.stars,
+			f.feedback,
+			r.reviewed,
+			r.record_id
+		FROM records r
+		JOIN slots s ON r.slot_id = s.slot_id
+		JOIN orgs o ON r.org_id = o.org_id
+		JOIN users u ON r.user_id = u.user_id
+		JOIN services srvc ON r.service_id = srvc.service_id
+		JOIN workers w ON r.worker_id = w.worker_id
+		LEFT JOIN feedbacks f ON r.record_id = f.record_id
+		WHERE ($1 <= 0 OR r.user_id = $1)
+		AND ($2 <= 0 OR r.org_id = $2)
+		AND ($3 = true AND date >= CURRENT_DATE) 
+		OR ($3 = false AND date < CURRENT_DATE)
+		LIMIT $4
+		OFFSET $5;
 	`
 	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
@@ -187,10 +188,10 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	return recs, found, nil
 }
 
-func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) error {
+func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -212,17 +213,38 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) e
 		req.WorkerID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if rows != nil {
 		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
+			return nil, fmt.Errorf("no rows inserted")
 		}
 	}
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit tx: %w", err)
+	query = `
+		SELECT 
+			u.email AS user_email,
+			srvc.name AS service_name,
+			srvc.description AS service_description
+			o.name AS org_name,
+			o.address AS org_address
+			s.date,
+			s.session_begin,
+			s.session_end
+		FROM records r
+		JOIN slots s ON r.slot_id = s.slot_id
+		JOIN orgs o ON r.org_id = o.org_id
+		JOIN users u ON r.user_id = u.user_id
+		JOIN services srvc ON r.service_id = srvc.service_id
+		WHERE record_id = $1;
+	`
+	record := &recordmodel.ReminderRecord{}
+	if err := tx.QueryRowContext(ctx, query, req.RecordID).Scan(record); err != nil {
+		return nil, err
 	}
-	return nil
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return record, nil
 }
 
 func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record) error {
@@ -320,20 +342,20 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	}()
 	query := `
 		SELECT 
-		u.email AS user_email,
-		srvc.name AS service_name,
-		srvc.description AS service_description
-		o.name AS org_name,
-		o.address AS org_address
-		s.date,
-		s.session_begin,
-		s.session_end
-	FROM records r
-	JOIN slots s ON r.slot_id = s.slot_id
-	JOIN orgs o ON r.org_id = o.org_id
-	JOIN users u ON r.user_id = u.user_id
-	JOIN services srvc ON r.service_id = srvc.service_id
-	WHERE s.date = CURRENT_DATE
+			u.email AS user_email,
+			srvc.name AS service_name,
+			srvc.description AS service_description
+			o.name AS org_name,
+			o.address AS org_address
+			s.date,
+			s.session_begin,
+			s.session_end
+		FROM records r
+		JOIN slots s ON r.slot_id = s.slot_id
+		JOIN orgs o ON r.org_id = o.org_id
+		JOIN users u ON r.user_id = u.user_id
+		JOIN services srvc ON r.service_id = srvc.service_id
+		WHERE s.date = CURRENT_DATE
 		AND CURRENT_TIME >= (session_begin::time - INTERVAL '2 hour')
 		AND CURRENT_TIME < session_begin::time;
 	`

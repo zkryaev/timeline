@@ -14,6 +14,8 @@ require (
 )
 
 require (
+	github.com/arran4/golang-ical v0.3.1
+	github.com/go-co-op/gocron/v2 v2.13.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/jmoiron/sqlx v1.4.0
@@ -24,8 +26,6 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/arran4/golang-ical v0.3.1 // indirect
-	github.com/go-co-op/gocron/v2 v2.13.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect

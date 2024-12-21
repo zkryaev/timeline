@@ -4,6 +4,8 @@ import (
 	"context"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/repository"
+	"timeline/internal/repository/mail"
+	"timeline/internal/repository/mail/entity"
 	"timeline/internal/repository/mapper/recordmap"
 
 	"go.uber.org/zap"
@@ -13,6 +15,7 @@ type RecordUseCase struct {
 	users   repository.UserRepository
 	orgs    repository.OrgRepository
 	records repository.RecordRepository
+	mail    mail.Post
 	Logger  *zap.Logger
 }
 
@@ -54,13 +57,20 @@ func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordL
 }
 
 func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) error {
-	if err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec)); err != nil {
+	record, err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec))
+	if err != nil {
 		r.Logger.Error(
 			"failed to add record",
 			zap.Error(err),
 		)
 		return err
 	}
+	r.mail.SendMsg(&entity.Message{
+		Email:    record.UserEmail,
+		Type:     mail.ReminderType,
+		Value:    recordmap.RecordToReminder(record),
+		IsAttach: true,
+	})
 	return nil
 }
 
