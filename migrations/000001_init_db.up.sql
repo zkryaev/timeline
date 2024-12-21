@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS users_verify (
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS orgs (
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS timetables (
@@ -56,13 +58,15 @@ CREATE TABLE IF NOT EXISTS orgs_verify (
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
 
+# Мягкое удаление связанных таблиц
 CREATE TABLE IF NOT EXISTS services (
     service_id SERIAL PRIMARY KEY,
     org_id INT,
     name VARCHAR(300) NOT NULL,
     cost NUMERIC(15,2) NOT NULL,
     description VARCHAR(400),
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
+    is_delete BOOLEAN DEFAULT FALSE
 );
 CREATE TABLE IF NOT EXISTS workers (
     worker_id SERIAL PRIMARY KEY,
@@ -72,7 +76,8 @@ CREATE TABLE IF NOT EXISTS workers (
     position VARCHAR(300),
     session_duration INT,
     degree VARCHAR(300),
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
+    is_delete BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS worker_services (
@@ -80,7 +85,8 @@ CREATE TABLE IF NOT EXISTS worker_services (
     service_id INT,
     PRIMARY KEY (worker_id, service_id),
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
-    FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE
+    FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE,
+    is_delete BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS worker_schedules (
@@ -92,7 +98,8 @@ CREATE TABLE IF NOT EXISTS worker_schedules (
     over TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
-    CONSTRAINT unique_worker_weekday UNIQUE (worker_id, weekday)
+    CONSTRAINT unique_worker_weekday UNIQUE (worker_id, weekday),
+    is_delete BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS slots (

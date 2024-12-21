@@ -60,7 +60,8 @@ func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*orgmod
 	query := `
 		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
-		WHERE worker_id = $1
+		WHERE is_delete = false
+		AND worker_id = $1
 		AND org_id = $2;
 	`
 	var Worker orgmodel.Worker
@@ -92,7 +93,8 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 			position = $3,
 			degree = $4,
 			session_duration = $5
-		WHERE worker_id = $6
+		WHERE is_delete = false 
+		AND worker_id = $6
 		AND org_id = $7;
 	`
 	if err = tx.QueryRowContext(ctx, query,
@@ -131,7 +133,8 @@ func (p *PostgresRepo) WorkerPatch(ctx context.Context, worker *orgmodel.Worker)
 			position = COALESCE(NULLIF($3, ''), position),
 			degree = COALESCE(NULLIF($4, ''), degree),
 			session_duration = COALESCE(NULLIF($5, 0), session_duration)
-		WHERE worker_id = $6
+		WHERE is_delete = false
+		AND worker_id = $6
 		AND org_id = $7;
 	`
 	if err = tx.QueryRowContext(ctx, query,
@@ -170,7 +173,9 @@ func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *orgm
 			w.worker_id, s.service_id
 		FROM workers w
 		JOIN services s ON w.org_id = s.org_id
-		WHERE w.worker_id = $1 
+		WHERE w.is_delete = false
+		AND s.is_delete = false
+		AND w.worker_id = $1 
 		AND s.service_id = $2
 		AND s.org_id = $3;
 	`
@@ -204,17 +209,23 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *or
 		}
 	}()
 	query := `
-		DELETE FROM worker_services
+		UPDATE worker_services
+		SET
+			is_delete = true
 		WHERE worker_id = (SELECT 
-					worker_id
-				FROM workers
-				WHERE org_id = $1
-				AND worker_id = $2)
+									worker_id
+								FROM workers
+								WHERE is_delete = false 
+								AND org_id = $1
+								AND worker_id = $2
+							)
 		AND service_id = (SELECT 
-					service_id
-				FROM services
-				WHERE org_id = $1
-				AND service_id = $3);
+									service_id
+								FROM services
+								WHERE is_delete = false 
+								AND org_id = $1
+								AND service_id = $3
+							);
 	`
 	rows, err := tx.ExecContext(ctx, query, &assignInfo.OrgID, &assignInfo.WorkerID, &assignInfo.ServiceID)
 	if err != nil {
@@ -245,7 +256,8 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int)
 	query := `SELECT 
 			COUNT(*)
 		FROM workers 
-		WHERE org_id = $1;
+		WHERE is_delete = false
+		AND org_id = $1;
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, OrgID).Scan(&found); err != nil {
@@ -257,7 +269,8 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int)
 	query = `
 		SELECT worker_id, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
-		WHERE org_id = $1
+		WHERE is_delete = false 
+		AND org_id = $1
 		LIMIT $2
 		OFFSET $3;
 	`
@@ -284,7 +297,8 @@ func (p *PostgresRepo) WorkerDelete(ctx context.Context, WorkerID, OrgID int) er
 	}()
 	query := `
 		DELETE FROM workers
-		WHERE worker_id = $1
+		WHERE AND is_delete = false
+		AND worker_id = $1
 		AND org_id = $2;
 	`
 	rows, err := tx.ExecContext(ctx, query, &WorkerID, &OrgID)

@@ -62,7 +62,8 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Serv
 			name = $1,
 			cost = $2,
 			description = $3
-		WHERE service_id = $4 
+		WHERE is_delete = false
+		AND service_id = $4 
 		AND org_id = $5;
 	`
 	if err = tx.QueryRowContext(ctx, query,
@@ -93,7 +94,8 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgm
 	query := `
 		SELECT service_id, org_id, name, cost, description
 		FROM services
-		WHERE service_id = $1
+		WHERE is_delete = false 
+		AND service_id = $1
 		AND org_id = $2;
 	`
 	var Service orgmodel.Service
@@ -120,7 +122,8 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 	query := `SELECT 
 			COUNT(*)
 		FROM services 
-		WHERE org_id = $1;
+		WHERE is_delete = false
+		AND org_id = $1;
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, OrgID).Scan(&found); err != nil {
@@ -132,7 +135,8 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 	query = `
 		SELECT service_id, org_id, name, cost, description
 		FROM services
-		WHERE org_id = $1
+		WHERE is_delete = false 
+		AND org_id = $1
 		LIMIT $2
 		OFFSET $3;
 	`
@@ -158,9 +162,11 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 		}
 	}()
 	query := `
-		DELETE 
-		FROM services
-		WHERE service_id = $1
+		UPDATE services
+		SET
+			is_delete = true
+		WHERE is_delete = false 
+		AND service_id = $1
 		AND org_id = $2;
 	`
 	rows, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
@@ -190,10 +196,14 @@ func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID i
 	}()
 	query := `SELECT worker_id, org_id, first_name, last_name, position, degree
 		FROM workers
-		WHERE worker_id IN (SELECT
-								worker_id 
-							FROM worker_services 
-							WHERE service_id = $1)
+		WHERE is_delete = false 
+		AND worker_id IN 
+		(SELECT
+				worker_id 
+			FROM worker_services 
+			WHERE is_delete = false 
+			AND service_id = $1
+		)
 		AND org_id = $2;
 	`
 	Workers := make([]*orgmodel.Worker, 0, 1)

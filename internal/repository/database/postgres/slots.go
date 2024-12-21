@@ -24,7 +24,9 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		SELECT ws.worker_schedule_id, ws.worker_id, ws.org_id, ws.weekday, ws.start, ws.over, w.session_duration, t.break_start, t.break_end
 		FROM worker_schedules ws
 		JOIN workers w ON w.worker_id = ws.worker_id
-		JOIN timetables t ON t.org_id = ws.org_id AND ws.weekday = t.weekday;
+		JOIN timetables t ON t.org_id = ws.org_id AND ws.weekday = t.weekday
+		WHERE w.is_delete = false
+		AND ws.is_delete = false;
 	`
 	workers := make([]*struct {
 		WorkerScheduleID int       `db:"worker_schedule_id"`

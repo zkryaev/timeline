@@ -73,7 +73,8 @@ func (p *PostgresRepo) OrgByEmail(ctx context.Context, email string) (*orgmodel.
 	query := `
 		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about 
 		FROM orgs
-        WHERE email = $1;
+        WHERE is_delete = false
+		AND email = $1;
 	`
 	var org orgmodel.OrgInfo
 	if err := tx.GetContext(ctx, &org, query, email); err != nil {
@@ -102,7 +103,8 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 	query := `
 		SELECT org_id, name, rating, type, city, address, telephone, lat, long, about 
 		FROM orgs
-        WHERE org_id = $1;
+        WHERE is_delete = false 
+		AND org_id = $1;
 	`
 	var org orgmodel.Organization
 	if err = tx.GetContext(ctx, &org, query, id); err != nil {
@@ -156,7 +158,8 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *orgmodel.AreaParams
 	LEFT JOIN timetables t
 		ON o.org_id = t.org_id
 		AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
-	WHERE o.lat BETWEEN $1 AND $2
+	WHERE o.is_delete = false 
+	AND o.lat BETWEEN $1 AND $2
 	AND o.long BETWEEN $3 AND $4;
 	`
 
@@ -199,7 +202,8 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	query := `SELECT 
 			COUNT(*)
 		FROM orgs 
-		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%') 
+		WHERE is_delete = false 
+		AND ($1 = '' OR name ILIKE '%' || $1 || '%') 
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
 	`
 	var found int
@@ -226,7 +230,8 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		LEFT JOIN timetables t
 		ON t.org_id = o.org_id
 		AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
-		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%')
+		WHERE o.is_delete = false
+		AND ($1 = '' OR name ILIKE '%' || $1 || '%')
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
 		LIMIT $3
 		OFFSET $4;
@@ -264,7 +269,8 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 			lat = $6,
 			long = $7,
 			about = $8
-		WHERE org_id = $9;
+		WHERE is_delete = false
+		AND org_id = $9;
 	`
 	res, err := tx.ExecContext(ctx, query,
 		new.Name,

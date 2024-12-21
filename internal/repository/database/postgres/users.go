@@ -65,7 +65,8 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.Use
 	}()
 	query := `
 		SELECT user_id, first_name, last_name, city, telephone, about FROM users
-		WHERE user_id = $1;
+		WHERE is_delete = false 
+		AND user_id = $1;
 	`
 	var user usermodel.UserInfo
 	if err = tx.GetContext(ctx, &user, query, UserID); err != nil {
@@ -97,7 +98,8 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) 
 			city = $3,
 			telephone = $4,
 			about = $5
-		WHERE user_id = $6
+		WHERE is_delete = false
+		AND user_id = $6;
 		`
 	res, err := tx.ExecContext(ctx, query,
 		new.FirstName,

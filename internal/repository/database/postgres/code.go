@@ -109,13 +109,15 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 		query = `
 		UPDATE users
 		SET verified = $1
-		WHERE user_id = $2;
+		WHERE is_delete = false 
+		AND user_id = $2;
 		`
 	case true:
 		query = `
 		UPDATE orgs
 		SET verified = $1
-		WHERE org_id = $2;
+		WHERE is_delete = false 
+		AND org_id = $2;
 		`
 	}
 	if _, err = tx.ExecContext(ctx, query, true, id); err != nil {
@@ -144,12 +146,14 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOr
 	case false:
 		query = `
         SELECT user_id, passwd_hash, created_at, verified FROM users
-        WHERE email = $1;
+        WHERE is_delete = false 
+		AND email = $1;
     	`
 	case true:
 		query = `
         SELECT org_id, passwd_hash, created_at, verified FROM orgs
-        WHERE email = $1;
+        WHERE is_delete = false
+		AND email = $1;
     	`
 	}
 

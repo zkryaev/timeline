@@ -30,7 +30,8 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	query := `SELECT
 			COUNT(*)
 		FROM workers
-		WHERE ($1 <= 0 OR worker_id = $1)
+		WHERE is_delete = false 
+		AND ($1 <= 0 OR worker_id = $1)
 		AND org_id = $1
 		AND ($2 <= 0 OR worker_id = $2);
 	`
@@ -46,7 +47,8 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		SELECT 
 			worker_id, session_duration
 		FROM workers
-        WHERE ($1 <= 0 OR worker_id = $1) 
+        WHERE is_delete = false 
+		AND ($1 <= 0 OR worker_id = $1) 
 		AND org_id = $2
 		LIMIT $3
 		OFFSET $4;
@@ -74,7 +76,8 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			start, 
 			over
 		FROM worker_schedules
-        WHERE worker_id = $1 
+        WHERE is_delete = false
+		AND worker_id = $1 
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3);
 	`
@@ -153,8 +156,9 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		UPDATE workers
 		SET
 			session_duration = COALESCE(NULLIF($1, 0), session_duration)
-		WHERE
-			worker_id = $2
+		WHERE is_delete = false
+		AND worker_id = $2
+
 	`
 	rows, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
 	if err != nil {
@@ -195,7 +199,8 @@ func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmo
 			over = $3, 
 			org_id = $4, 
 			worker_id = $5
-		WHERE worker_schedule_id = $6
+		WHERE is_delete = false
+		AND worker_schedule_id = $6
 		AND EXISTS (
 			SELECT 1
 			FROM orgschedule 
@@ -240,8 +245,11 @@ func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmo
 	}()
 
 	query := `
-		DELETE FROM worker_schedules
-		WHERE worker_id = $1
+		UPDATE worker_schedules
+		SET 
+			is_delete = true
+		WHERE is_delete = false
+		AND worker_id = $1
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3)
 	`
