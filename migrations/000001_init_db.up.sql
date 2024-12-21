@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     city VARCHAR(100) NOT NULL,
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    verified BOOLEAN DEFAULT FALSE
+    verified BOOLEAN DEFAULT FALSE,
     is_delete BOOLEAN DEFAULT FALSE
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS orgs (
     long FLOAT NOT NULL,
     about TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    verified BOOLEAN DEFAULT FALSE
+    verified BOOLEAN DEFAULT FALSE,
     is_delete BOOLEAN DEFAULT FALSE
 );
 
@@ -58,7 +58,6 @@ CREATE TABLE IF NOT EXISTS orgs_verify (
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
 
-# Мягкое удаление связанных таблиц
 CREATE TABLE IF NOT EXISTS services (
     service_id SERIAL PRIMARY KEY,
     org_id INT,

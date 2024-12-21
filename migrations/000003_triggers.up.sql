@@ -1,5 +1,4 @@
 
-# Мягкое удаление записей
 CREATE OR REPLACE FUNCTION soft_delete_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -14,7 +13,6 @@ BEFORE DELETE ON users
 FOR EACH ROW
 EXECUTE FUNCTION soft_delete_user();
 
-# DELETE orgs -> workers, services
 CREATE OR REPLACE FUNCTION soft_delete_org()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -32,7 +30,6 @@ BEFORE DELETE ON orgs
 FOR EACH ROW
 EXECUTE FUNCTION soft_delete_org();
 
-# DELETE workers -> worker_schedules, worker_services
 CREATE OR REPLACE FUNCTION soft_delete_worker()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -48,7 +45,6 @@ BEFORE DELETE ON workers
 FOR EACH ROW
 EXECUTE FUNCTION soft_delete_worker();
 
-# Мягкое удаление работников (workers) ведет к мягкому удалению в worker_schedules, worker_services
 CREATE OR REPLACE FUNCTION soft_delete_service()
 RETURNS TRIGGER AS $$
 BEGIN
