@@ -55,7 +55,7 @@ const (
 	workerID       = "/{orgID}/workers/{workerID}"
 	workerList     = "/{orgID}/workers"
 	workerAssign   = "/workers/service"
-	workerUnAssign = "{orgID}/workers/{workerID}/service/{serviceID}"
+	workerUnAssign = "/{orgID}/workers/service/{workerID}/{serviceID}"
 	// Services
 	service        = "/services"
 	serviceID      = "/{orgID}/services/{serviceID}"
@@ -68,7 +68,7 @@ const (
 
 	// Slots
 	slots       = "/slots"
-	slotsWorker = "/slots/{workerID}"
+	slotsWorker = "{orgID}/slots/{workerID}"
 )
 
 // Record
@@ -95,8 +95,8 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	r.HandleFunc(health, HealthCheck)
 
 	v1 := r.NewRoute().PathPrefix(v1).Subrouter()
-	// Auth
 	// !!!! Пока версия не продовая все ручки доступны без токенов !!!!
+	// Auth
 	authRouter := v1.NewRoute().PathPrefix(authPrefix).Subrouter()
 	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")
 	authRouter.HandleFunc(authRegisterOrg, auth.OrgRegister).Methods("POST")
@@ -133,7 +133,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	orgRouter.HandleFunc(workerID, org.Worker).Methods("GET")
 	orgRouter.HandleFunc(workerList, org.WorkerList).Methods("GET")
 	orgRouter.HandleFunc(workerAssign, org.WorkerAssignService).Methods("POST")
-	orgRouter.HandleFunc(workerAssign, org.WorkerUnAssignService).Methods("DELETE")
+	orgRouter.HandleFunc(workerUnAssign, org.WorkerUnAssignService).Methods("DELETE")
 	// Services
 	orgRouter.HandleFunc(service, org.ServiceAdd).Methods("POST")
 	orgRouter.HandleFunc(service, org.ServiceUpdate).Methods("PUT")

@@ -18,7 +18,7 @@ func (p *PostgresRepo) Timetable(ctx context.Context, OrgID int) ([]*orgmodel.Op
 		}
 	}()
 	query := `
-		SELECT weekday, open, close, break_start, break_end, org_id
+		SELECT weekday, open, close, break_start, break_end
 		FROM timetables
 		WHERE org_id = $1;
 	`

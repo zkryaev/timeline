@@ -44,18 +44,20 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	// Список id воркеров
 	query = `
 		SELECT 
-			worker_id
-		FROM worker_schedules
+			worker_id, session_duration
+		FROM workers
         WHERE ($1 <= 0 OR worker_id = $1) 
 		AND org_id = $2
-		AND ($3 <= 0 OR weekday = $3)
 		LIMIT $4
 		OFFSET $5;
 	`
-	workerIDList := make([]int, 0, metainfo.Limit)
+	workerList := make([]struct {
+		WorkerID        int `db:"worker_id"`
+		SessionDuration int `db:"session_duration"`
+	}, 0, metainfo.Limit)
 	if err = tx.SelectContext(
 		ctx,
-		&workerIDList,
+		&workerList,
 		query,
 		metainfo.WorkerID,
 		metainfo.OrgID,
@@ -78,26 +80,27 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		AND ($3 <= 0 OR weekday = $3)
 	`
 	resp := &orgmodel.ScheduleList{
-		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerIDList)),
+		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerList)),
 		Found:   found,
 	}
 	var schedule []*orgmodel.Schedule
-	for _, id := range workerIDList {
+	for _, worker := range workerList {
 		schedule = make([]*orgmodel.Schedule, 0, 7) // 7 = число дней в неделе
 		if err = tx.SelectContext(
 			ctx,
 			&schedule,
 			query,
-			id,
+			worker.WorkerID,
 			metainfo.OrgID,
 			metainfo.Weekday,
 		); err != nil {
 			return nil, err
 		}
 		worker := &orgmodel.WorkerSchedule{
-			WorkerID: metainfo.WorkerID,
-			OrgID:    metainfo.OrgID,
-			Schedule: schedule,
+			WorkerID:        metainfo.WorkerID,
+			OrgID:           metainfo.OrgID,
+			SessionDuration: worker.SessionDuration,
+			Schedule:        schedule,
 		}
 		resp.Workers = append(resp.Workers, worker)
 	}

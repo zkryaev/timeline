@@ -19,17 +19,18 @@ type Slots interface {
 // @Tags organization/slots
 // @Produce json
 // @Param   workerID path int true "worker_id"
+// @Param   orgID path int true "org_id"
 // @Success 200 {array} orgdto.SlotResp
 // @Failure 400
 // @Failure 500
-// @Router /orgs/slots/{workerID} [get]
+// @Router /orgs/{orgID}/slots/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchPathID(mux.Vars(r), "workerID")
+	params, err := validation.FetchPathID(mux.Vars(r), "workerID", "orgID")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	req := &orgdto.SlotReq{WorkerID: params["workerID"]}
+	req := &orgdto.SlotReq{WorkerID: params["workerID"], OrgID: params["orgID"]}
 	if err = o.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

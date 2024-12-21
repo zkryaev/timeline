@@ -12,6 +12,7 @@ type Slot struct {
 type SlotReq struct {
 	SlotID           int `json:"slot_id"`
 	WorkerID         int `json:"worker_id" validate:"required"`
+	OrgID            int `json:"org_id" validate:"required"`
 	WorkerScheduleID int `json:"worker_schedule_id"`
 }
 
@@ -21,8 +22,8 @@ type SlotResp struct {
 }
 
 type SlotUpdate struct {
-	SlotID           int  `json:"slot_id" validate:"required"`
-	WorkerID         int  `json:"worker_id" validate:"required"`
+	SlotID   int `json:"slot_id" validate:"required"`
+	WorkerID int `json:"worker_id" validate:"required"`
 	//WorkerScheduleID int  `json:"worker_schedule_id"`
-	Busy             bool `json:"busy" validate:"required"`
+	Busy bool `json:"busy" validate:"required"`
 }

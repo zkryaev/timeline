@@ -9,12 +9,12 @@ type WorkerSchedule struct {
 
 type ScheduleList struct {
 	Workers []*WorkerSchedule `json:"workers"`
-	Found     int               `json:"found"`
+	Found   int               `json:"found"`
 }
 
 type ScheduleParams struct {
 	WorkerID int `json:"worker_id"`
-	OrgID    int `json:"org_id"`
+	OrgID    int `json:"org_id" validate:"required"`
 	Weekday  int `json:"weekday"`
 	Limit    int
 	Page     int
