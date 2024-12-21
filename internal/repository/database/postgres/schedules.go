@@ -54,7 +54,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	workerList := make([]struct {
 		WorkerID        int `db:"worker_id"`
 		SessionDuration int `db:"session_duration"`
-	}, 0, metainfo.Limit)
+	}, 0, 3)
 	if err = tx.SelectContext(
 		ctx,
 		&workerList,
@@ -78,6 +78,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3);
 	`
+	fmt.Println(workerList)
 	resp := &orgmodel.ScheduleList{
 		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerList)),
 		Found:   found,
@@ -96,7 +97,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			return nil, err
 		}
 		worker := &orgmodel.WorkerSchedule{
-			WorkerID:        metainfo.WorkerID,
+			WorkerID:        worker.WorkerID,
 			OrgID:           metainfo.OrgID,
 			SessionDuration: worker.SessionDuration,
 			Schedule:        schedule,
