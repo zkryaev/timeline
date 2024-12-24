@@ -29,9 +29,8 @@ func (o *OrgUseCase) Slots(ctx context.Context, req *orgdto.SlotReq) ([]*orgdto.
 		return nil, err
 	}
 	resp := make([]*orgdto.SlotResp, 0, len(data))
-	for i, v := range data {
+	for _, v := range data {
 		resp = append(resp, orgmap.SlotToDTO(v))
-		resp[i].SlotID = v.SlotID
 	}
 	return resp, nil
 }

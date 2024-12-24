@@ -19,11 +19,12 @@ type RecordUseCase struct {
 	Logger  *zap.Logger
 }
 
-func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, recordRepo repository.RecordRepository, logger *zap.Logger) *RecordUseCase {
+func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, recordRepo repository.RecordRepository, mailRepo mail.Post, logger *zap.Logger) *RecordUseCase {
 	return &RecordUseCase{
 		users:   userRepo,
 		orgs:    orgRepo,
 		records: recordRepo,
+		mail:    mailRepo,
 		Logger:  logger,
 	}
 }

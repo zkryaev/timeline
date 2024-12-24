@@ -71,9 +71,13 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 			tx.Rollback()
 		}
 	}()
-	query := `INSERT INTO feedbacks
+	query := `
+		INSERT INTO feedbacks
 		(record_id, stars, feedback)
-		VALUES($1, $2, $3)
+		SELECT $1, $2, $3
+		FROM slots s
+		WHERE s.record_id = $1
+		AND CURRENT_TIMESTAMP >= s.session_end;
 	`
 	rows, err := tx.ExecContext(
 		ctx,
@@ -93,7 +97,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 	query = `UPDATE records
 		SET
 			reviewed = true
-		WHERE record_id = $1
+		WHERE record_id = $1;
 	`
 	rows, err = tx.ExecContext(
 		ctx,

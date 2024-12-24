@@ -128,18 +128,39 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 
 	query := `
 		WITH orgschedule AS (
-			SELECT open::time AS open_time, close::time AS close_time
+			SELECT 
+				org_id,
+				open::time AS open_time, 
+				close::time AS close_time, 
+				break_start::time AS break_start, 
+				break_end::time AS break_end
 			FROM timetables
 			WHERE weekday = $1 AND org_id = $4
 		)
-		INSERT INTO worker_schedules (weekday, start, over, org_id, worker_id)
+		INSERT INTO worker_schedules 
+			(weekday, start, over, org_id, worker_id)
 		SELECT $1, $2, $3, $4, $5
-		FROM orgschedule
-		WHERE
-			$6::time >= orgschedule.open_time 
-		AND $6::time <= orgschedule.close_time
-		AND $7::time >= orgschedule.open_time 
-		AND $7::time <= orgschedule.close_time;
+		FROM (SELECT 1) AS dummy_table
+		WHERE 
+		NOT EXISTS (
+			SELECT 1
+			FROM worker_schedules
+			WHERE is_delete = false
+			AND worker_id = $5
+			AND weekday = $1 -- правильно
+		)
+		AND EXISTS (
+			SELECT 1
+			FROM orgschedule
+			WHERE $2::time >= open_time 
+			AND $2::time <= close_time
+			AND $3::time >= open_time 
+			AND $3::time <= close_time
+			AND (
+				$3::time <= break_start OR $2::time >= break_end OR 
+				($2::time < break_start AND $3::time > break_end)
+			) 
+		)
 	`
 	for _, v := range schedule.Schedule {
 		rows, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over)

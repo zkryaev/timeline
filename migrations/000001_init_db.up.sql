@@ -46,8 +46,7 @@ CREATE TABLE IF NOT EXISTS timetables (
     close TIMESTAMP NOT NULL,
     break_start TIMESTAMP NOT NULL,
     break_end TIMESTAMP NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
-    CONSTRAINT unique_org_weekday UNIQUE(org_id, weekday)
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS orgs_verify (
@@ -115,7 +114,7 @@ CREATE TABLE IF NOT EXISTS slots (
 
 CREATE TABLE IF NOT EXISTS records (
     record_id SERIAL PRIMARY KEY,
-    reviewed BOOLEAN,
+    reviewed BOOLEAN DEFAULT FALSE,
     slot_id INT,
     service_id INT,
     worker_id INT,

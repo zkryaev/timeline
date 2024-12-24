@@ -70,8 +70,10 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 // @Summary Records
 // @Description Get bounded with records informations
 // @Tags Records
-// @Param   userID query int true "user_id"
-// @Param   orgID query int true "org_id"
+// @Param limit query int true "Limit the number of results"
+// @Param page query int true "Page number for pagination"
+// @Param   userID query int false "user_id"
+// @Param   orgID query int false "org_id"
 // @Param   fresh query bool false "Decide which records must be returned. True - only current & future records. False/NotGiven - olds"
 // @Success 200 {object} recordto.RecordList
 // @Failure 400
@@ -82,6 +84,8 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		"user_id": false,
 		"org_id":  false,
 		"fresh":   false,
+		"limit":   false,
+		"page":    false,
 	}
 	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
@@ -91,6 +95,8 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		"user_id": "int",
 		"org_id":  "int",
 		"fresh":   "bool",
+		"limit":   "int",
+		"page":    "int",
 	}
 	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
 	if err != nil {
@@ -101,6 +107,8 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		UserID: queryParams["user_id"].(int),
 		OrgID:  queryParams["org_id"].(int),
 		Fresh:  queryParams["fresh"].(bool),
+		Limit:  queryParams["limit"].(int),
+		Page:   queryParams["page"].(int),
 	}
 	if err := rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -151,7 +159,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /records/{recordID} [delete]
+// @Router /info/records/{recordID} [delete]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordDelete(w http.ResponseWriter, r *http.Request) {
 	params, err := validation.FetchPathID(mux.Vars(r), "recordID")

@@ -39,6 +39,8 @@ func RecordParamsToModel(dto *recordto.RecordListParams) *recordmodel.RecordList
 		UserID:   dto.UserID,
 		Reviewed: dto.Reviewed,
 		Fresh:    dto.Fresh,
+		Limit:    dto.Limit,
+		Offset:   (dto.Page - 1) * dto.Limit,
 	}
 }
 

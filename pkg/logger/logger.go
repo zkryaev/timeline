@@ -24,6 +24,7 @@ func New(env string) *zap.Logger {
 	LogsPath := envars.GetPath("LOGS_PATH")
 	OutputPaths := []string{"stdout"}
 	if _, err := os.Stat(LogsPath); err == nil {
+		
 		OutputPaths = append(OutputPaths, LogsPath)
 	} else {
 		log.Println("Warn:", "wrong path to logs.txt")

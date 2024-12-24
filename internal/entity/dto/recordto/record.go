@@ -20,6 +20,8 @@ type RecordListParams struct {
 	UserID   int  `json:"user_id"`
 	Fresh    bool `json:"fresh"`
 	Reviewed bool `json:"reviewed"`
+	Limit    int  `json:"limit"`
+	Page     int  `json:"page"`
 }
 
 type RecordScrap struct {

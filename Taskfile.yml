@@ -6,8 +6,8 @@ vars:
   ENTRYPOINT: ./cmd/timeline/
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
-  SWAGGER_DOCS: ./docs/swagger
   SWAGGER_SRC: ./cmd/timeline/main.go
+  SWAGGER_OUT: ./docs/swagger
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   MIGRATION_PATH: ./migrations
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
@@ -67,10 +67,10 @@ tasks:
     cmds:
       - docker-compose down
 
-  gen-api:
+  swagger:
     desc: "Generate Swagger docs"
     cmds:
-      - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_DOCS}}
+      - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_OUT}}
 
   lint:
     desc: "Run GolangCI-Lint and save output to file"
@@ -105,4 +105,4 @@ tasks:
   default:
     desc: "Default task - runs Swagger generation"
     cmds:
-      - task: gen-api
+      - task: swagger

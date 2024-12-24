@@ -53,6 +53,7 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Tags organization/slots
 // @Accept json
 // @Param   request body orgdto.SlotUpdate true "slots info"
+// @Param   orgID path int true "org_id"
 // @Success 200
 // @Failure 400
 // @Failure 500

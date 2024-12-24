@@ -103,8 +103,11 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
 		WHERE ($1 <= 0 OR r.user_id = $1)
 		AND ($2 <= 0 OR r.org_id = $2)
-		AND ($3 = true AND date >= CURRENT_DATE) 
-		OR ($3 = false AND date < CURRENT_DATE);
+		AND ( 
+				($3 = TRUE AND s.date >= CURRENT_DATE) 
+				OR 
+				($3 = FALSE AND s.date < CURRENT_DATE)   
+			);
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, req.UserID, req.OrgID, req.Fresh).Scan(&found); err != nil {
@@ -138,14 +141,16 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
 		WHERE ($1 <= 0 OR r.user_id = $1)
 		AND ($2 <= 0 OR r.org_id = $2)
-		AND ($3 = true AND date >= CURRENT_DATE) 
-		OR ($3 = false AND date < CURRENT_DATE)
+		AND ( 
+				($3 = TRUE AND s.date >= CURRENT_DATE) 
+				OR 
+				($3 = FALSE AND s.date < CURRENT_DATE)   
+			)
 		LIMIT $4
 		OFFSET $5;
 	`
 	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
-	defer rows.Close()
 	if err != nil {
 		return nil, 0, err
 	}
@@ -158,6 +163,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		Feedback: &recordmodel.Feedback{},
 	}
 	for rows.Next() {
+		fmt.Println("Entered")
 		err := rows.Scan(
 			&rec.Service.Name,
 			&rec.Service.Cost,
@@ -198,35 +204,34 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 			tx.Rollback()
 		}
 	}()
-	query := `INSERT INTO records
-		(record_id, user_id, org_id, service_id, slot_id, worker_id)
-		VALUES($1, $2, $3, $4, $5, $6, $7)
+	query := `
+		INSERT INTO records
+			(user_id, org_id, service_id, slot_id, worker_id)
+		SELECT $1, $2, $3, $4, $5
+		FROM slots s
+		WHERE s.slot_id = $4
+		AND s.busy = FALSE
+		RETURNING record_id;
 	`
-	rows, err := tx.ExecContext(
+	var recordID int
+	if err = tx.QueryRowContext(
 		ctx,
 		query,
-		req.RecordID,
 		req.UserID,
 		req.OrgID,
 		req.ServiceID,
 		req.SlotID,
 		req.WorkerID,
-	)
-	if err != nil {
+	).Scan(&recordID); err != nil {
 		return nil, err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return nil, fmt.Errorf("no rows inserted")
-		}
 	}
 	query = `
 		SELECT 
 			u.email AS user_email,
 			srvc.name AS service_name,
-			srvc.description AS service_description
+			srvc.description AS service_description,
 			o.name AS org_name,
-			o.address AS org_address
+			o.address AS org_address,
 			s.date,
 			s.session_begin,
 			s.session_end
@@ -235,10 +240,19 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		JOIN orgs o ON r.org_id = o.org_id
 		JOIN users u ON r.user_id = u.user_id
 		JOIN services srvc ON r.service_id = srvc.service_id
-		WHERE record_id = $1;
+		WHERE r.record_id = $1;
 	`
 	record := &recordmodel.ReminderRecord{}
-	if err := tx.QueryRowContext(ctx, query, req.RecordID).Scan(record); err != nil {
+	if err := tx.QueryRowContext(ctx, query, recordID).Scan(
+		&record.UserEmail,
+		&record.ServiceName,
+		&record.ServiceDescription,
+		&record.OrgName,
+		&record.OrgAddress,
+		&record.Date,
+		&record.Begin,
+		&record.End,
+	); err != nil {
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -303,7 +317,7 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 		}
 	}()
 	query := `DELETE FROM records
-		WHERE record_id 
+		WHERE record_id
 		IN (SELECT r.record_id
 			FROM records r
 			JOIN slots s ON r.slot_id = s.slot_id AND r.record_id = $1
