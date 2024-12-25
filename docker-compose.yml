@@ -9,20 +9,39 @@ services:
         POSTGRES_PASSWORD: ${DB_PASSWD}
         POSTGRES_DB: ${DB_NAME}
       ports:
-        - "${DB_PORT}:5432"         
+        - "${DB_PORT}:${DB_PORT}"         
       #volumes:
       #  - ./db_init_user/:/docker-entrypoint-initdb.d/ 
       # - pgdata:/var/lib/postgresql/data
       networks:
         - default
       healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+        test: ["CMD-SHELL", "pg_isready -h localhost -p ${DB_PORT} -U ${DB_USER}"]
         interval: 10s        
         timeout: 5s          
         retries: 5
-
-#volumes:
+    minio:
+      image: minio/minio:latest
+      container_name: minio
+      ports:
+        - "9000:9000" # Порт для доступа к API MinIO
+        - "9001:9001" # Порт для веб-интерфейса MinIO Console
+      environment:
+        MINIO_ROOT_USER: ${S3_ROOT_USER}
+        MINIO_ROOT_PASSWORD: ${S3_ROOT_PASSWORD}
+        MINIO_CACHE_EXPIRY: ${MINIO_CACHE_TTL}
+        MINIO_USE_SSL: ${MINIO_USE_SSL}
+        MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKETS}
+        MINIO_CACHE: /mnt/minio_cache
+      volumes:
+        - minio_data:/data # Хранилище данных MinIO
+        - minio_config:/root/.minio # Конфигурационные файлы MinIO
+      command: server /data --console-address ":9001"
+volumes:
 #  pgdata:
+  minio_data:
+  minio_config:
+  minio_cache:
 
 networks:
   default:
