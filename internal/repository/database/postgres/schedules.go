@@ -147,7 +147,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 			FROM worker_schedules
 			WHERE is_delete = false
 			AND worker_id = $5
-			AND weekday = $1 -- правильно
+			AND weekday = $1
 		)
 		AND EXISTS (
 			SELECT 1

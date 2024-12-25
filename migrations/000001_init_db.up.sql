@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS users (
     is_delete BOOLEAN DEFAULT FALSE
 );
 
+CREATE TABLE IF NOT EXISTS media_users (
+    media_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    url TEXT UNIQUE NOT NULL,
+    type INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    INDEX (user_id)
+
+)
+
 CREATE TABLE IF NOT EXISTS users_verify (
     user_verify_id SERIAL PRIMARY KEY,
     user_id INT,
@@ -37,6 +47,15 @@ CREATE TABLE IF NOT EXISTS orgs (
     verified BOOLEAN DEFAULT FALSE,
     is_delete BOOLEAN DEFAULT FALSE
 );
+
+CREATE TABLE IF NOT EXISTS media_orgs (
+    media_id SERIAL PRIMARY KEY,
+    org_id INT NOT NULL,
+    url TEXT UNIQUE NOT NULL,
+    type INT NOT NULL,
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    INDEX (org_id)
+)
 
 CREATE TABLE IF NOT EXISTS timetables (
     timetable_id SERIAL PRIMARY KEY,
@@ -66,6 +85,15 @@ CREATE TABLE IF NOT EXISTS services (
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     is_delete BOOLEAN DEFAULT FALSE
 );
+
+CREATE TABLE IF NOT EXISTS media_orgs (
+    media_id SERIAL PRIMARY KEY,
+    worker_id INT NOT NULL,
+    url TEXT UNIQUE NOT NULL,
+    type INT NOT NULL,
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
+    INDEX (worker_id)
+)
 CREATE TABLE IF NOT EXISTS workers (
     worker_id SERIAL PRIMARY KEY,
     org_id INT, 
@@ -96,7 +124,6 @@ CREATE TABLE IF NOT EXISTS worker_schedules (
     over TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
-    CONSTRAINT unique_worker_weekday UNIQUE (worker_id, weekday),
     is_delete BOOLEAN DEFAULT FALSE
 );
 
@@ -120,11 +147,12 @@ CREATE TABLE IF NOT EXISTS records (
     worker_id INT,
     user_id INT,
     org_id INT,
-    FOREIGN KEY (slot_id) REFERENCES slots(slot_id),
+    FOREIGN KEY (slot_id) UNIQUE REFERENCES slots(slot_id),
     FOREIGN KEY (service_id) REFERENCES services(service_id),
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id)
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id),
+    UNIQUE (slot_id)
 );
 
 CREATE TABLE IF NOT EXISTS feedbacks (

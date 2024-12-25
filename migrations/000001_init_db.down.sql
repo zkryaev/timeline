@@ -4,6 +4,8 @@ DROP TABLE IF EXISTS worker_services;
 DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS timetables;
 DROP TABLE IF EXISTS orgs_verify;
+DROP TABLE IF EXISTS media_users;
+DROP TABLE IF EXISTS media_orgs;
 DROP TABLE IF EXISTS users_verify;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS orgs;

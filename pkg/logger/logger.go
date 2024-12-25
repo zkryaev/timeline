@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 	"timeline/internal/libs/envars"
 
@@ -12,22 +13,35 @@ import (
 )
 
 const (
+	// Логи выводятся на консоль
 	LocalEnv = "LOCAL"
-	DevEnv   = "DEV"
-	ProdEnv  = "PROD"
+	// Логи выводятся на консоль
+	DevEnv = "DEV"
+	// Логи выводятся в файл
+	ProdEnv = "PROD"
 )
 
 func New(env string) *zap.Logger {
 	cfg := zap.Config{}
 	encoder := zapcore.EncoderConfig{}
-	// получаем путь куда сохранять логи
-	LogsPath := envars.GetPath("LOGS_PATH")
+	filepath := envars.GetPath("APP_LOGS")
 	OutputPaths := []string{"stdout"}
-	if _, err := os.Stat(LogsPath); err == nil {
-		
-		OutputPaths = append(OutputPaths, LogsPath)
+	if _, err := os.Stat(filepath); err == nil {
+		OutputPaths = append(OutputPaths, filepath)
 	} else {
-		log.Println("Warn:", "wrong path to logs.txt")
+		var timestamp string
+		log.Println("log.txt not found")
+		filename := strings.SplitAfter(filepath, "/")[len(strings.SplitAfter(filepath, "/"))-1]
+		path := strings.TrimSuffix(filepath, filename)
+		if env == ProdEnv {
+			timestamp = time.Now().Format("15:04:05_2006-01-02_")
+		}
+		_, err := os.Create(path + timestamp + filename)
+		if err != nil {
+			log.Println("couldn't create log.txt: ", err.Error())
+			os.Exit(1)
+		}
+		log.Println("log.txt has been created: ", path+filename)
 	}
 	cfg.OutputPaths = OutputPaths
 
@@ -39,8 +53,8 @@ func New(env string) *zap.Logger {
 	case LocalEnv, DevEnv:
 		encoder = zap.NewDevelopmentEncoderConfig()
 		encoder.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		encoder.EncodeTime = customTimeEncoder            // zapcore.ISO8601TimeEncoder
-		encoder.EncodeCaller = zapcore.ShortCallerEncoder // краткий вывод caller
+		encoder.EncodeTime = customTimeEncoder            
+		encoder.EncodeCaller = zapcore.ShortCallerEncoder
 
 		cfg = zap.NewDevelopmentConfig()
 		cfg.DisableStacktrace = true
