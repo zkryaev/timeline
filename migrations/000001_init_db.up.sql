@@ -17,9 +17,8 @@ CREATE TABLE IF NOT EXISTS media_users (
     user_id INT NOT NULL,
     url TEXT UNIQUE NOT NULL,
     type INT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     INDEX (user_id)
-
 )
 
 CREATE TABLE IF NOT EXISTS users_verify (
@@ -53,7 +52,7 @@ CREATE TABLE IF NOT EXISTS media_orgs (
     org_id INT NOT NULL,
     url TEXT UNIQUE NOT NULL,
     type INT NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     INDEX (org_id)
 )
 
@@ -86,12 +85,12 @@ CREATE TABLE IF NOT EXISTS services (
     is_delete BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS media_orgs (
+CREATE TABLE IF NOT EXISTS media_workers (
     media_id SERIAL PRIMARY KEY,
     worker_id INT NOT NULL,
     url TEXT UNIQUE NOT NULL,
     type INT NOT NULL,
-    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
     INDEX (worker_id)
 )
 CREATE TABLE IF NOT EXISTS workers (
