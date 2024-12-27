@@ -54,36 +54,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER soft_delete_service
-BEFORE DELETE ON services
-FOR EACH ROW
-EXECUTE FUNCTION soft_delete_service();
-
-CREATE OR REPLACE FUNCTION check_media_user_limit()
-RETURNS TRIGGER AS $$
-DECLARE
-    record_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO record_count FROM media_users WHERE user_id = NEW.user_id;
-    IF record_count >= 1 THEN
-        RAISE EXCEPTION 'The maximum number of records has been exceeded for user_id %', NEW.user_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER before_insert_media_user
-BEFORE INSERT ON media_users
-FOR EACH ROW
-EXECUTE FUNCTION check_media_user_limit();
-
 CREATE OR REPLACE FUNCTION check_media_org_limit()
 RETURNS TRIGGER AS $$
 DECLARE
     record_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO record_count FROM media_orgs WHERE org_id = NEW.org_id;
-    IF record_count >= 6 THEN
+    IF record_count >= 5 THEN
         RAISE EXCEPTION 'The maximum number of records has been exceeded for org_id %', NEW.org_id;
     END IF;
     RETURN NEW;
@@ -94,21 +71,3 @@ CREATE TRIGGER before_insert_media_orgs
 BEFORE INSERT ON media_orgs
 FOR EACH ROW
 EXECUTE FUNCTION check_media_org_limit();
-
-CREATE OR REPLACE FUNCTION check_media_worker_limit()
-RETURNS TRIGGER AS $$
-DECLARE
-    record_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO record_count FROM media_workers WHERE worker_id = NEW.worker_id;
-    IF record_count >= 1 THEN
-        RAISE EXCEPTION 'The maximum number of records has been exceeded for worker_id %', NEW.worker_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER before_insert_media_workers
-BEFORE INSERT ON media_workers
-FOR EACH ROW
-EXECUTE FUNCTION check_media_worker_limit();

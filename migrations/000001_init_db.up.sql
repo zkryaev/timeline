@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
+    uuid VARCHAR(50),
     email VARCHAR(255) UNIQUE NOT NULL,
     passwd_hash TEXT NOT NULL,
     first_name VARCHAR(255) NOT NULL,
@@ -12,15 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
     is_delete BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS media_users (
-    media_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    url TEXT UNIQUE NOT NULL,
-    type INT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    INDEX (user_id)
-)
-
 CREATE TABLE IF NOT EXISTS users_verify (
     user_verify_id SERIAL PRIMARY KEY,
     user_id INT,
@@ -31,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users_verify (
 
 CREATE TABLE IF NOT EXISTS orgs (
     org_id SERIAL PRIMARY KEY,
+    uuid VARCHAR(50),
     email VARCHAR(255) UNIQUE NOT NULL,
     passwd_hash TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -47,11 +40,9 @@ CREATE TABLE IF NOT EXISTS orgs (
     is_delete BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS media_orgs (
-    media_id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS showcase (
+    uuid VARCHAR(50) PRIMARY KEY,
     org_id INT NOT NULL,
-    url TEXT UNIQUE NOT NULL,
-    type INT NOT NULL,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     INDEX (org_id)
 )
@@ -85,16 +76,9 @@ CREATE TABLE IF NOT EXISTS services (
     is_delete BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS media_workers (
-    media_id SERIAL PRIMARY KEY,
-    worker_id INT NOT NULL,
-    url TEXT UNIQUE NOT NULL,
-    type INT NOT NULL,
-    FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
-    INDEX (worker_id)
-)
 CREATE TABLE IF NOT EXISTS workers (
     worker_id SERIAL PRIMARY KEY,
+    uuid VARCHAR(50),
     org_id INT, 
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255),
