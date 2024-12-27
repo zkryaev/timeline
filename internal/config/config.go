@@ -50,6 +50,16 @@ type Token struct {
 	RefreshTTL time.Duration `yaml:"refresh_ttl" env-default:"5m"`
 }
 
+type S3 struct {
+	Host          string `env:"S3_HOST" env-required:"true"`
+	User          string `env:"S3_ROOT_USER" env-required:"true"`
+	Password      string `env:"S3_ROOT_PASSWORD" env-required:"true"`
+	DefaultBucket string `env:"S3_DEFAULT_BUCKET" env-required:"true"`
+	DataPort      string `env:"S3_DATA_PORT" env-default:"9000"`
+	ConsolePort   string `env:"S3_CONSOLE_PORT" env-default:"9001"`
+	UseSSL        bool   `env:"S3_USE_SSL" env-default:"false"`
+}
+
 func MustLoad() Config {
 	configPath := envars.GetPath("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
