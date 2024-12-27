@@ -23,20 +23,25 @@ services:
     minio:
       image: minio/minio:latest
       container_name: minio
+      command: server /data --console-address ":9001"
       ports:
-        - "9000:9000" # Порт для доступа к API MinIO
-        - "9001:9001" # Порт для веб-интерфейса MinIO Console
+        - "${S3_DATA_PORT}:${S3_DATA_PORT}" # Порт для доступа к API MinIO
+        - "${S3_CONSOLE_PORT}:${S3_CONSOLE_PORT}" # Порт для веб-интерфейса MinIO Console
       environment:
         MINIO_ROOT_USER: ${S3_ROOT_USER}
         MINIO_ROOT_PASSWORD: ${S3_ROOT_PASSWORD}
         MINIO_CACHE_EXPIRY: ${MINIO_CACHE_TTL}
-        MINIO_USE_SSL: ${MINIO_USE_SSL}
-        MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKETS}
+        MINIO_USE_SSL: ${S3_USE_SSL}
+        MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
         MINIO_CACHE: /mnt/minio_cache
       volumes:
         - minio_data:/data # Хранилище данных MinIO
         - minio_config:/root/.minio # Конфигурационные файлы MinIO
-      command: server /data --console-address ":9001"
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+        interval: 30s
+        timeout: 20s
+        retries: 3
 volumes:
 #  pgdata:
   minio_data:
