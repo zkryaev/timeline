@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"timeline/internal/app"
 	"timeline/internal/config"
+	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/mail"
 	"timeline/internal/libs/cronjob"
-	"timeline/internal/repository"
-	"timeline/internal/repository/mail"
 	"timeline/pkg/logger"
 
 	"github.com/joho/godotenv"
@@ -37,7 +37,7 @@ func main() {
 	Logs := logger.New(cfg.App.Env)
 	Logs.Info("Application is initializing")
 
-	db, err := repository.GetDB(os.Getenv("DB"), cfg.DB)
+	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
 		Logs.Fatal("wrong db type was intered", zap.Error(err))
 	}
