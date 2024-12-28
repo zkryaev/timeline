@@ -3,7 +3,7 @@ package orgcase
 import (
 	"context"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/infrastructure/mapper/orgmap"
 
 	"go.uber.org/zap"
 )

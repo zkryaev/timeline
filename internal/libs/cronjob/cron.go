@@ -2,7 +2,7 @@ package cronjob
 
 import (
 	"context"
-	"timeline/internal/repository"
+	"timeline/internal/infrastructure"
 
 	gocron "github.com/go-co-op/gocron/v2"
 )
@@ -11,7 +11,7 @@ import (
 //   - slots: генерирует и удаляет стухшие
 //   - user_codes, org_codes: удаляет стухшие
 //   - users, orgs: удаляет стухшие
-func InitCronScheduler(db repository.Repository) gocron.Scheduler {
+func InitCronScheduler(db infrastructure.Database) gocron.Scheduler {
 	s, err := gocron.NewScheduler()
 	if err != nil {
 		panic(err.Error())
@@ -22,7 +22,7 @@ func InitCronScheduler(db repository.Repository) gocron.Scheduler {
 			gocron.NewAtTimes(gocron.NewAtTime(16, 00, 00)),
 		),
 		gocron.NewTask(
-			func(slots repository.SlotRepository) {
+			func(slots infrastructure.Slotinfrastructure) {
 				ctx := context.Background()
 				slots.DeleteExpiredSlots(ctx)
 				slots.GenerateSlots(ctx)
@@ -37,7 +37,7 @@ func InitCronScheduler(db repository.Repository) gocron.Scheduler {
 			gocron.NewAtTimes(gocron.NewAtTime(00, 00, 00)),
 		),
 		gocron.NewTask(
-			func(codes repository.CodeRepository) {
+			func(codes infrastructure.Codeinfrastructure) {
 				ctx := context.Background()
 				codes.DeleteExpiredCodes(ctx)
 			},
@@ -51,7 +51,7 @@ func InitCronScheduler(db repository.Repository) gocron.Scheduler {
 			gocron.NewAtTimes(gocron.NewAtTime(00, 00, 00)),
 		),
 		gocron.NewTask(
-			func(users repository.UserRepository, orgs repository.OrgRepository) {
+			func(users infrastructure.UserRepository, orgs infrastructure.OrgRepository) {
 				ctx := context.Background()
 				users.UserDeleteExpired(ctx)
 				orgs.OrgDeleteExpired(ctx)

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/repository/database/postgres"
-	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/infrastructure/database/postgres"
+	"timeline/internal/infrastructure/mapper/orgmap"
 
 	"go.uber.org/zap"
 )

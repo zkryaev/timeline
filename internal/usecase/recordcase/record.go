@@ -3,23 +3,23 @@ package recordcase
 import (
 	"context"
 	"timeline/internal/entity/dto/recordto"
-	"timeline/internal/repository"
-	"timeline/internal/repository/mail"
-	"timeline/internal/repository/mail/entity"
-	"timeline/internal/repository/mapper/recordmap"
+	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/mail"
+	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/models"
 
 	"go.uber.org/zap"
 )
 
 type RecordUseCase struct {
-	users   repository.UserRepository
-	orgs    repository.OrgRepository
-	records repository.RecordRepository
-	mail    mail.Post
+	users   infrastructure.UserRepository
+	orgs    infrastructure.OrgRepository
+	records infrastructure.Recordinfrastructure
+	mail    infrastructure.Mail
 	Logger  *zap.Logger
 }
 
-func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, recordRepo repository.RecordRepository, mailRepo mail.Post, logger *zap.Logger) *RecordUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.Recordinfrastructure, mailRepo infrastructure.Mail, logger *zap.Logger) *RecordUseCase {
 	return &RecordUseCase{
 		users:   userRepo,
 		orgs:    orgRepo,
@@ -66,7 +66,7 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) err
 		)
 		return err
 	}
-	r.mail.SendMsg(&entity.Message{
+	r.mail.SendMsg(&models.Message{
 		Email:    record.UserEmail,
 		Type:     mail.ReminderType,
 		Value:    recordmap.RecordToReminder(record),

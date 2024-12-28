@@ -8,13 +8,13 @@ import (
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
-	"timeline/internal/repository"
-	"timeline/internal/repository/database/postgres"
-	"timeline/internal/repository/mail"
-	mailentity "timeline/internal/repository/mail/entity"
-	"timeline/internal/repository/mapper/orgmap"
-	"timeline/internal/repository/mapper/recordmap"
-	"timeline/internal/repository/mapper/usermap"
+	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/database/postgres"
+	"timeline/internal/infrastructure/mail"
+	"timeline/internal/infrastructure/mapper/orgmap"
+	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/mapper/usermap"
+	"timeline/internal/infrastructure/models"
 
 	"go.uber.org/zap"
 )
@@ -24,14 +24,14 @@ var (
 )
 
 type UserUseCase struct {
-	user    repository.UserRepository
-	org     repository.OrgRepository
-	records repository.RecordRepository
-	mail    mail.Post
+	user    infrastructure.UserRepository
+	org     infrastructure.OrgRepository
+	records infrastructure.Recordinfrastructure
+	mail    infrastructure.Mail
 	Logger  *zap.Logger
 }
 
-func New(userRepo repository.UserRepository, orgRepo repository.OrgRepository, recRepo repository.RecordRepository, logger *zap.Logger) *UserUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.Recordinfrastructure, logger *zap.Logger) *UserUseCase {
 	return &UserUseCase{
 		user:   userRepo,
 		org:    orgRepo,
@@ -114,7 +114,7 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
 		return err
 	}
 	for i := range data {
-		msg := &mailentity.Message{
+		msg := &models.Message{
 			Email:    data[i].UserEmail,
 			Type:     mail.ReminderType,
 			Value:    recordmap.RecordToReminder(data[i]),

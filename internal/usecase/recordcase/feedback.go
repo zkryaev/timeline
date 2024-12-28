@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"timeline/internal/entity/dto/recordto"
-	"timeline/internal/repository/database/postgres"
-	"timeline/internal/repository/mapper/recordmap"
+	"timeline/internal/infrastructure/database/postgres"
+	"timeline/internal/infrastructure/mapper/recordmap"
 
 	"go.uber.org/zap"
 )

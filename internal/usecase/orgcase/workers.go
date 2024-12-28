@@ -3,7 +3,7 @@ package orgcase
 import (
 	"context"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/repository/mapper/orgmap"
+	"timeline/internal/infrastructure/mapper/orgmap"
 
 	"go.uber.org/zap"
 )
@@ -91,7 +91,7 @@ func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID, Limit, Page int) (*o
 		workerList = append(workerList, orgmap.WorkerToDTO(v))
 	}
 	resp := &orgdto.WorkerList{
-		List: workerList,
+		List:  workerList,
 		Found: found,
 	}
 	return resp, nil
