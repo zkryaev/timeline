@@ -27,6 +27,7 @@ type LoginReq struct {
 }
 
 type UserRegisterReq struct {
+	UUID string
 	Credentials
 	entity.User
 }
@@ -36,6 +37,7 @@ type RegisterResp struct {
 }
 
 type OrgRegisterReq struct {
+	UUID string
 	Credentials
 	entity.OrgInfo
 }

@@ -37,14 +37,3 @@ type OpenHours struct {
 	BreakStart string `json:"break_start,omitempty" validate:"time"`
 	BreakEnd   string `json:"break_end,omitempty" validate:"time"`
 }
-
-// type OrgAddInfo struct {
-// 	Telephone string `json:"telephone,omitempty" validate:"e164"`
-// 	Social    string `json:"social,omitempty" validate:"url"`
-// 	About     string `json:"about,omitempty" validate:"max=1000"`
-// }
-
-// type City struct {
-// 	ID   uint64 `json:"id"`
-// 	Name string `json:"name" validate:"required,min=2,max=100"`
-// }

@@ -2,6 +2,7 @@ package entity
 
 type User struct {
 	UserID    int    `json:"id,omitempty"`
+	UUID      string `json:"uuid"`
 	FirstName string `json:"first_name,omitempty" validate:"required,min=3,max=100"`
 	LastName  string `json:"last_name,omitempty" validate:"required,min=3,max=100"`
 	Telephone string `json:"telephone,omitempty" validate:"e164"`
