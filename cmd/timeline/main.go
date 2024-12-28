@@ -12,6 +12,7 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/mail"
+	"timeline/internal/infrastructure/s3"
 	"timeline/internal/libs/cronjob"
 	"timeline/pkg/logger"
 
@@ -58,8 +59,15 @@ func main() {
 	Logs.Info("Successfuly connected to", zap.String("Mail server", os.Getenv("MAIL_HOST")))
 	defer post.Shutdown()
 
+	// Подключение к S3
+	s3storage := s3.New(cfg.StorageS3)
+	if err := s3storage.Connect(); err != nil {
+		Logs.Fatal("failed to connect to S3", zap.Error(err))
+	}
+	Logs.Info("Successfully connected to S3", zap.Bool("ssl_mode", cfg.StorageS3.UseSSL))
+
 	App := app.New(cfg.App, Logs)
-	err = App.SetupControllers(cfg.Token, db, post)
+	err = App.SetupControllers(cfg.Token, db, post, s3storage)
 	if err != nil {
 		Logs.Fatal(
 			"failed setup controllers",
