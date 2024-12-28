@@ -41,11 +41,11 @@ CREATE TABLE IF NOT EXISTS orgs (
 );
 
 CREATE TABLE IF NOT EXISTS showcase (
-    uuid VARCHAR(50) PRIMARY KEY,
+    url VARCHAR(100) PRIMARY KEY,
     org_id INT NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
-    INDEX (org_id)
-)
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_showcase_org_id ON showcase (org_id);
 
 CREATE TABLE IF NOT EXISTS timetables (
     timetable_id SERIAL PRIMARY KEY,
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS records (
     worker_id INT,
     user_id INT,
     org_id INT,
-    FOREIGN KEY (slot_id) UNIQUE REFERENCES slots(slot_id),
+    FOREIGN KEY (slot_id) REFERENCES slots(slot_id),
     FOREIGN KEY (service_id) REFERENCES services(service_id),
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),

@@ -1,11 +1,11 @@
-INSERT INTO users (email, passwd_hash, first_name, last_name, telephone, city, about, verified) VALUES
-('ivan.ivanov@example.com', 'hashed_password1', 'Иван', 'Иванов', '+73431234567', 'Москва', 'Люблю путешествовать и заниматься спортом.', true),
-('elena.petrova@example.com', 'hashed_password2', 'Елена', 'Петрова', '+73431234568', 'Санкт-Петербург', 'Работаю в IT и увлекаюсь фотографией.', true),
-('sergey.sidorov@example.com', 'hashed_password3', 'Сергей', 'Сидоров', '+73431234569', 'Новосибирск', 'Инженер-электронщик с 10-летним опытом.', true);
-INSERT INTO orgs (email, passwd_hash, name, rating, type, city, address, telephone, lat, long, about, verified) VALUES
-('clinic.moscow@example.com', 'hashed_password4', 'Клиника здоровья', 4.8, 'Медицинская клиника', 'Москва', 'ул. Ленина, д. 10', '+73431234570', 55.7558, 37.6173, 'Оказываем услуги диагностики и лечения.', true),
-('gym.spb@example.com', 'hashed_password5', 'Фитнес-центр Спорт', 4.6, 'Фитнес-центр', 'Санкт-Петербург', 'пр. Невский, д. 20', '+73431234571', 59.9343, 30.3351, 'Современное оборудование и профессиональные тренеры.', true),
-('library.nsk@example.com', 'hashed_password6', 'Библиотека знаний', 4.9, 'Библиотека', 'Новосибирск', 'ул. Красный проспект, д. 5', '+73431234572', 55.0084, 82.9357, 'Крупнейшая библиотека региона с богатым фондом.', true);
+INSERT INTO users (uuid, email, passwd_hash, first_name, last_name, telephone, city, about, verified) VALUES
+('', 'ivan.ivanov@example.com', 'hashed_password1', 'Иван', 'Иванов', '+73431234567', 'Москва', 'Люблю путешествовать и заниматься спортом.', true),
+('', 'elena.petrova@example.com', 'hashed_password2', 'Елена', 'Петрова', '+73431234568', 'Санкт-Петербург', 'Работаю в IT и увлекаюсь фотографией.', true),
+('', 'sergey.sidorov@example.com', 'hashed_password3', 'Сергей', 'Сидоров', '+73431234569', 'Новосибирск', 'Инженер-электронщик с 10-летним опытом.', true);
+INSERT INTO orgs (uuid, email, passwd_hash, name, rating, type, city, address, telephone, lat, long, about, verified) VALUES
+('', 'clinic.moscow@example.com', 'hashed_password4', 'Клиника здоровья', 4.8, 'Медицинская клиника', 'Москва', 'ул. Ленина, д. 10', '+73431234570', 55.7558, 37.6173, 'Оказываем услуги диагностики и лечения.', true),
+('', 'gym.spb@example.com', 'hashed_password5', 'Фитнес-центр Спорт', 4.6, 'Фитнес-центр', 'Санкт-Петербург', 'пр. Невский, д. 20', '+73431234571', 59.9343, 30.3351, 'Современное оборудование и профессиональные тренеры.', true),
+('', 'library.nsk@example.com', 'hashed_password6', 'Библиотека знаний', 4.9, 'Библиотека', 'Новосибирск', 'ул. Красный проспект, д. 5', '+73431234572', 55.0084, 82.9357, 'Крупнейшая библиотека региона с богатым фондом.', true);
 INSERT INTO timetables (org_id, weekday, open, close, break_start, break_end) VALUES
 (1, 1, '2024-11-28 08:00:00', '2024-11-28 20:00:00', '2024-11-28 12:00:00', '2024-11-28 13:00:00'),
 (1, 2, '2024-11-28 08:00:00', '2024-11-28 20:00:00', '2024-11-28 12:00:00', '2024-11-28 13:00:00'),
@@ -19,10 +19,10 @@ INSERT INTO services (org_id, name, cost, description) VALUES
 (2, 'Персональная тренировка', 1500.00, 'Индивидуальные занятия с профессиональным тренером.'),
 (3, 'Аренда книги', 50.00, 'Почасовая аренда редких книг из библиотеки.');
 
-INSERT INTO workers (org_id, first_name, last_name, position, session_duration, degree) VALUES
-(1, 'Анна', 'Кузнецова', 'Терапевт', 60, 'Кандидат медицинских наук'),
-(2, 'Дмитрий', 'Смирнов', 'Тренер', 60, 'Мастер спорта международного класса'),
-(3, 'Мария', 'Васильева', 'Библиотекарь', 60, 'Доктор филологических наук');
+INSERT INTO workers (org_id, uuid, first_name, last_name, position, session_duration, degree) VALUES
+(1, '', 'Анна', 'Кузнецова', 'Терапевт', 60, 'Кандидат медицинских наук'),
+(2, '', 'Дмитрий', 'Смирнов', 'Тренер', 60, 'Мастер спорта международного класса'),
+(3, '', 'Мария', 'Васильева', 'Библиотекарь', 60, 'Доктор филологических наук');
 
 INSERT INTO worker_services (worker_id, service_id) VALUES
 (1, 1), -- Анна Кузнецова предоставляет услугу "Общий осмотр"
