@@ -14,6 +14,7 @@ type Config struct {
 	DB    Database
 	Mail  Mail
 	Token Token `yaml:"token"`
+	StorageS3    S3
 }
 
 type Application struct {
