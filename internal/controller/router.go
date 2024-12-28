@@ -5,6 +5,7 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/s3"
 
 	"github.com/gorilla/mux"
 )
@@ -14,6 +15,7 @@ type Controllers struct {
 	User   *users.UserCtrl
 	Org    *orgs.OrgCtrl
 	Record *records.RecordCtrl
+	S3     *s3.S3Ctrl
 }
 
 // General
@@ -82,6 +84,11 @@ const (
 	feedbackID = "/feedbacks/info"
 )
 
+// S3
+const (
+	media = "/media"
+)
+
 func InitRouter(controllersSet *Controllers) *mux.Router {
 	r := mux.NewRouter()
 
@@ -90,6 +97,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	user := controllersSet.User
 	org := controllersSet.Org
 	rec := controllersSet.Record
+	s3 := controllersSet.S3
 
 	r.Use(auth.Middleware.HandlerLogs)
 	r.HandleFunc(health, HealthCheck)
@@ -161,5 +169,10 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	recRouter.HandleFunc(feedback, rec.FeedbackUpdate).Methods("PUT")
 	recRouter.HandleFunc(feedbackID, rec.Feedbacks).Methods("GET")
 	recRouter.HandleFunc(feedbackID, rec.FeedbackDelete).Methods("DELETE")
+
+	s3Router := v1.NewRoute().Subrouter()
+	s3Router.HandleFunc(media, s3.Upload).Methods("POST")
+	s3Router.HandleFunc(media, s3.Download).Methods("GET")
+	s3Router.HandleFunc(media, s3.Delete).Methods("DELETE")
 	return r
 }

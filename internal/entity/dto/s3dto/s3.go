@@ -22,6 +22,5 @@ type File struct {
 
 type DomenInfo struct {
 	Entity   string `json:"entity"`
-	EntityID int    `json:"entityID"`
-	Type     string `json:"type"`
+	EntityID int    `json:"entity_id"`
 }

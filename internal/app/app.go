@@ -10,14 +10,15 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	s3ctrl "timeline/internal/controller/s3"
 	validation "timeline/internal/controller/validation"
+	"timeline/internal/infrastructure"
 	"timeline/internal/libs/secret"
-	"timeline/internal/repository"
-	"timeline/internal/repository/mail"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/auth/middleware"
 	"timeline/internal/usecase/orgcase"
 	"timeline/internal/usecase/recordcase"
+	s3usecase "timeline/internal/usecase/s3"
 	"timeline/internal/usecase/usercase"
 
 	jsoniter "github.com/json-iterator/go"
@@ -53,7 +54,7 @@ func (a *App) Stop(ctx context.Context) {
 	a.httpServer.Shutdown(ctx)
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Repository, mailService mail.Post /*redis*/) error {
+func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3 /*redis*/) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
@@ -108,6 +109,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		validator,
 	)
 
+	// Работа с записями
 	usecaseRecord := recordcase.New(
 		storage,
 		storage,
@@ -123,11 +125,15 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage repository.Reposit
 		validator,
 	)
 
+	// Хранилище изображений
+	s3Usecase := s3usecase.New(storage, storage, s3Service, a.log)
+	s3API := s3ctrl.New(s3Usecase, a.log, json)
 	controllerSet := &controller.Controllers{
 		Auth:   authAPI,
 		User:   userAPI,
 		Org:    orgAPI,
 		Record: recordAPI,
+		S3:     s3API,
 	}
 
 	a.httpServer.Handler = controller.InitRouter(controllerSet)
