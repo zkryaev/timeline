@@ -32,7 +32,7 @@ type OrgInfo struct {
 }
 
 type Organization struct {
-	ImagesURL []string
+	ShowcasesURL []*models.ImageMeta
 	OrgInfo
 	Timetable []*OpenHours
 }

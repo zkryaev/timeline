@@ -6,10 +6,11 @@ import (
 )
 
 type Organization struct {
-	OrgID     int `json:"id"`
-	ImagesURL []*s3dto.FileURL
-	Info      *entity.OrgInfo     `json:"info"`
-	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
+	OrgID        int                 `json:"id"`
+	UUID         string              `json:"uuid"`
+	ShowcasesURL []*s3dto.FileURL    `json:"showcases_url"`
+	Info         *entity.OrgInfo     `json:"info"`
+	Timetable    []*entity.OpenHours `json:"timetable,omitempty"`
 }
 
 type OrgUpdateReq struct {
