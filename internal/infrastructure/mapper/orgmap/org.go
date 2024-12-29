@@ -46,10 +46,10 @@ func CoordsToModel(dto *entity.Coordinates) *orgmodel.Coordinates {
 
 func OrganizationToDTO(model *orgmodel.Organization) *orgdto.Organization {
 	return &orgdto.Organization{
-		ImagesURL: mediamap.ImageUUIDToURL(model.ImagesURL...),
-		OrgID:     model.OrgID,
-		Info:      OrgInfoToEntity(&model.OrgInfo),
-		Timetable: TimetableToEntity(model.Timetable),
+		ShowcasesURL: mediamap.URLToDTO(model.ShowcasesURL),
+		OrgID:        model.OrgID,
+		Info:         OrgInfoToEntity(&model.OrgInfo),
+		Timetable:    TimetableToEntity(model.Timetable),
 	}
 }
 

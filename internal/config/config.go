@@ -10,11 +10,11 @@ import (
 )
 
 type Config struct {
-	App   Application `yaml:"app"`
-	DB    Database
-	Mail  Mail
-	Token Token `yaml:"token"`
-	StorageS3    S3
+	App       Application `yaml:"app"`
+	DB        Database
+	Mail      Mail
+	Token     Token `yaml:"token"`
+	StorageS3 S3
 }
 
 type Application struct {

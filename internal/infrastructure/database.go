@@ -50,10 +50,10 @@ type OrgRepository interface {
 	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
 	OrgDeleteExpired(ctx context.Context) error
-	OrgSaveShowcaseImageURL(ctx context.Context, orgID int, showcaseImageURL string) error
+	OrgSaveShowcaseImageURL(ctx context.Context, meta *models.ImageMeta) error
 	OrgUUID(ctx context.Context, orgID int) (string, error)
 	OrgSetUUID(ctx context.Context, orgID int, NewUUID string) error
-	OrgDeleteURL(ctx context.Context, URL string, Showcase bool) error
+	OrgDeleteURL(ctx context.Context, meta *models.ImageMeta) error
 	Timetableinfrastructure
 	Workerinfrastructure
 	Serviceinfrastructure

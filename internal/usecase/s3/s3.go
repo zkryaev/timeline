@@ -9,16 +9,18 @@ import (
 	"strings"
 	"timeline/internal/entity/dto/s3dto"
 	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/models"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 const (
-	SHOWCASE = "showcase"
-	ORG      = "org"
-	USER     = "user"
-	WORKER   = "worker"
+	GALLERY = "gallery"
+	BANNER  = "banner"
+	ORG     = "org"
+	USER    = "user"
+	WORKER  = "worker"
 )
 
 var (
@@ -58,20 +60,20 @@ func (s *S3UseCase) Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error 
 	}
 	URL := NewUUID.String()
 	// Сохраняем UUID/URL showcase
-	switch dto.Entity {
-	case ORG:
+	switch {
+	case dto.Entity == ORG:
 		if err := s.org.OrgSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
-	case USER:
+	case dto.Entity == USER:
 		if err := s.user.UserSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
-	case WORKER:
+	case dto.Entity == WORKER:
 		if err := s.org.WorkerSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
-	case SHOWCASE:
+	case (dto.Entity == GALLERY) || (dto.Entity == BANNER):
 		idStr := strconv.Itoa(dto.EntityID)
 		b := strings.Builder{}
 		b.Grow(len("org") + 1 + len(idStr) + len(URL))
@@ -80,11 +82,16 @@ func (s *S3UseCase) Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error 
 		b.WriteString("/")
 		b.WriteString(URL)
 		URL = b.String()
-		if err := s.org.OrgSaveShowcaseImageURL(ctx, dto.EntityID, URL); err != nil {
+		meta := &models.ImageMeta{
+			URL:     URL,
+			DomenID: dto.EntityID,
+			Type:    dto.Entity,
+		}
+		if err := s.org.OrgSaveShowcaseImageURL(ctx, meta); err != nil {
 			return fmt.Errorf("%s: %w", ErrSaveURL, err)
 		}
 	default:
-		return fmt.Errorf("entity doesn't exist: %s", dto.Entity)
+		return fmt.Errorf("entity \"%s\" doesn't exist", dto.Entity)
 	}
 	if err := s.minio.Upload(ctx, URL, dto.Name, dto.Size, dto.Reader); err != nil {
 		return fmt.Errorf("failed to upload file to s3: %w", err)
@@ -123,20 +130,25 @@ func (s *S3UseCase) Delete(ctx context.Context, entity string, URL string) error
 	if err := validateURL(URL); err != nil {
 		return err
 	}
-	switch entity {
-	case ORG:
-		if err := s.org.OrgDeleteURL(ctx, URL, false); err != nil {
+	meta := &models.ImageMeta{
+		URL:  URL,
+		Type: entity,
+	}
+	switch {
+	case entity == ORG:
+
+		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
 			return fmt.Errorf("%s: %w", ErrDeleting, err)
 		}
-	case SHOWCASE:
-		if err := s.org.OrgDeleteURL(ctx, URL, true); err != nil {
+	case (entity == GALLERY) || (entity == BANNER):
+		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
 			return fmt.Errorf("%s: %w", ErrDeleting, err)
 		}
-	case USER:
+	case entity == USER:
 		if err := s.user.UserDeleteURL(ctx, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrDeleting, err)
 		}
-	case WORKER:
+	case entity == WORKER:
 		if err := s.org.WorkerDeleteURL(ctx, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrDeleting, err)
 		}

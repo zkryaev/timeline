@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 
 	pgx "github.com/jackc/pgx/v5"
@@ -58,7 +59,7 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (
 	return orgID, nil
 }
 
-func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, orgID int, showcaseImageURL string) error {
+func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, meta *models.ImageMeta) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -68,10 +69,10 @@ func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, orgID int, s
 			tx.Rollback()
 		}
 	}()
-	query := `INSERT INTO showcase (url, org_id)
-		VALUES($1, $2);
+	query := `INSERT INTO showcase (url, org_id, type)
+		VALUES($1, $2, $3);
 	`
-	if _, err := tx.ExecContext(ctx, query, showcaseImageURL, orgID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID, meta.Type); err != nil {
 		return fmt.Errorf("failed to save showcase url: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
@@ -135,7 +136,7 @@ func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string
 }
 
 // Если Showcase = true, то строка удаляется, иначе uuid организации будет пустым
-func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, URL string, Showcase bool) error {
+func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -147,15 +148,15 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, URL string, Showcase bo
 	}()
 	var query string
 	var entity string
-	switch Showcase {
-	case true:
-		entity = "showcase"
-		query = `DELETE FROM showcase WHERE uuid = $1;`
-	case false:
+	switch {
+	case (meta.Type == "showcase") || (meta.Type == "banner"):
+		entity = meta.Type
+		query = `DELETE FROM showcase WHERE url = $1;`
+	default:
 		entity = "org"
 		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1;`
 	}
-	if rows, err := tx.ExecContext(ctx, query, URL); err != nil {
+	if rows, err := tx.ExecContext(ctx, query, meta.URL); err != nil {
 		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {
 			return fmt.Errorf("failed %s urls wasn't deleted: %w", entity, err)
 		}
@@ -203,11 +204,12 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
 	}
 	query = `
-		SELECT url
+		SELECT 
+			url, type
 		FROM showcase
 		WHERE org_id = $1;
 	`
-	if err := tx.SelectContext(ctx, &org.ImagesURL, query, id); err != nil {
+	if err := tx.SelectContext(ctx, &org.ShowcasesURL, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}

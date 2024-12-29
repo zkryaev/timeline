@@ -7,7 +7,7 @@ const (
 )
 
 type ImageMeta struct {
+	URL     string `db:"url"`
 	DomenID int
-	UUID    string `db:"uuid"`
-	Type    int    `db:"type"`
+	Type    string `db:"type"`
 }
