@@ -15,8 +15,8 @@ import (
 
 type respWriterCustom struct {
 	http.ResponseWriter
-	statusCode int         // Хранит статус ответа
-	header     http.Header // Заголовки ответа
+	statusCode int
+	header     http.Header
 }
 
 func (rw *respWriterCustom) WriteHeader(statusCode int) {
@@ -58,14 +58,20 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 		rw := &respWriterCustom{ResponseWriter: w}
 
 		next.ServeHTTP(rw, r)
-
+		duration := time.Since(start)
 		decodedURI, err := url.QueryUnescape(r.RequestURI)
 		if err != nil {
 			decodedURI = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
-
-		duration := time.Since(start)
-		m.logger.Info(fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.statusCode, duration))
+		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.statusCode, duration)
+		switch {
+		case rw.statusCode >= http.StatusBadRequest && rw.statusCode < http.StatusInternalServerError:
+			m.logger.Warn(logsText)
+		case rw.statusCode >= http.StatusInternalServerError:
+			m.logger.Error(logsText)
+		default:
+			m.logger.Info(logsText)
+		}
 	})
 }
 
