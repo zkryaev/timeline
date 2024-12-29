@@ -4,7 +4,7 @@ import "io"
 
 type FileURL struct {
 	URL  string `json:"url"`
-	Type int    `json:"type,omitempty"` // зарезервированное поле под блог в дальнейшем. Пока нету
+	Type string    `json:"type"` // зарезервированное поле под блог в дальнейшем. Пока нету
 }
 
 type CreateFileDTO struct {
