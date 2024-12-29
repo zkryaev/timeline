@@ -37,7 +37,7 @@ func main() {
 	//Инициализация логгера
 	Logs := logger.New(cfg.App.Env)
 	Logs.Info("Application is initializing")
-
+	defer Logs.Sync()
 	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
 		Logs.Fatal("wrong db type was intered", zap.Error(err))
