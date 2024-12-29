@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS orgs (
 
 CREATE TABLE IF NOT EXISTS showcase (
     url VARCHAR(100) PRIMARY KEY,
+    type VARCHAR(100),
     org_id INT NOT NULL,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
 );
