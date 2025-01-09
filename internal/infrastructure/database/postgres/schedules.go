@@ -152,13 +152,13 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		AND EXISTS (
 			SELECT 1
 			FROM orgschedule
-			WHERE $2::time >= open_time 
-			AND $2::time <= close_time
-			AND $3::time >= open_time 
-			AND $3::time <= close_time
+			WHERE $6::time >= open_time 
+			AND $6::time <= close_time
+			AND $7::time >= open_time 
+			AND $7::time <= close_time
 			AND (
-				$3::time <= break_start OR $2::time >= break_end OR 
-				($2::time < break_start AND $3::time > break_end)
+				$7::time <= break_start OR $6::time >= break_end OR 
+				($6::time < break_start AND $7::time > break_end)
 			) 
 		)
 	`
