@@ -71,3 +71,12 @@ CREATE TRIGGER before_insert_showcase
 BEFORE INSERT ON showcase
 FOR EACH ROW
 EXECUTE FUNCTION check_media_org_limit();
+
+CREATE OR REPLACE FUNCTION soft_delete_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE users SET is_delete = TRUE WHERE org_id = OLD.org_id;
+    DELETE FROM users_verify WHERE user_id = OLD.user_id;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
