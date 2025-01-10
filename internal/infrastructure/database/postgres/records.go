@@ -228,6 +228,17 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		return nil, err
 	}
 	query = `
+		UPDATE slots
+		SET
+			busy = true
+		WHERE 
+			slot_id = $1
+		AND busy = false;
+	`
+	if _, err := tx.ExecContext(ctx, query, req.SlotID); err != nil {
+		return nil, err
+	}
+	query = `
 		SELECT 
 			u.email AS user_email,
 			srvc.name AS service_name,
@@ -257,7 +268,6 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 	); err != nil {
 		return nil, err
 	}
-	fmt.Println(record)
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}

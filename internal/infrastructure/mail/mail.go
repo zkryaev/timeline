@@ -78,6 +78,7 @@ func (s *MailServer) SendMsg(msg *models.Message) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("sendmsg", m)
 	select {
 	case s.msgs <- m:
 		// Письмо успешно помещено в очередь
@@ -106,6 +107,7 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 	for {
 		select {
 		case msg := <-s.msgs:
+			fmt.Println("worker", msg)
 			if msg == nil {
 				continue
 			}
