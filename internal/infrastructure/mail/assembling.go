@@ -41,14 +41,17 @@ var (
 		  <span style="font-weight: bold; color: %s">Услуга:</span>
 		  <span>%%s</span>
 		</div>
-		<div style="margin-bottom: 5px;">
-		  <span style="font-weight: bold; color: %s">Время:</span>
-		  <span>%%s</span>
-		</div>
 		  <p>Ждем вас!</p>
 	  </div>
-	  `, emailFont, textColor, labelColor, labelColor, labelColor)
+	  `, emailFont, textColor, labelColor, labelColor)
 )
+
+/*
+	<div style="margin-bottom: 5px;">
+	  <span style="font-weight: bold; color: %s">Время:</span>
+	  <span>%%s</span>
+	</div>
+*/
 
 var (
 	ErrWrongMsgType = errors.New("set wrong msg type")
@@ -81,7 +84,7 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 		body = fmt.Sprintf(reminderTemplate,
 			fields.Organization,
 			fields.Service,
-			fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
+			//fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
 		)
 		if data.IsAttach {
 			icsContent = icsCreate(fields)
