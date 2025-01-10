@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"timeline/internal/app"
 	"timeline/internal/config"
@@ -28,43 +30,54 @@ import (
 func main() {
 	// Подгружаем все переменные окружения
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("No .env file found")
+		log.Fatal(".env not found!")
 	}
 
 	// Подгружаем конфиг
 	cfg := config.MustLoad()
-
+	successConnection := "Successfuly connected to"
 	//Инициализация логгера
 	Logs := logger.New(cfg.App.Env)
-	Logs.Info("Application is initializing")
+	Logs.Info("Application initializing...")
 	defer Logs.Sync()
 	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
-		Logs.Fatal("wrong db type was intered", zap.Error(err))
+		Logs.Fatal("incorrect db type", zap.Error(err))
 	}
 	err = db.Open()
 	if err != nil {
 		Logs.Fatal(
-			"failed to connect",
-			zap.String("Database", os.Getenv("DB")),
+			fmt.Sprintf("failed to connect %s", os.Getenv("DB")),
 			zap.Error(err),
 		)
 	}
-	Logs.Info("Successfuly connected to", zap.String("Database", os.Getenv("DB")))
+	Logs.Info(
+		fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")),
+		zap.String("host:port", cfg.DB.Host+":"+cfg.DB.Port),
+		zap.String("SSL", cfg.DB.SSLmode),
+	)
 	defer db.Close()
 
 	// Поднимаем почтовый сервис параметрами по умолчанию
 	post := mail.New(cfg.Mail, Logs, 0, 0, 0)
 	post.Start()
-	Logs.Info("Successfuly connected to", zap.String("Mail server", os.Getenv("MAIL_HOST")))
+	Logs.Info(
+		fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")),
+		zap.String("host:port", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
+	)
 	defer post.Shutdown()
 
 	// Подключение к S3
-	s3storage := s3.New(cfg.StorageS3)
+	s3storage := s3.New(cfg.S3)
 	if err := s3storage.Connect(); err != nil {
-		Logs.Fatal("failed to connect to S3", zap.Error(err))
+		Logs.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
 	}
-	Logs.Info("Successfully connected to S3", zap.Bool("ssl_mode", cfg.StorageS3.UseSSL))
+	Logs.Info(
+		fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")),
+		zap.String("StorageURL", cfg.S3.Host+":"+cfg.S3.DataPort),
+		zap.String("ConsoleURL", cfg.S3.Host+":"+cfg.S3.ConsolePort),
+		zap.Bool("SSL", cfg.S3.SSLmode),
+	)
 
 	App := app.New(cfg.App, Logs)
 	err = App.SetupControllers(cfg.Token, db, post, s3storage)
