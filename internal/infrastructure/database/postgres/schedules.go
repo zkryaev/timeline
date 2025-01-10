@@ -81,7 +81,6 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3);
 	`
-	fmt.Println(workerList)
 	resp := &orgmodel.ScheduleList{
 		Workers: make([]*orgmodel.WorkerSchedule, 0, len(workerList)),
 		Found:   found,
@@ -135,7 +134,8 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 				break_start::time AS break_start, 
 				break_end::time AS break_end
 			FROM timetables
-			WHERE weekday = $1 AND org_id = $4
+			WHERE weekday = $1 
+			AND org_id = $4
 		)
 		INSERT INTO worker_schedules 
 			(weekday, start, over, org_id, worker_id)
@@ -179,7 +179,6 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 			session_duration = COALESCE(NULLIF($1, 0), session_duration)
 		WHERE is_delete = false
 		AND worker_id = $2
-
 	`
 	rows, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
 	if err != nil {
