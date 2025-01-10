@@ -31,7 +31,7 @@ services:
         MINIO_ROOT_USER: ${S3_ROOT_USER}
         MINIO_ROOT_PASSWORD: ${S3_ROOT_PASSWORD}
         MINIO_CACHE_EXPIRY: ${MINIO_CACHE_TTL}
-        MINIO_USE_SSL: ${S3_USE_SSL}
+        MINIO_USE_SSL: ${S3_SSLMODE}
         MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
         MINIO_CACHE: /mnt/minio_cache
       volumes:
