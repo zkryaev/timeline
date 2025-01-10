@@ -3,11 +3,11 @@ package mail
 import (
 	"errors"
 	"fmt"
+	ics "github.com/arran4/golang-ical"
+	"gopkg.in/gomail.v2"
 	"io"
 	"time"
 	"timeline/internal/infrastructure/models"
-	ics "github.com/arran4/golang-ical"
-	"gopkg.in/gomail.v2"
 )
 
 const (

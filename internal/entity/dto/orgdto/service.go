@@ -20,6 +20,6 @@ type ServiceResp struct {
 }
 
 type ServiceList struct {
-	List []*ServiceResp `json:"service_list"`
-	Found int `json:"found"`
+	List  []*ServiceResp `json:"service_list"`
+	Found int            `json:"found"`
 }

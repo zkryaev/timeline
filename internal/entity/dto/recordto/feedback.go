@@ -8,8 +8,8 @@ type Feedback struct {
 }
 
 type FeedbackList struct {
-	List []*Feedback `json:"feedback_list"`
-	Found int `json:"found"`
+	List  []*Feedback `json:"feedback_list"`
+	Found int         `json:"found"`
 }
 
 type FeedbackParams struct {

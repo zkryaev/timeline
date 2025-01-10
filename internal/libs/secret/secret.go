@@ -9,8 +9,6 @@ import (
 	"timeline/internal/libs/envars"
 )
 
-
-
 func LoadPrivateKey() (*rsa.PrivateKey, error) {
 	pathToSecret := envars.GetPath("SECRET_PATH")
 	if pathToSecret == "" {
