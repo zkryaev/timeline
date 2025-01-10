@@ -76,6 +76,7 @@ func (s *MailServer) Shutdown() {
 func (s *MailServer) SendMsg(msg *models.Message) error {
 	m, err := letterAssembly(msg)
 	if err != nil {
+		fmt.Println("letterAssembly:", err.Error())
 		return err
 	}
 	fmt.Println("sendmsg", m)

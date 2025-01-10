@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/recordmodel"
 	"timeline/internal/infrastructure/models/usermodel"
@@ -94,7 +93,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	}()
 	query := `
 		SELECT
-			COUNT(*)
+			COUNT(record_id)
 		FROM records r
 		JOIN slots s ON r.slot_id = s.slot_id
 		JOIN orgs o ON r.org_id = o.org_id
@@ -156,16 +155,15 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	if err != nil {
 		return nil, 0, err
 	}
-	rec := &recordmodel.RecordScrap{
-		Org:      &orgmodel.OrgInfo{},
-		User:     &usermodel.UserInfo{},
-		Slot:     &orgmodel.Slot{},
-		Service:  &orgmodel.Service{},
-		Worker:   &orgmodel.Worker{},
-		Feedback: &recordmodel.Feedback{},
-	}
 	for rows.Next() {
-		fmt.Println("Entered")
+		rec := &recordmodel.RecordScrap{
+			Org:      &orgmodel.OrgInfo{},
+			User:     &usermodel.UserInfo{},
+			Slot:     &orgmodel.Slot{},
+			Service:  &orgmodel.Service{},
+			Worker:   &orgmodel.Worker{},
+			Feedback: &recordmodel.Feedback{},
+		}
 		err := rows.Scan(
 			&rec.Service.Name,
 			&rec.Service.Cost,
@@ -213,11 +211,10 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		SELECT $1, $2, $3, $4, $5
 		FROM slots s
 		WHERE s.slot_id = $4
-		AND s.busy = FALSE
+		AND s.busy = false
 		RETURNING record_id;
 	`
 	var recordID int
-	log.Println(recordID)
 	if err = tx.QueryRowContext(
 		ctx,
 		query,
