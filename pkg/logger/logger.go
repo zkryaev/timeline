@@ -14,11 +14,11 @@ import (
 
 const (
 	// Логи выводятся на консоль
-	LocalEnv = "LOCAL"
+	Local = "LOCAL"
 	// Логи выводятся на консоль
-	DevEnv = "DEV"
+	Dev = "DEV"
 	// Логи выводятся в файл
-	ProdEnv = "PROD"
+	Prod = "PROD"
 )
 
 func New(env string) *zap.Logger {
@@ -33,7 +33,7 @@ func New(env string) *zap.Logger {
 		log.Println("log.txt not found")
 		filename := strings.SplitAfter(filepath, "/")[len(strings.SplitAfter(filepath, "/"))-1]
 		path := strings.TrimSuffix(filepath, filename)
-		if env == ProdEnv {
+		if env == Prod {
 			timestamp = time.Now().Format("15:04:05_2006-01-02_")
 		}
 		_, err := os.Create(path + timestamp + filename)
@@ -50,16 +50,16 @@ func New(env string) *zap.Logger {
 	}
 
 	switch env {
-	case LocalEnv, DevEnv:
+	case Local, Dev:
 		encoder = zap.NewDevelopmentEncoderConfig()
 		encoder.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		encoder.EncodeTime = customTimeEncoder            
+		encoder.EncodeTime = customTimeEncoder
 		encoder.EncodeCaller = zapcore.ShortCallerEncoder
 
 		cfg = zap.NewDevelopmentConfig()
 		cfg.DisableStacktrace = true
 		cfg.EncoderConfig = encoder
-	case ProdEnv:
+	case Prod:
 		encoder = zap.NewProductionEncoderConfig()
 		cfg = zap.NewProductionConfig()
 		cfg.EncoderConfig = encoder
