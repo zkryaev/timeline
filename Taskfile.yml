@@ -29,25 +29,24 @@ vars:
 tasks:
   dsn:
     silent: true
-    desc: "Show DSN"
     cmds:
       - echo {{.DSN}}
+  
   migrate-up:
-    desc: "Apply migrations"
+    desc: "migrations [applying...]"
+    silent: true
     cmds:
       - go run ./cmd/migrator/main.go --dsn={{.DSN}} --migrations-path={{.MIGRATION_PATH}}
+  
   migrate-down:
-    desc: "Reverse migrations"
+    desc: "migrations [reverse...]"
+    silent: true
     cmds:
       - migrate -database {{.DSN}} -path {{.MIGRATION_PATH}} down
-  migrate-deploy:
-    desc: "Migrations + waiting for DB"
-    cmds:
-      - sleep 4
-      - {task: migrate-up}
-  env_setup_check:
+      
+  check-envs:
+    desc: "checks that all required environment variables are set and non-empty"
     silent: true
-    desc: "Checks that all required environment variables are set and non-empty"
     cmds:
       - for:
           var: ENVS
@@ -57,15 +56,22 @@ tasks:
             exit 1
           fi
       - echo "All required environment variables are set."
-  docker-up:
-    silent: true
-    desc: "Start docker-compose"
+
+  docker-all:
     cmds:
       - docker-compose up -d
+
   docker-rm:
-    desc: "Stop and clean running containers"
     cmds:
       - docker-compose down
+
+  docker-s3:
+    cmds:
+      - docker-compose up minio -d
+
+  docker-db:
+    cmds:
+      - docker-compose up postgres -d
 
   swagger:
     desc: "Generate Swagger docs"
@@ -78,9 +84,16 @@ tasks:
       - golangci-lint run > {{.LINTER_LOG}}.txt
 
   build:
-    desc: "Compile the application binary"
+    silent: true
     cmds:
+      - go fmt ./...
       - go build -v -o {{.OUTPUT_BINARY}} {{.ENTRYPOINT}}
+  
+  run:
+    desc: "build -> run"
+    deps: [build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
 
   clean:
     desc: "Remove generated Swagger docs, binary, and linter log"
@@ -90,15 +103,8 @@ tasks:
       - rm -r {{.LINTER_LOG}}/*
 
   deploy:
-    desc: "env-checks -> docker -> migrations -> build application -> run"
-    deps: [env_setup_check, docker-up, migrate-up, build]
-    cmds:
-      - ./{{.OUTPUT_BINARY}}
-
-
-  run:
-    desc: "build application -> run"
-    deps: [build]
+    desc: "envs -> db -> s3 -> migrations -> build -> run"
+    deps: [check-envs, docker-all, migrate-up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
