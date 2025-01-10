@@ -98,9 +98,9 @@ tasks:
   clean:
     desc: "Remove generated Swagger docs, binary, and linter log"
     cmds:
-      - rm -r {{.SWAGGER_DOCS}}/*
-      - rm -r {{.OUTPUT_BINARY}}/*
-      - rm -r {{.LINTER_LOG}}/*
+      - rm -r ./{{.SWAGGER_DOCS}}/*
+      - rm -r ./{{.OUTPUT_BINARY}}/*
+      - rm -r ./{{.LINTER_LOG}}/*
 
   deploy:
     desc: "envs -> db -> s3 -> migrations -> build -> run"
