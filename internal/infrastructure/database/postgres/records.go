@@ -124,6 +124,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			w.first_name AS worker_first_name, 
 			w.last_name AS worker_last_name, 
 			o.name AS org_name,
+			o.type AS org_type,
 			u.first_name AS user_first_name,
 			u.last_name AS user_last_name, 
 			s.date,
@@ -171,6 +172,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			&rec.Worker.FirstName,
 			&rec.Worker.LastName,
 			&rec.Org.Name,
+			&rec.Org.Type,
 			&rec.User.FirstName,
 			&rec.User.LastName,
 			&rec.Slot.Date,
@@ -371,9 +373,9 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 		SELECT 
 			u.email AS user_email,
 			srvc.name AS service_name,
-			srvc.description AS service_description
+			srvc.description AS service_description,
 			o.name AS org_name,
-			o.address AS org_address
+			o.address AS org_address,
 			s.date,
 			s.session_begin,
 			s.session_end
