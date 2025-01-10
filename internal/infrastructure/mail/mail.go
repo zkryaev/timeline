@@ -76,10 +76,9 @@ func (s *MailServer) Shutdown() {
 func (s *MailServer) SendMsg(msg *models.Message) error {
 	m, err := letterAssembly(msg)
 	if err != nil {
-		fmt.Println("letterAssembly:", err.Error())
+		// TODO: логировать ошибку
 		return err
 	}
-	fmt.Println("sendmsg", m)
 	select {
 	case s.msgs <- m:
 		// Письмо успешно помещено в очередь
@@ -108,7 +107,6 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 	for {
 		select {
 		case msg := <-s.msgs:
-			fmt.Println("worker", msg)
 			if msg == nil {
 				continue
 			}

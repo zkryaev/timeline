@@ -113,6 +113,7 @@ func icsCreate(msg *models.ReminderMsg) string {
 	event.SetCreatedTime(time.Now())
 	event.SetDtStampTime(time.Now())
 	event.SetModifiedAt(time.Now())
+	fmt.Println(msg.SessionStart, msg.SessionEnd)
 	event.SetStartAt(msg.SessionStart)
 	event.SetEndAt(msg.SessionEnd)
 	event.SetSummary(msg.Service)

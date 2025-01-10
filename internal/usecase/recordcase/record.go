@@ -2,7 +2,6 @@ package recordcase
 
 import (
 	"context"
-	"fmt"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/mail"
@@ -67,8 +66,7 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) err
 		)
 		return err
 	}
-	fmt.Println(record.UserEmail)
-	fmt.Println("send email")
+
 	r.mail.SendMsg(&models.Message{
 		Email:    record.UserEmail,
 		Type:     mail.ReminderType,
