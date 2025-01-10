@@ -103,7 +103,7 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 	return m, nil
 }
 
-func icsCreate(msg models.ReminderMsg) string {
+func icsCreate(msg *models.ReminderMsg) string {
 	eventUID := fmt.Sprintf("%s@%s", time.Now().Format("20060102T150405Z"), "timeline.ru")
 	reminderUID := fmt.Sprintf("reminder-%s", eventUID)
 
