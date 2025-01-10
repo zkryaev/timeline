@@ -31,7 +31,7 @@ func New(cfg config.S3) *Minio {
 func (m *Minio) Connect() error {
 	minioClient, err := minio.New(m.cfg.Host+":"+m.cfg.DataPort, &minio.Options{
 		Creds:  credentials.NewStaticV4(m.cfg.User, m.cfg.Password, ""),
-		Secure: m.cfg.UseSSL,
+		Secure: m.cfg.SSLmode,
 	})
 	if err != nil {
 		return err

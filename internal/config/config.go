@@ -10,11 +10,11 @@ import (
 )
 
 type Config struct {
-	App       Application `yaml:"app"`
-	DB        Database
-	Mail      Mail
-	Token     Token `yaml:"token"`
-	StorageS3 S3
+	App   Application `yaml:"app"`
+	DB    Database
+	Mail  Mail
+	Token Token `yaml:"token"`
+	S3    S3
 }
 
 type Application struct {
@@ -58,7 +58,7 @@ type S3 struct {
 	DefaultBucket string `env:"S3_DEFAULT_BUCKET" env-required:"true"`
 	DataPort      string `env:"S3_DATA_PORT" env-default:"9000"`
 	ConsolePort   string `env:"S3_CONSOLE_PORT" env-default:"9001"`
-	UseSSL        bool   `env:"S3_USE_SSL" env-default:"false"`
+	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
 }
 
 func MustLoad() Config {
