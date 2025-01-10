@@ -51,19 +51,21 @@ func main() {
 			zap.Error(err),
 		)
 	}
+	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")))
 	Logs.Info(
-		fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")),
-		zap.String("host:port", cfg.DB.Host+":"+cfg.DB.Port),
-		zap.String("SSL", cfg.DB.SSLmode),
+		"",
+		zap.String("database server", cfg.DB.Host+":"+cfg.DB.Port),
+		zap.String("ssl", cfg.DB.SSLmode),
 	)
 	defer db.Close()
 
 	// Поднимаем почтовый сервис параметрами по умолчанию
 	post := mail.New(cfg.Mail, Logs, 0, 0, 0)
 	post.Start()
+	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
 	Logs.Info(
-		fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")),
-		zap.String("host:port", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
+		"",
+		zap.String("mail server", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
 	)
 	defer post.Shutdown()
 
@@ -72,11 +74,12 @@ func main() {
 	if err := s3storage.Connect(); err != nil {
 		Logs.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
 	}
+	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
 	Logs.Info(
-		fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")),
-		zap.String("StorageURL", cfg.S3.Host+":"+cfg.S3.DataPort),
-		zap.String("ConsoleURL", cfg.S3.Host+":"+cfg.S3.ConsolePort),
-		zap.Bool("SSL", cfg.S3.SSLmode),
+		"",
+		zap.String("storage", cfg.S3.Host+":"+cfg.S3.DataPort),
+		zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
+		zap.Bool("ssl", cfg.S3.SSLmode),
 	)
 
 	App := app.New(cfg.App, Logs)
@@ -104,7 +107,8 @@ func main() {
 			}
 		}
 	}()
-	Logs.Info("Application is now running", zap.String("HTTP server", cfg.App.Host+":"+cfg.App.Port))
+	Logs.Info("Application is running")
+	Logs.Info("", zap.String("app server", cfg.App.Host+":"+cfg.App.Port))
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
