@@ -93,7 +93,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	}()
 	query := `
 		SELECT
-			COUNT(record_id)
+			COUNT(r.record_id)
 		FROM records r
 		JOIN slots s ON r.slot_id = s.slot_id
 		JOIN orgs o ON r.org_id = o.org_id
