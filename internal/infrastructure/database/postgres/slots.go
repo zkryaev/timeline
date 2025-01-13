@@ -28,7 +28,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		WHERE w.is_delete = false
 		AND ws.is_delete = false;
 	`
-	workers := make([]*struct {
+	workerSchedules := make([]*struct {
 		WorkerScheduleID int       `db:"worker_schedule_id"`
 		WorkerID         int       `db:"worker_id"`
 		OrgID            int       `db:"org_id"`
@@ -39,7 +39,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		BreakStart       time.Time `db:"break_start"`
 		BreakEnd         time.Time `db:"break_end"`
 	}, 0, 10)
-	if err := tx.SelectContext(ctx, &workers, query); err != nil {
+	if err := tx.SelectContext(ctx, &workerSchedules, query); err != nil {
 		return err
 	}
 	// формула для вычисления будущей даты:
@@ -52,7 +52,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		INSERT INTO slots
 		(date, session_begin, session_end, busy, worker_schedule_id, worker_id)
 		VALUES
-		(CURRENT_DATE + (7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1 + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7), 
+		(CURRENT_DATE + ((7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1  + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7) || ' days' )::INTERVAL, 
 		$2, 
 		$3, 
 		$4, 
@@ -60,13 +60,16 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		$6);
 	`
 	busy := false
-	for _, v := range workers {
+	for _, v := range workerSchedules {
 		periods := int(v.Over.Sub(v.Start) / (time.Duration(v.SessionDuration) * time.Minute))
 		for i := 0; i < periods; i++ {
 			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
 			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute) // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
-			// Если время начала сеанса лежит в перерыве слот не создается
-			if custom.CompareTime(begin, v.BreakStart) >= 0 && custom.CompareTime(begin, v.BreakStart) <= 0 {
+			// Слот не создается, если время начала или конца сеанса попадает в перерыв работника
+			if custom.CompareTime(begin, v.BreakStart) >= 0 && custom.CompareTime(begin, v.BreakEnd) < 0 {
+				continue
+			}
+			if custom.CompareTime(end, v.BreakStart) > 0 && custom.CompareTime(end, v.BreakEnd) <= 0 {
 				continue
 			}
 			_, err = tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
