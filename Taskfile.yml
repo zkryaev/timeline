@@ -28,6 +28,7 @@ vars:
 
 tasks:
   dsn:
+    desc: "show db connection-url"
     silent: true
     cmds:
       - echo {{.DSN}}
@@ -58,6 +59,7 @@ tasks:
       - echo "All required environment variables are set."
 
   docker-all:
+    desc: "deploy all containers in list"
     cmds:
       - docker-compose up -d
 
@@ -74,12 +76,12 @@ tasks:
       - docker-compose up postgres -d
 
   swagger:
-    desc: "Generate Swagger docs"
+    desc: "generate swagger docs"
     cmds:
       - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_OUT}}
 
   lint:
-    desc: "Run GolangCI-Lint and save output to file"
+    desc: "run GolangCI-Lint and save output to file"
     cmds:
       - golangci-lint run > {{.LINTER_LOG}}.txt
 
@@ -90,25 +92,23 @@ tasks:
       - go build -v -o {{.OUTPUT_BINARY}} {{.ENTRYPOINT}}
   
   run:
-    desc: "build -> run"
     deps: [build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
   clean:
-    desc: "Remove generated Swagger docs, binary, and linter log"
+    desc: "remove generated swagger docs, binary, and linter log"
     cmds:
       - rm -r ./{{.SWAGGER_DOCS}}/*
       - rm -r ./{{.OUTPUT_BINARY}}/*
       - rm -r ./{{.LINTER_LOG}}/*
 
   deploy:
-    desc: "envs -> db -> s3 -> migrations -> build -> run"
+    desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
     deps: [check-envs, docker-all, migrate-up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
   default:
-    desc: "Default task - runs Swagger generation"
-    cmds:
-      - task: swagger
+    cmds: 
+      - task -ac
