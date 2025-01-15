@@ -164,8 +164,17 @@ func validateURL(URL string) error {
 	if len(components) == 0 {
 		return ErrURLEmpty
 	}
-	if err := uuid.Validate(components[1]); err != nil {
-		return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
+	// uuid itself
+	if len(components) == 1 {
+		if err := uuid.Validate(components[0]); err != nil {
+			return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
+		}
+	}
+	// domain-name/uuid
+	if len(components) == 2 {
+		if err := uuid.Validate(components[1]); err != nil {
+			return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
+		}
 	}
 	return nil
 }
