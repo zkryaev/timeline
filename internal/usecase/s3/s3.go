@@ -30,7 +30,7 @@ var (
 	ErrSaveURL     = errors.New("failed to save url")
 	ErrSaveFile    = errors.New("failed to save file")
 	ErrURLEmpty    = errors.New("empty url")
-	ErrInvalidUUID = errors.New("invalid url's uuid")
+	ErrInvalidURL  = errors.New("invalid url")
 	ErrDownloading = errors.New("failed to download file from s3")
 	ErrUploading   = errors.New("failed to upload file to s3")
 	ErrDeleting    = errors.New("failed to delete file into s3")
@@ -161,20 +161,19 @@ func (s *S3UseCase) Delete(ctx context.Context, entity string, URL string) error
 
 func validateURL(URL string) error {
 	components := strings.Split(URL, "/")
-	if len(components) == 0 {
+	switch n := len(components); n {
+	case 0:
 		return ErrURLEmpty
-	}
-	// uuid itself
-	if len(components) == 1 {
+	case 1: // uuid
 		if err := uuid.Validate(components[0]); err != nil {
-			return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
+			return fmt.Errorf("%s: %w", ErrInvalidURL, err)
 		}
-	}
-	// domain-name/uuid
-	if len(components) == 2 {
+	case 2: // domain-name/uuid
 		if err := uuid.Validate(components[1]); err != nil {
-			return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
+			return fmt.Errorf("%s: %w", ErrInvalidURL, err)
 		}
+	default:
+		return ErrInvalidURL
 	}
 	return nil
 }
