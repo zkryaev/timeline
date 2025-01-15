@@ -164,10 +164,8 @@ func validateURL(URL string) error {
 	if len(components) == 0 {
 		return ErrURLEmpty
 	}
-	for _, v := range components {
-		if err := uuid.Validate(v); err != nil {
-			return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
-		}
+	if err := uuid.Validate(components[1]); err != nil {
+		return fmt.Errorf("%s: %w", ErrInvalidUUID, err)
 	}
 	return nil
 }
