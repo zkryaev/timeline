@@ -64,14 +64,17 @@ tasks:
       - docker-compose up -d
 
   docker-rm:
+    desc: "delete containers"
     cmds:
       - docker-compose down
 
   docker-s3:
+    desc: "run s3"
     cmds:
       - docker-compose up minio -d
 
   docker-db:
+    desc: "run db"
     cmds:
       - docker-compose up postgres -d
 
@@ -92,6 +95,7 @@ tasks:
       - go build -v -o {{.OUTPUT_BINARY}} {{.ENTRYPOINT}}
   
   run:
+    desc: "run application"
     deps: [build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
