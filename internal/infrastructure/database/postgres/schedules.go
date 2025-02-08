@@ -28,7 +28,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	}()
 	// Пагинация - found
 	query := `SELECT
-			COUNT(*)
+			COUNT(worker_id)
 		FROM workers
 		WHERE is_delete = false 
 		AND ($1 <= 0 OR worker_id = $1)

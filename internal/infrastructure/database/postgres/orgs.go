@@ -292,8 +292,8 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		}
 	}()
 	query := `SELECT 
-			COUNT(*)
-		FROM orgs 
+			COUNT(org_id)
+		FROM orgs
 		WHERE is_delete = false 
 		AND ($1 = '' OR name ILIKE '%' || $1 || '%') 
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')

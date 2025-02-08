@@ -25,7 +25,7 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 		}
 	}()
 	query := `SELECT 
-			COUNT(*)
+			COUNT(r.record_id)
 		FROM records r
 		JOIN feedbacks f
 		ON r.record_id = f.record_id AND reviewed = true

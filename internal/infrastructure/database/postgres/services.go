@@ -120,7 +120,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 		}
 	}()
 	query := `SELECT 
-			COUNT(*)
+			COUNT(service_id)
 		FROM services 
 		WHERE is_delete = false
 		AND org_id = $1;

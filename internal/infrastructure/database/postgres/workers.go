@@ -254,7 +254,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int)
 		}
 	}()
 	query := `SELECT 
-			COUNT(*)
+			COUNT(worker_id)
 		FROM workers 
 		WHERE is_delete = false
 		AND org_id = $1;
