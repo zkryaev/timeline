@@ -6,13 +6,17 @@ import (
 )
 
 // get path from home dir
-// example: /home/$USER/Timeline/$GIVEN_PATH
+// example: /home/$USER/timeline/$GIVEN_PATH
 func GetPath(envName string) string {
 	pathToFile := os.Getenv(envName)
-	rootProjectDir, _ := os.Getwd()
+	if pathToFile == "" {
+		return ""
+	}
+	currDir, _ := os.Getwd()
+	projectRootDir := strings.SplitAfter(currDir, "timeline/")[0]
 	path := strings.Builder{}
-	path.Grow(len(rootProjectDir) + len(pathToFile))
-	path.WriteString(rootProjectDir)
+	path.Grow(len(projectRootDir) + len(pathToFile))
+	path.WriteString(projectRootDir)
 	if strings.Contains(pathToFile, path.String()) {
 		return pathToFile
 	}

@@ -2,24 +2,24 @@ package custom
 
 import "time"
 
-// Сравнение по времени (формат 15:00):
-// если t < u, то -1,
-// если t > u, то +1,
-// если t = u, то 0,
-func CompareTime(t time.Time, u time.Time) int {
-	tHour, tMinute := t.Hour(), t.Minute()
-	uHour, uMinute := u.Hour(), u.Minute()
+// Сравнение только по часам и минутам (формат 15:00):
+//   - если a < b, то -1
+//   - если a > b, то +1
+//   - если a = b, то  0
+func CompareTime(a time.Time, b time.Time) int {
+	aHour, aMinute := a.Hour(), a.Minute()
+	bHour, bMinute := b.Hour(), b.Minute()
 
-	if tHour < uHour {
+	if aHour < bHour {
 		return -1
 	}
-	if tHour > uHour {
+	if aHour > bHour {
 		return 1
 	}
-	if tMinute < uMinute {
+	if aMinute < bMinute {
 		return -1
 	}
-	if tMinute > uMinute {
+	if aMinute > bMinute {
 		return 1
 	}
 	return 0
