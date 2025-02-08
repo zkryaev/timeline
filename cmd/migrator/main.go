@@ -43,13 +43,13 @@ func main() {
 		}
 	}
 	if err != nil {
-		log.Fatal("migrate.New: ", err.Error())
+		log.Fatal("create migrate: ", err.Error())
 	}
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("m.Up: no migrations to apply")
 			return
 		}
-		log.Fatal("m.Up: ", err)
+		log.Fatal("migrator: ", err)
 	}
 }
