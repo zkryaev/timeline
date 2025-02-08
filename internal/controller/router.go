@@ -164,6 +164,7 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	recRouter.HandleFunc(recordID, rec.Record).Methods("GET")
 	recRouter.HandleFunc(recordList, rec.RecordList).Methods("GET")
 	recRouter.HandleFunc(recordID, rec.RecordDelete).Methods("DELETE")
+
 	// Feedbacks
 	recRouter.HandleFunc(feedback, rec.FeedbackSet).Methods("POST")
 	recRouter.HandleFunc(feedback, rec.FeedbackUpdate).Methods("PUT")

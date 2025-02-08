@@ -3,11 +3,10 @@ package records
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/libs/custom"
-
-	"github.com/gorilla/mux"
 )
 
 type Feedback interface {
@@ -131,18 +130,27 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete feedback
 // @Description Delete feedback for specified record
 // @Tags record / feedback
-// @Param   recordID path int true "record_id"
+// @Param   recordID query int true "record_id"
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /records/feedbacks/{recordID} [delete]
+// @Router /records/feedbacks/info [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
+
+	query := map[string]bool{
+		"record_id": true,
+	}
+	if !validation.IsQueryValid(r, query) {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+		return
+	}
+	recordid, err := strconv.Atoi(r.URL.Query().Get("record_id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	req := &recordto.FeedbackParams{RecordID: params["recordID"]}
+
+	req := &recordto.FeedbackParams{RecordID: recordid}
 	if err := rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

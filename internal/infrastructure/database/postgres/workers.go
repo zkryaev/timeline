@@ -297,7 +297,7 @@ func (p *PostgresRepo) WorkerDelete(ctx context.Context, WorkerID, OrgID int) er
 	}()
 	query := `
 		DELETE FROM workers
-		WHERE AND is_delete = false
+		WHERE is_delete = false
 		AND worker_id = $1
 		AND org_id = $2;
 	`

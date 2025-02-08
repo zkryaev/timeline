@@ -135,7 +135,7 @@ func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string
 	return nil
 }
 
-// Если Showcase = true, то строка удаляется, иначе uuid организации будет пустым
+// Если GALLERY/BANNER = true, то строка удаляется, иначе uuid организации будет пустым
 func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
@@ -149,12 +149,14 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta)
 	var query string
 	var entity string
 	switch {
-	case (meta.Type == "showcase") || (meta.Type == "banner"):
+	case (meta.Type == "gallery") || (meta.Type == "banner"):
 		entity = meta.Type
 		query = `DELETE FROM showcase WHERE url = $1;`
-	default:
+	case (meta.Type == "org"):
 		entity = "org"
 		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1;`
+	default:
+		return fmt.Errorf("image type %s doesn't exist: %w", entity, err)
 	}
 	if rows, err := tx.ExecContext(ctx, query, meta.URL); err != nil {
 		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {

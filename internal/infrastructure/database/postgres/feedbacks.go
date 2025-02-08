@@ -58,7 +58,7 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 	if err = tx.Commit(); err != nil {
 		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return feedbacks, 0, nil
+	return feedbacks, found, nil
 }
 
 func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Feedback) error {
@@ -75,8 +75,9 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		INSERT INTO feedbacks
 		(record_id, stars, feedback)
 		SELECT $1, $2, $3
-		FROM slots s
-		WHERE s.record_id = $1
+		FROM records r
+		JOIN slots s ON s.slot_id = r.slot_id 
+		WHERE r.record_id = $1
 		AND CURRENT_TIMESTAMP >= s.session_end;
 	`
 	rows, err := tx.ExecContext(

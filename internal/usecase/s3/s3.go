@@ -59,7 +59,6 @@ func (s *S3UseCase) Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error 
 		return ErrGenUUID
 	}
 	URL := NewUUID.String()
-	// Сохраняем UUID/URL showcase
 	switch {
 	case dto.Entity == ORG:
 		if err := s.org.OrgSetUUID(ctx, dto.EntityID, URL); err != nil {
@@ -136,7 +135,6 @@ func (s *S3UseCase) Delete(ctx context.Context, entity string, URL string) error
 	}
 	switch {
 	case entity == ORG:
-
 		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
 			return fmt.Errorf("%s: %w", ErrDeleting, err)
 		}
