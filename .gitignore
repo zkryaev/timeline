@@ -1,4 +1,4 @@
-logs
+logs/*
 .task
 /config/local.yml
 .env
