@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetPath(t *testing.T) {
+func TestGetPathByEnv(t *testing.T) {
 	currDir, _ := os.Getwd()
 	projectRootDir := strings.SplitAfter(currDir, "timeline/")[0]
 
@@ -31,7 +31,7 @@ func TestGetPath(t *testing.T) {
 
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			require.Equal(t, c.exp, GetPath(c.env))
+			require.Equal(t, c.exp, GetPathByEnv(c.env))
 		})
 	}
 }

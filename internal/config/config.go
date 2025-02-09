@@ -62,7 +62,7 @@ type S3 struct {
 }
 
 func MustLoad() Config {
-	configPath := envars.GetPath("CONFIG_PATH")
+	configPath := envars.GetPathByEnv("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatalf("the cfg file doesn't exist at the path: %s", configPath)
 	}

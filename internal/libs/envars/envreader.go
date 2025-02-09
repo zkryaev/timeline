@@ -7,7 +7,7 @@ import (
 
 // get path from home dir
 // example: /home/$USER/timeline/$GIVEN_PATH
-func GetPath(envName string) string {
+func GetPathByEnv(envName string) string {
 	pathToFile := os.Getenv(envName)
 	if pathToFile == "" {
 		return ""

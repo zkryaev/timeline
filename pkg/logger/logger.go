@@ -22,7 +22,7 @@ const (
 )
 
 func New(env string) *zap.Logger {
-	filepath := envars.GetPath("APP_LOGS")
+	filepath := envars.GetPathByEnv("APP_LOGS")
 	outputPaths := []string{"stdout"}
 	if _, err := os.Stat(filepath); err == nil {
 		outputPaths = append(outputPaths, filepath)

@@ -10,7 +10,7 @@ import (
 )
 
 func LoadPrivateKey() (*rsa.PrivateKey, error) {
-	pathToSecret := envars.GetPath("SECRET_PATH")
+	pathToSecret := envars.GetPathByEnv("SECRET_PATH")
 	if pathToSecret == "" {
 		return nil, fmt.Errorf("empty secret-path-env: %s", pathToSecret)
 	}
