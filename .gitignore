@@ -1,4 +1,5 @@
 logs/*
+coverage*
 .task
 /config/local.yml
 .env
