@@ -22,12 +22,10 @@ const (
 )
 
 func New(env string) *zap.Logger {
-	cfg := zap.Config{}
-	encoder := zapcore.EncoderConfig{}
 	filepath := envars.GetPath("APP_LOGS")
-	OutputPaths := []string{"stdout"}
+	outputPaths := []string{"stdout"}
 	if _, err := os.Stat(filepath); err == nil {
-		OutputPaths = append(OutputPaths, filepath)
+		outputPaths = append(outputPaths, filepath)
 	} else {
 		var timestamp string
 		log.Println("log.txt not found")
@@ -43,26 +41,30 @@ func New(env string) *zap.Logger {
 		}
 		log.Println("log.txt has been created: ", path+filename)
 	}
-	cfg.OutputPaths = OutputPaths
 
 	customTimeEncoder := func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 		enc.AppendString(t.Format("2006-01-02 15:04:05.000-0700"))
 	}
 
+	cfg := zap.Config{}
+	encoder := zapcore.EncoderConfig{}
+
 	switch env {
 	case Local, Dev:
 		encoder = zap.NewDevelopmentEncoderConfig()
+		cfg = zap.NewDevelopmentConfig()
+
 		encoder.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoder.EncodeTime = customTimeEncoder
 		encoder.EncodeCaller = zapcore.ShortCallerEncoder
 
-		cfg = zap.NewDevelopmentConfig()
+		cfg.OutputPaths = outputPaths
 		cfg.DisableStacktrace = true
 		cfg.EncoderConfig = encoder
 	case Prod:
-		encoder = zap.NewProductionEncoderConfig()
 		cfg = zap.NewProductionConfig()
-		cfg.EncoderConfig = encoder
+
+		cfg.EncoderConfig = zap.NewProductionEncoderConfig()
 	case "":
 		log.Fatal("logger did't setup: ENV is empty")
 	}
