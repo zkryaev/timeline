@@ -19,13 +19,13 @@ type Database interface {
 }
 
 type infrastructure interface {
-	Codeinfrastructure
+	CodeRepository
 	UserRepository
 	OrgRepository
-	Recordinfrastructure
+	RecordRepository
 }
 
-type Codeinfrastructure interface {
+type CodeRepository interface {
 	SaveVerifyCode(ctx context.Context, info *models.CodeInfo) error
 	VerifyCode(ctx context.Context, info *models.CodeInfo) (time.Time, error)
 	ActivateAccount(ctx context.Context, id int, isOrg bool) error
@@ -54,31 +54,31 @@ type OrgRepository interface {
 	OrgUUID(ctx context.Context, orgID int) (string, error)
 	OrgSetUUID(ctx context.Context, orgID int, NewUUID string) error
 	OrgDeleteURL(ctx context.Context, meta *models.ImageMeta) error
-	Timetableinfrastructure
-	Workerinfrastructure
-	Serviceinfrastructure
-	Slotinfrastructure
-	Scheduleinfrastructure
+	TimetableRepository
+	WorkerRepository
+	ServiceRepository
+	SlotRepository
+	ScheduleRepository
 }
 
-type Recordinfrastructure interface {
+type RecordRepository interface {
 	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
 	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error)
 	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, error)
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, req *recordmodel.Record) error
 	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)
-	Feedbackinfrastructure
+	FeedbackRepository
 }
 
-type Timetableinfrastructure interface {
+type TimetableRepository interface {
 	Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error)
 	TimetableAdd(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
 	TimetableUpdate(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
 	TimetableDelete(ctx context.Context, orgID, weekday int) error
 }
 
-type Workerinfrastructure interface {
+type WorkerRepository interface {
 	Worker(ctx context.Context, WorkerID, OrgID int) (*orgmodel.Worker, error)
 	WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (int, error)
 	WorkerUpdate(ctx context.Context, worker *orgmodel.Worker) error
@@ -92,7 +92,7 @@ type Workerinfrastructure interface {
 	WorkerDeleteURL(ctx context.Context, URL string) error
 }
 
-type Serviceinfrastructure interface {
+type ServiceRepository interface {
 	Service(ctx context.Context, ServiceID, OrgID int) (*orgmodel.Service, error)
 	ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgmodel.Worker, error)
 	ServiceAdd(ctx context.Context, service *orgmodel.Service) (int, error)
@@ -101,21 +101,21 @@ type Serviceinfrastructure interface {
 	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
 }
 
-type Slotinfrastructure interface {
+type SlotRepository interface {
 	GenerateSlots(ctx context.Context) error
 	DeleteExpiredSlots(ctx context.Context) error
 	UpdateSlot(ctx context.Context, busy bool, params *orgmodel.SlotsMeta) error
 	Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, error)
 }
 
-type Scheduleinfrastructure interface {
+type ScheduleRepository interface {
 	WorkerSchedule(ctx context.Context, params *orgmodel.ScheduleParams) (*orgmodel.ScheduleList, error)
 	AddWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
 	UpdateWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
 	DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error
 }
 
-type Feedbackinfrastructure interface {
+type FeedbackRepository interface {
 	FeedbackList(ctx context.Context, params *recordmodel.FeedbackParams) ([]*recordmodel.Feedback, int, error)
 	FeedbackSet(ctx context.Context, feedback *recordmodel.Feedback) error
 	FeedbackUpdate(ctx context.Context, feedback *recordmodel.Feedback) error

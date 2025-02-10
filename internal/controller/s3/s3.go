@@ -14,19 +14,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type S3 interface {
+type S3UseCase interface {
 	Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error
 	Download(ctx context.Context, URL string) (*s3dto.File, error)
 	Delete(ctx context.Context, entity string, URL string) error
 }
 
 type S3Ctrl struct {
-	usecase S3
+	usecase S3UseCase
 	json    jsoniter.API
 	logger  *zap.Logger
 }
 
-func New(storage S3, Logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
+func New(storage S3UseCase, Logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
 	return &S3Ctrl{
 		usecase: storage,
 		logger:  Logger,

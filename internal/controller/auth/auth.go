@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type Auth interface {
+type AuthUseCase interface {
 	Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error)
 	UserRegister(ctx context.Context, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error)
 	OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error)
@@ -22,19 +22,19 @@ type Auth interface {
 
 type Middleware interface {
 	ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.Token, error)
-	IsTokenValid(next http.Handler) http.Handler
+	IsAccessTokenValid(next http.Handler) http.Handler
 	HandlerLogs(next http.Handler) http.Handler
 }
 
 type AuthCtrl struct {
-	usecase    Auth
+	usecase    AuthUseCase
 	Logger     *zap.Logger
 	Middleware Middleware
 	json       jsoniter.API
 	validator  *validator.Validate
 }
 
-func New(usecase Auth, middleware Middleware, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *AuthCtrl {
+func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *AuthCtrl {
 	return &AuthCtrl{
 		usecase:    usecase,
 		Logger:     logger,

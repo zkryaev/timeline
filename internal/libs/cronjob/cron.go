@@ -22,7 +22,7 @@ func InitCronScheduler(db infrastructure.Database) gocron.Scheduler {
 			gocron.NewAtTimes(gocron.NewAtTime(16, 00, 00)),
 		),
 		gocron.NewTask(
-			func(slots infrastructure.Slotinfrastructure) {
+			func(slots infrastructure.SlotRepository) {
 				ctx := context.Background()
 				slots.DeleteExpiredSlots(ctx)
 				slots.GenerateSlots(ctx)
@@ -37,7 +37,7 @@ func InitCronScheduler(db infrastructure.Database) gocron.Scheduler {
 			gocron.NewAtTimes(gocron.NewAtTime(00, 00, 00)),
 		),
 		gocron.NewTask(
-			func(codes infrastructure.Codeinfrastructure) {
+			func(codes infrastructure.CodeRepository) {
 				ctx := context.Background()
 				codes.DeleteExpiredCodes(ctx)
 			},
