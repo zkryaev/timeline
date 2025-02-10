@@ -26,12 +26,12 @@ var (
 type UserUseCase struct {
 	user    infrastructure.UserRepository
 	org     infrastructure.OrgRepository
-	records infrastructure.Recordinfrastructure
+	records infrastructure.RecordRepository
 	mail    infrastructure.Mail
 	Logger  *zap.Logger
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.Recordinfrastructure, logger *zap.Logger) *UserUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository, logger *zap.Logger) *UserUseCase {
 	return &UserUseCase{
 		user:   userRepo,
 		org:    orgRepo,

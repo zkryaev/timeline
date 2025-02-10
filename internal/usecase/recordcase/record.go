@@ -14,12 +14,12 @@ import (
 type RecordUseCase struct {
 	users   infrastructure.UserRepository
 	orgs    infrastructure.OrgRepository
-	records infrastructure.Recordinfrastructure
+	records infrastructure.RecordRepository
 	mail    infrastructure.Mail
 	Logger  *zap.Logger
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.Recordinfrastructure, mailRepo infrastructure.Mail, logger *zap.Logger) *RecordUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.RecordRepository, mailRepo infrastructure.Mail, logger *zap.Logger) *RecordUseCase {
 	return &RecordUseCase{
 		users:   userRepo,
 		orgs:    orgRepo,

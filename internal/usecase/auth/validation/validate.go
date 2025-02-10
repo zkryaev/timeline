@@ -2,15 +2,13 @@ package validation
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
-	ErrWrongClaims    = errors.New("invalid token claims")
-	ErrClaimsNotFound = errors.New("not found token claims")
+	ErrWrongClaims = errors.New("invalid token claims")
 )
 
 func IsCodeExpired(created_at time.Time) bool {
@@ -33,20 +31,14 @@ func IsAccountExpired(created_at time.Time) bool {
 }
 
 // Проверяем наличие полей и верного ли они типа
-func ValidateTokenClaims(req *jwt.Token) error {
-	_, ok := req.Claims.(jwt.MapClaims)["id"].(float64)
-	if !ok {
-		log.Println("id!")
+func ValidateTokenClaims(c jwt.Claims) error {
+	if _, ok := c.(jwt.MapClaims)["id"].(float64); !ok {
 		return ErrWrongClaims
 	}
-	_, ok = req.Claims.(jwt.MapClaims)["is_org"].(bool)
-	if !ok {
-		log.Println("is_org!")
+	if _, ok := c.(jwt.MapClaims)["is_org"].(bool); !ok {
 		return ErrWrongClaims
 	}
-	_, ok = req.Claims.(jwt.MapClaims)["type"].(string)
-	if !ok {
-		log.Println("type!")
+	if _, ok := c.(jwt.MapClaims)["type"].(string); !ok {
 		return ErrWrongClaims
 	}
 	return nil

@@ -34,13 +34,13 @@ type AuthUseCase struct {
 	secret   *rsa.PrivateKey
 	user     infrastructure.UserRepository
 	org      infrastructure.OrgRepository
-	code     infrastructure.Codeinfrastructure
+	code     infrastructure.CodeRepository
 	mail     infrastructure.Mail
 	TokenCfg config.Token
 	Logger   *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, codeRepo infrastructure.Codeinfrastructure, mailSrv infrastructure.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, codeRepo infrastructure.CodeRepository, mailSrv infrastructure.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
@@ -232,7 +232,7 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq
 
 func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*authdto.AccessToken, error) {
 	// Валидируем Claims токена. Есть ли они и нормальные ли.
-	err := validation.ValidateTokenClaims(req)
+	err := validation.ValidateTokenClaims(req.Claims)
 	if err != nil {
 		return nil, err
 	}
