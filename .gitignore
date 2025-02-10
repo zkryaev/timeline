@@ -8,3 +8,4 @@ linter_logs*
 bin
 db_init_user
 docs/swagger
+mocks/*
