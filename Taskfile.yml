@@ -87,10 +87,12 @@ tasks:
     desc: "run GolangCI-Lint and save output to file"
     cmds:
       - golangci-lint run > {{.LINTER_LOG}}.txt
-
-  tests:
-    desc: "run tests"
-    cmd: go test -v -count=1 ./...
+  
+  mocks:
+    desc: "generate mocks for every domen"
+    cmds:
+      - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
+      - mockery --all --dir ./internal/controller/ --output ./mocks/controller
 
   coverage:
     desc: "run tests and show coverage"
