@@ -152,7 +152,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 		)
 		return nil, err
 	}
-	// Генерируем код
+
 	code, err := verification.GenerateCode()
 	if err != nil {
 		a.Logger.Error(
@@ -170,7 +170,6 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 }
 
 func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq) {
-	// Генерируем код
 	code, err := verification.GenerateCode()
 	if err != nil {
 		a.Logger.Error(

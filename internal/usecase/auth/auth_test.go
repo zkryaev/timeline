@@ -8,10 +8,12 @@ import (
 	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity/dto/authdto"
+	"timeline/internal/infrastructure/mapper/codemap"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/libs/passwd"
 	mocks "timeline/mocks/infrastructure"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -20,11 +22,12 @@ import (
 
 type AuthUseCaseTestSuite struct {
 	suite.Suite
-	authUseCase  *AuthUseCase
-	mockUserRepo *mocks.UserRepository
-	mockOrgRepo  *mocks.OrgRepository
-	mockCodeRepo *mocks.CodeRepository
-	mockMailRepo *mocks.Mail
+	authUseCase    *AuthUseCase
+	mockUserRepo   *mocks.UserRepository
+	mockOrgRepo    *mocks.OrgRepository
+	mockCodeRepo   *mocks.CodeRepository
+	mockMailRepo   *mocks.Mail
+	mockPrivateKey *rsa.PrivateKey
 }
 
 func (suite *AuthUseCaseTestSuite) SetupTest() {
@@ -32,12 +35,14 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 	suite.mockOrgRepo = &mocks.OrgRepository{}
 	suite.mockCodeRepo = &mocks.CodeRepository{}
 	suite.mockMailRepo = &mocks.Mail{}
-	mockPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		suite.T().Fatal(err.Error())
 	}
+	suite.mockPrivateKey = privateKey
+
 	suite.authUseCase = New(
-		mockPrivateKey,
+		suite.mockPrivateKey,
 		suite.mockUserRepo,
 		suite.mockOrgRepo,
 		suite.mockCodeRepo,
@@ -63,7 +68,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 	require.NoError(suite.T(), err)
 
 	expectedExpiration := &models.ExpInfo{
-		ID:        1,
+		ID:        0,
 		Verified:  true,
 		CreatedAt: time.Now(),
 		Hash:      hash,
@@ -71,7 +76,6 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 
 	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, email, isOrg).Return(expectedExpiration, nil)
 
-	// Вызов метода Login
 	req := &authdto.LoginReq{
 		Credentials: authdto.Credentials{
 			Email:    email,
@@ -85,18 +89,154 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 	suite.NotNil(tokens.AccessToken)
 	suite.NotNil(tokens.RefreshToken)
 
-	// Проверка вызова моков
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
 
-// func (suite *AuthUseCaseTestSuite) TestUserRegister(t *testing.T) {
+func (suite *AuthUseCaseTestSuite) TestLoginFail() {
+	ctx := context.Background()
 
-// }
+	req := &authdto.LoginReq{
+		Credentials: authdto.Credentials{
+			Email:    "test@example.com",
+			Password: "SecurePassword123",
+		},
+		IsOrg: false,
+	}
 
-// func (suite *AuthUseCaseTestSuite) TestOrgRegister(t *testing.T) {
+	expectedExpiration := &models.ExpInfo{
+		ID:        0,
+		Verified:  true,
+		CreatedAt: time.Now(),
+		Hash:      "hash",
+	}
 
-// }
+	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
 
-// func (suite *AuthUseCaseTestSuite) TestVerifyCode(t *testing.T) {
+	tokens, err := suite.authUseCase.Login(ctx, req)
+	suite.Error(err)
+	suite.Nil(tokens)
 
-// }
+	suite.mockCodeRepo.AssertExpectations(suite.T())
+}
+
+func (suite *AuthUseCaseTestSuite) TestLoginNotVerifiedAccountExpired() {
+	ctx := context.Background()
+
+	req := &authdto.LoginReq{
+		Credentials: authdto.Credentials{
+			Email:    "test@example.com",
+			Password: "SecurePassword123",
+		},
+		IsOrg: false,
+	}
+
+	hash, err := passwd.GetHash(req.Password)
+	require.NoError(suite.T(), err)
+
+	expectedExpiration := &models.ExpInfo{
+		ID:        0,
+		Verified:  false,
+		CreatedAt: time.Time{},
+		Hash:      hash,
+	}
+
+	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
+
+	tokens, err := suite.authUseCase.Login(ctx, req)
+	suite.Equal(ErrAccountExpired, err)
+	suite.Nil(tokens)
+
+	suite.mockCodeRepo.AssertExpectations(suite.T())
+}
+
+func (suite *AuthUseCaseTestSuite) TestLoginVerifiedAccountExpired() {
+	ctx := context.Background()
+	req := &authdto.LoginReq{
+		Credentials: authdto.Credentials{
+			Email:    "test@example.com",
+			Password: "SecurePassword123",
+		},
+		IsOrg: false,
+	}
+
+	hash, err := passwd.GetHash(req.Password)
+	require.NoError(suite.T(), err)
+
+	expectedExpiration := &models.ExpInfo{
+		ID:        0,
+		Verified:  true,
+		CreatedAt: time.Time{},
+		Hash:      hash,
+	}
+
+	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
+
+	tokens, err := suite.authUseCase.Login(ctx, req)
+	suite.NoError(err)
+	suite.NotNil(tokens)
+
+	suite.mockCodeRepo.AssertExpectations(suite.T())
+}
+
+func (suite *AuthUseCaseTestSuite) TestVerifyCodeFresh() {
+	ctx := context.Background()
+	req := &authdto.VerifyCodeReq{
+		Code: "0000",
+	}
+
+	notExpired := time.Now().Add(5 * time.Minute)
+
+	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
+	suite.mockCodeRepo.On("ActivateAccount", mock.Anything, req.ID, req.IsOrg).Return(nil)
+
+	tokens, err := suite.authUseCase.VerifyCode(ctx, req)
+	suite.NoError(err)
+	suite.NotNil(tokens)
+
+	suite.mockCodeRepo.AssertExpectations(suite.T())
+}
+
+func (suite *AuthUseCaseTestSuite) TestVerifyCodeExpired() {
+	ctx := context.Background()
+	req := &authdto.VerifyCodeReq{
+		Code: "0000",
+	}
+
+	notExpired := time.Now().Add(-10 * time.Minute)
+
+	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
+
+	tokens, err := suite.authUseCase.VerifyCode(ctx, req)
+	suite.Equal(ErrCodeExpired, err)
+	suite.Nil(tokens)
+
+	suite.mockCodeRepo.AssertExpectations(suite.T())
+}
+
+func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenSuccess() {
+	ctx := context.Background()
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"id":     1.0,
+		"is_org": false,
+		"type":   "access",
+		"exp":    time.Now(),
+	})
+
+	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, token)
+	suite.NoError(err)
+	suite.NotNil(tokens)
+}
+
+func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenBadClaims() {
+	ctx := context.Background()
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"id":     1.0,
+		"is_org": false,
+		"type":   00000000000,
+		"exp":    time.Now(),
+	})
+
+	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, token)
+	suite.Error(err)
+	suite.Nil(tokens)
+}
