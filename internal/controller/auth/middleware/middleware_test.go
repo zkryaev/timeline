@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"timeline/internal/entity"
 	"timeline/internal/libs/jwtlib"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 )
@@ -87,4 +90,20 @@ func (suite *MiddlewareTestSuite) TestSuspectToken() {
 
 	_, err = suite.Middeware.ExtractToken(w, r)
 	suite.Error(err)
+}
+
+func (suite *MiddlewareTestSuite) TestAnotherTokenSign() {
+	metadata := &entity.TokenMetadata{ID: 0, IsOrg: false}
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	suite.Require().NoError(err)
+	suspectToken, err := jwtlib.NewToken(privateKey, suite.tokenCfg, metadata, "access")
+	suite.NoError(err)
+	suite.Greater(len(suspectToken), 0)
+
+	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
+	r.Header.Set("Authorization", "Bearer "+suspectToken)
+	w := httptest.NewRecorder()
+
+	_, err = suite.Middeware.ExtractToken(w, r)
+	suite.Contains(err.Error(), jwt.ErrTokenSignatureInvalid.Error())
 }
