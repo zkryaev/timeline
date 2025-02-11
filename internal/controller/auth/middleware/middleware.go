@@ -17,6 +17,7 @@ import (
 var (
 	ErrTokenNotFound   = errors.New("token not found")
 	ErrAuthHeaderEmpty = errors.New("auth header empty")
+	ErrInvalidSign = errors.New("invalid sign method")
 )
 
 type Middleware struct {
@@ -66,7 +67,7 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Проверяем алгоритм подписи токена
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("wrong token signing: %v", token.Header["alg"])
+			return nil, errors.Join(ErrInvalidSign, fmt.Errorf("token sign: %s", token.Method.Alg()))
 		}
 		publicKey := &m.secret.PublicKey
 		return publicKey, nil
