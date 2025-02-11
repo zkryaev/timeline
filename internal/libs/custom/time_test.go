@@ -16,14 +16,14 @@ func TestCompareTime(t *testing.T) {
 	}{
 		{
 			name: "a earlier on minute than b",
-			a:    time.Now(),
-			b:    time.Now().Add(1 * time.Minute),
+			a:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 15, 00, 00, 00, time.UTC),
+			b:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 15, 1, 00, 00, time.UTC),
 			exp:  -1,
 		},
 		{
 			name: "a later on minute than b",
-			a:    time.Now().Add(1 * time.Minute),
-			b:    time.Now(),
+			a:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 15, 1, 0, 00, time.UTC),
+			b:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 15, 00, 00, 00, time.UTC),
 			exp:  1,
 		},
 		{
@@ -34,8 +34,8 @@ func TestCompareTime(t *testing.T) {
 		},
 		{
 			name: "a later on hour than b",
-			a:    time.Now().Add(1 * time.Hour),
-			b:    time.Now(),
+			a:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 16, 00, 00, 00, time.UTC),
+			b:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 15, 00, 00, 00, time.UTC),
 			exp:  1,
 		},
 	}
