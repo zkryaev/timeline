@@ -19,31 +19,9 @@ var (
 	ErrAuthHeaderEmpty = errors.New("auth header empty")
 )
 
-type respWriterCustom struct {
-	http.ResponseWriter
-	statusCode int
-	header     http.Header
-}
-
 type Middleware struct {
 	secret *rsa.PrivateKey
 	logger *zap.Logger
-}
-
-func (rw *respWriterCustom) WriteHeader(statusCode int) {
-	rw.statusCode = statusCode
-	rw.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (rw *respWriterCustom) Write(b []byte) (int, error) {
-	if rw.statusCode == 0 { // Если WriteHeader не был вызван
-		rw.WriteHeader(http.StatusOK)
-	}
-	return rw.ResponseWriter.Write(b)
-}
-
-func (rw *respWriterCustom) Header() http.Header {
-	return rw.ResponseWriter.Header()
 }
 
 func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
@@ -92,7 +70,7 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 		}
 		publicKey := &m.secret.PublicKey
 		return publicKey, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Name}))
 	return token, err
 }
 
@@ -100,6 +78,7 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 func (m *Middleware) IsAccessTokenValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := m.ExtractToken(w, r)
+
 		if err != nil || !token.Valid {
 			http.Error(w, "token expired", http.StatusUnauthorized)
 			return
