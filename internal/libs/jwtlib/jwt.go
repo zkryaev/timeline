@@ -1,6 +1,7 @@
 package jwtlib
 
 import (
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"errors"
 	"time"
@@ -12,7 +13,8 @@ import (
 )
 
 var (
-	ErrInvalidTokenType = errors.New("invalid token type")
+	ErrInvalidTokenType  = errors.New("invalid token type")
+	ErrInvalidSignMethod = errors.New("invalid sign method")
 )
 
 func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata) (*authdto.TokenPair, error) {
@@ -30,7 +32,7 @@ func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.Tok
 	}, nil
 }
 
-func NewToken(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata, tokenType string) (string, error) {
+func NewToken(secret interface{}, cfg config.Token, metadata *entity.TokenMetadata, tokenType string) (string, error) {
 	var exp int64
 	switch tokenType {
 	case "access":
@@ -40,7 +42,16 @@ func NewToken(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMe
 	default:
 		return "", ErrInvalidTokenType
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+	var signMethod jwt.SigningMethod
+	switch secret.(type) {
+	case *rsa.PrivateKey:
+		signMethod = jwt.SigningMethodRS256
+	case *ecdsa.PrivateKey:
+		signMethod = jwt.SigningMethodES256
+	default:
+		return "", ErrInvalidSignMethod
+	}
+	token := jwt.NewWithClaims(signMethod, jwt.MapClaims{
 		"id":     metadata.ID,
 		"is_org": metadata.IsOrg,
 		"type":   tokenType,
