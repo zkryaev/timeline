@@ -15,7 +15,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 )
@@ -37,7 +36,7 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 	suite.mockMailRepo = &mocks.Mail{}
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		suite.T().Fatal(err.Error())
+		suite.T().Fatal(err)
 	}
 	suite.mockPrivateKey = privateKey
 
@@ -65,7 +64,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 	isOrg := false
 
 	hash, err := passwd.GetHash(password)
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	expectedExpiration := &models.ExpInfo{
 		ID:        0,
@@ -103,11 +102,14 @@ func (suite *AuthUseCaseTestSuite) TestLoginFail() {
 		IsOrg: false,
 	}
 
+	hash, err := passwd.GetHash("another_passwd")
+	suite.Require().NoError(err)
+
 	expectedExpiration := &models.ExpInfo{
 		ID:        0,
 		Verified:  true,
 		CreatedAt: time.Now(),
-		Hash:      "hash",
+		Hash:      hash,
 	}
 
 	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
@@ -131,7 +133,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginNotVerifiedAccountExpired() {
 	}
 
 	hash, err := passwd.GetHash(req.Password)
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	expectedExpiration := &models.ExpInfo{
 		ID:        0,
@@ -160,7 +162,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginVerifiedAccountExpired() {
 	}
 
 	hash, err := passwd.GetHash(req.Password)
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	expectedExpiration := &models.ExpInfo{
 		ID:        0,
