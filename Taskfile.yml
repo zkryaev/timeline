@@ -8,9 +8,10 @@ vars:
   LINTER_LOG: linter_logs
   SWAGGER_SRC: ./cmd/timeline/main.go
   SWAGGER_OUT: ./docs/swagger
-  # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   MIGRATION_PATH: ./migrations
+  # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+  TEST_DSN: "postgres://user:passwd@localhost:5555/testdb?sslmode=disable"
   ENVS:
     - CONFIG_PATH
     - DB
@@ -32,7 +33,6 @@ tasks:
     silent: true
     cmds:
       - echo {{.DSN}}
-  
   migrate-up:
     desc: "migrations [applying...]"
     silent: true
@@ -63,7 +63,7 @@ tasks:
     cmds:
       - docker-compose up -d
 
-  docker-rm:
+  docker-rm-all:
     desc: "delete containers"
     cmds:
       - docker-compose down
@@ -100,6 +100,14 @@ tasks:
       - go test -short -count=1 -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o ./coverage.html
       - rm coverage.out
+
+  test-db:
+    desc: "deploy db -> apply migrations -> run repo tests"
+    silent: true
+    cmds:
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
+      - go test -v -count=1 ./internal/infrastructure/database/postgres_test
   build:
     silent: true
     cmds:
