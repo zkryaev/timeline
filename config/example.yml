@@ -5,7 +5,7 @@ app:
     host: localhost
     port: 8080
     timeout: 10s
-    iddle_timeout: 5m # connection ttl with client
+    idle_timeout: 5m # connection ttl with client
 
 token: 
   access_ttl: 1m
