@@ -28,7 +28,7 @@ func main() {
 
 	var m *migrate.Migrate
 	var err error
-	// Две попытки между которыми 1 секунда
+
 	maxRetries := 10
 	for try := maxRetries; try > 0; try-- {
 		m, err = migrate.New(
@@ -36,14 +36,14 @@ func main() {
 			dsn,
 		)
 		if err != nil {
-			log.Printf("migrator: database is unavailable. Left %d attemps\n", try)
+			log.Printf("migrator: failed open database. Left %d attemps\n", try)
 			time.Sleep(2 * time.Second)
 		} else {
 			break
 		}
 	}
 	if err != nil {
-		log.Fatal("create migrate: ", err.Error())
+		log.Fatal("migrator: ", err.Error())
 	}
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
