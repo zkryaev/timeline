@@ -31,7 +31,7 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, Info *models.CodeInfo
 	switch Info.IsOrg {
 	case false:
 		query = `
-		INSERT INTO user_verify (code, user_id)
+		INSERT INTO users_verify (code, user_id)
         VALUES ($1, $2);
 		`
 	case true:
@@ -66,7 +66,7 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, Info *models.CodeInfo) (t
 	switch Info.IsOrg {
 	case false:
 		query = `
-		SELECT expires_at FROM user_verify
+		SELECT expires_at FROM users_verify
         WHERE code = $1 AND user_id = $2;
 		`
 	case true:
