@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"context"
 	"fmt"
 	"timeline/internal/config"
 
@@ -21,7 +20,6 @@ func New(cfg config.Database) *PostgresRepo {
 }
 
 func (p *PostgresRepo) Open() error {
-	context.Background()
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		p.cfg.Host,
