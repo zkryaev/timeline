@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log"
 	"timeline/internal/infrastructure/models/orgmodel"
 )
 
@@ -84,7 +83,6 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 			WHERE org_id = $1
 			AND ($2 <= 0 OR weekday = $2)
 	`
-	log.Println(orgID, weekday)
 	res, err := tx.ExecContext(ctx, query, orgID, weekday)
 	if err != nil {
 		return err
@@ -113,7 +111,7 @@ func (p *PostgresRepo) TimetableUpdate(ctx context.Context, orgID int, new []*or
 	}()
 	query := `UPDATE timetables
 		SET 
-			weekday = $1, 
+			weekday = $1,
 			open = $2,
 			close = $3,
 			break_start = $4,
