@@ -10,6 +10,7 @@ type UserRegister struct {
 
 type UserInfo struct {
 	UserID    int    `db:"user_id"`
+	Email     string `db:"email"`
 	UUID      string `db:"uuid"`
 	FirstName string `db:"first_name"`
 	LastName  string `db:"last_name"`

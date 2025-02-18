@@ -64,7 +64,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.Use
 		}
 	}()
 	query := `
-		SELECT user_id, uuid, first_name, last_name, city, telephone, about FROM users
+		SELECT user_id, email, uuid, first_name, last_name, city, telephone, about FROM users
 		WHERE is_delete = false 
 		AND user_id = $1;
 	`

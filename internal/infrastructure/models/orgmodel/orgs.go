@@ -21,6 +21,7 @@ type OpenHours struct {
 type OrgInfo struct {
 	UUID      string  `db:"uuid"`
 	OrgID     int     `db:"org_id"`
+	Email     string  `db:"email"`
 	Name      string  `db:"name"`
 	Rating    float64 `db:"rating"`
 	Type      string  `db:"type"`
