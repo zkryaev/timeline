@@ -75,5 +75,4 @@ INSERT INTO records (reviewed, slot_id, service_id, worker_id, user_id, org_id) 
 
 INSERT INTO feedbacks (record_id, stars, feedback) VALUES
 (1, 5, 'Отличный сервис, очень доволен!'),
-(2, 4, 'Хорошая тренировка, но хотелось бы больше внимания.'),
-(3, 5, 'Замечательная библиотека, много интересных книг!');
+(2, 4, 'Хорошая тренировка, но хотелось бы больше внимания.');
