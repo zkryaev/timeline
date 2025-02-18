@@ -181,7 +181,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		}
 	}()
 	query := `
-		SELECT org_id, uuid, name, rating, type, city, address, telephone, lat, long, about 
+		SELECT org_id, email, uuid, name, rating, type, city, address, telephone, lat, long, about 
 		FROM orgs
         WHERE is_delete = false 
 		AND org_id = $1;
