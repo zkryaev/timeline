@@ -46,10 +46,12 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 		ON r.record_id = f.record_id AND r.reviewed = true
 		WHERE ($1 <= 0 OR f.record_id = $1)
 		AND ($2 <= 0 OR r.user_id = $2)
-		AND ($3 <= 0 OR r.org_id = $3);
+		AND ($3 <= 0 OR r.org_id = $3)
+		LIMIT $4
+		OFFSET $5;
 	`
 	feedbacks := make([]*recordmodel.Feedback, 0, 1)
-	if err := tx.SelectContext(ctx, &feedbacks, query, params.RecordID, params.UserID, params.OrgID); err != nil {
+	if err := tx.SelectContext(ctx, &feedbacks, query, params.RecordID, params.UserID, params.OrgID, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrFeedbackNotFound
 		}
