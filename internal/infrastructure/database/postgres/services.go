@@ -147,7 +147,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 	if tx.Commit() != nil {
 		return nil, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return Services, 0, nil
+	return Services, found, nil
 }
 
 // Удаление услуги, предоставляемой организации и удаление связи с работниками
