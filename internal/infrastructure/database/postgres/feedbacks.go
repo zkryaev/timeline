@@ -135,7 +135,7 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 		SET
 			stars = $1,
 			feedback = $2
-		WHERE record_id = $3
+		WHERE record_id = $3;
 	`
 	rows, err := tx.ExecContext(
 		ctx,
@@ -169,7 +169,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		}
 	}()
 	query := `DELETE FROM feedbacks
-		WHERE record_id = $1
+		WHERE record_id = $1;
 	`
 	rows, err := tx.ExecContext(ctx, query, params.RecordID)
 	if err != nil {
@@ -183,7 +183,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 	query = `UPDATE records
 		SET
 			reviewed = false
-		WHERE record_id = $1
+		WHERE record_id = $1;
 	`
 	rows, err = tx.ExecContext(
 		ctx,

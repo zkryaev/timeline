@@ -296,7 +296,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		FROM orgs
 		WHERE is_delete = false 
 		AND ($1 = '' OR name ILIKE '%' || $1 || '%') 
-		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
+		AND ($2 = '' OR type ILIKE '%' || $2 || '%');
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, params.Name, params.Type).Scan(&found); err != nil {
