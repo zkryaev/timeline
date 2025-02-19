@@ -64,7 +64,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.Use
 		}
 	}()
 	query := `
-		SELECT user_id, email, uuid, first_name, last_name, city, telephone, about FROM users
+		SELECT user_id, email, COALESCE(uuid, '') AS uuid, first_name, last_name, city, telephone, about FROM users
 		WHERE is_delete = false 
 		AND user_id = $1;
 	`
@@ -139,6 +139,29 @@ func (p *PostgresRepo) UserDeleteExpired(ctx context.Context) error {
 		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
 	`
 	if _, err := tx.ExecContext(ctx, query); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+// Only for tests!
+func (p *PostgresRepo) UserDelete(ctx context.Context, userID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `DELETE FROM users
+		WHERE user_id = $1;
+	`
+	if _, err := tx.ExecContext(ctx, query, userID); err != nil {
 		return err
 	}
 	if err = tx.Commit(); err != nil {

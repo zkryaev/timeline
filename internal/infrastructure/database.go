@@ -38,6 +38,7 @@ type UserRepository interface {
 	UserSave(ctx context.Context, user *usermodel.UserRegister) (int, error)
 	UserByID(ctx context.Context, userID int) (*usermodel.UserInfo, error)
 	UserDeleteExpired(ctx context.Context) error
+	UserDelete(ctx context.Context, userID int) error
 	UserUUID(ctx context.Context, userID int) (string, error)
 	UserSetUUID(ctx context.Context, userID int, NewUUID string) error
 	UserDeleteURL(ctx context.Context, URL string) error
