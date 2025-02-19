@@ -387,7 +387,9 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	`
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
-	defer rows.Close()
+	defer func(){
+		err = rows.Close()
+	}()
 	if err != nil {
 		return nil, err
 	}

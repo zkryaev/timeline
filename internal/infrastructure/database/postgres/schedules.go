@@ -160,7 +160,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 				$7::time <= break_start OR $6::time >= break_end OR 
 				($6::time < break_start AND $7::time > break_end)
 			) 
-		)
+		);
 	`
 	for _, v := range schedule.Schedule {
 		rows, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over)
@@ -178,7 +178,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		SET
 			session_duration = COALESCE(NULLIF($1, 0), session_duration)
 		WHERE is_delete = false
-		AND worker_id = $2
+		AND worker_id = $2;
 	`
 	rows, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
 	if err != nil {
@@ -271,7 +271,7 @@ func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmo
 		WHERE is_delete = false
 		AND worker_id = $1
 		AND org_id = $2
-		AND ($3 <= 0 OR weekday = $3)
+		AND ($3 <= 0 OR weekday = $3);
 	`
 	rows, err := tx.ExecContext(ctx, query, metainfo.WorkerID, metainfo.OrgID, metainfo.Weekday)
 	if err != nil {

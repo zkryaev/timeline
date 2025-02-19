@@ -43,7 +43,7 @@ func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, new []*orgmo
 	}()
 	query := `INSERT INTO timetables
 			(weekday, open, close, break_start, break_end, org_id)
-			VALUES($1, $2, $3, $4, $5, $6)
+			VALUES($1, $2, $3, $4, $5, $6);
 	`
 	for _, hours := range new {
 		res, err := tx.ExecContext(ctx, query,
@@ -81,7 +81,7 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 	}()
 	query := `DELETE FROM timetables
 			WHERE org_id = $1
-			AND ($2 <= 0 OR weekday = $2)
+			AND ($2 <= 0 OR weekday = $2);
 	`
 	res, err := tx.ExecContext(ctx, query, orgID, weekday)
 	if err != nil {
