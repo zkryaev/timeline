@@ -15,8 +15,7 @@ INSERT INTO timetables (org_id, weekday, open, close, break_start, break_end) VA
 
 INSERT INTO services (org_id, name, cost, description) VALUES
 (1, 'Общий осмотр', 1200.00, 'Проведение общего осмотра терапевтом.'),
-(2, 'Персональная тренировка', 1500.00, 'Индивидуальные занятия с профессиональным тренером.'),
-(3, 'Аренда книги', 50.00, 'Почасовая аренда редких книг из библиотеки.');
+(2, 'Персональная тренировка', 1500.00, 'Индивидуальные занятия с профессиональным тренером.');
 
 INSERT INTO workers (org_id, uuid, first_name, last_name, position, session_duration, degree) VALUES
 (1, '', 'Анна', 'Кузнецова', 'Терапевт', 60, 'Кандидат медицинских наук'),
@@ -25,8 +24,7 @@ INSERT INTO workers (org_id, uuid, first_name, last_name, position, session_dura
 
 INSERT INTO worker_services (worker_id, service_id) VALUES
 (1, 1), -- Анна Кузнецова предоставляет услугу "Общий осмотр"
-(2, 2), -- Дмитрий Смирнов предоставляет услугу "Персональная тренировка"
-(3, 3); -- Мария Васильева предоставляет услугу "Аренда книги"
+(2, 2); -- Дмитрий Смирнов предоставляет услугу "Персональная тренировка"
 
 INSERT INTO worker_schedules (org_id, worker_id, weekday, start, over) VALUES
 (1, 1, 1, '2024-11-28 08:00:00', '2024-11-28 20:00:00'), -- Анна Кузнецова (Терапевт) на понедельник
@@ -69,9 +67,7 @@ INSERT INTO slots (worker_schedule_id, worker_id, date, session_begin, session_e
 
 INSERT INTO records (reviewed, slot_id, service_id, worker_id, user_id, org_id) VALUES
 (true, 1, 1, 1, 1, 1), 
-(true, 2, 2, 2, 1, 2),
-(true, 3, 3, 3, 3, 3); 
+(false, 2, 2, 2, 1, 2);
 
 INSERT INTO feedbacks (record_id, stars, feedback) VALUES
-(1, 5, 'Отличный сервис, очень доволен!'),
-(2, 4, 'Хорошая тренировка, но хотелось бы больше внимания.');
+(1, 5, 'Отличный сервис, очень доволен!');
