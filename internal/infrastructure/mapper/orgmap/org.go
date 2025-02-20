@@ -112,8 +112,8 @@ func OrgInfoToModel(model *entity.OrgInfo) *orgmodel.OrgInfo {
 
 func OrgUpdateToModel(dto *orgdto.OrgUpdateReq) *orgmodel.Organization {
 	resp := &orgmodel.Organization{}
+	resp.OrgInfo = *OrgInfoToModel(&dto.OrgInfo) // сстрого так, иначе перезаписывается OrgID
 	resp.OrgID = dto.OrgID
-	resp.OrgInfo = *OrgInfoToModel(&dto.OrgInfo)
 	resp.Timetable = TimetableToModel(dto.Timetable)
 	return resp
 }
