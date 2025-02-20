@@ -71,8 +71,13 @@ func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, meta *models
 	query := `INSERT INTO showcase (url, org_id, type)
 		VALUES($1, $2, $3);
 	`
-	if _, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID, meta.Type); err != nil {
+	res, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID, meta.Type)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to save showcase url: %w", err)
+	case rowsAffected == 0:
+		return pgx.ErrNoRows
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -379,7 +384,7 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 	case err != nil:
 		return fmt.Errorf("failed update org info: %w", err)
 	case rowsAffected == 0:
-		return ErrOrgNotFound
+		return pgx.ErrNoRows
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -425,8 +430,13 @@ func (p *PostgresRepo) OrgDeleteExpired(ctx context.Context) error {
 		WHERE verified IS NOT true
 		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
 	`
-	if _, err := tx.ExecContext(ctx, query); err != nil {
-		return err
+	res, err := tx.ExecContext(ctx, query)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed delete expired org's accounts: %w", err)
+	case rowsAffected == 0:
+		return pgx.ErrNoRows
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
