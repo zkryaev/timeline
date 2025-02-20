@@ -50,6 +50,7 @@ type OrgRepository interface {
 	OrgByID(ctx context.Context, id int) (*orgmodel.Organization, error)
 	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
+	OrgDelete(ctx context.Context, orgID int) error
 	OrgDeleteExpired(ctx context.Context) error
 	OrgSaveShowcaseImageURL(ctx context.Context, meta *models.ImageMeta) error
 	OrgUUID(ctx context.Context, orgID int) (string, error)
