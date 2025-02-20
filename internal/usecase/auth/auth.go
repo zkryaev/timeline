@@ -104,7 +104,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		return nil, err
 	}
 	req.Credentials.Password = hash
-	id, err := uuid.NewRandom()
+	id, _ := uuid.NewRandom()
 	req.UUID = id.String()
 	userID, err := a.user.UserSave(ctx, usermap.UserRegisterToModel(req))
 	if err != nil {
@@ -142,7 +142,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 	}
 	req.Credentials.Password = hash
 	req.Name = strings.ToLower(req.Name)
-	id, err := uuid.NewRandom()
+	id, _ := uuid.NewRandom()
 	req.UUID = id.String()
 	orgID, err := a.org.OrgSave(ctx, orgmap.RegisterReqToModel(req))
 	if err != nil {
