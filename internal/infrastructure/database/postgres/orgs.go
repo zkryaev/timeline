@@ -50,7 +50,6 @@ func (p *PostgresRepo) OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (
 		org.Long,
 		org.About,
 	).Scan(&orgID); err != nil {
-		// TODO: пока отдаем фулл ошибку, а вообще нельзя внутренние ошибки отдавать наружу
 		return 0, fmt.Errorf("failed to save org: %w", err)
 	}
 	if tx.Commit() != nil {
@@ -375,11 +374,35 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 		new.About,
 		new.OrgID,
 	)
-	if err != nil {
-		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
-			return ErrOrgNotFound
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed update org info: %w", err)
+	case rowsAffected == 0:
+		return ErrOrgNotFound
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+// Only for tests
+func (p *PostgresRepo) OrgDelete(ctx context.Context, orgID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `DELETE FROM orgs
+		WHERE org_id = $1;
+	`
+	if _, err := tx.ExecContext(ctx, query, orgID); err != nil {
+		return err
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
