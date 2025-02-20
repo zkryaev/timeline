@@ -1,11 +1,16 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 	"timeline/internal/config"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+)
+
+var (
+	ErrNoRowsAffected = errors.New("no rows affected")
 )
 
 type PostgresRepo struct {
