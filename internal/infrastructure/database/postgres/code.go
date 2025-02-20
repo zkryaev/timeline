@@ -120,8 +120,13 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 		AND org_id = $2;
 		`
 	}
-	if _, err = tx.ExecContext(ctx, query, true, id); err != nil {
+	res, err := tx.ExecContext(ctx, query, true, id)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to activate account: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

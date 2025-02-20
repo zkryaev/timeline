@@ -77,7 +77,7 @@ func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, meta *models
 	case err != nil:
 		return fmt.Errorf("failed to save showcase url: %w", err)
 	case rowsAffected == 0:
-		return pgx.ErrNoRows
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -384,7 +384,7 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 	case err != nil:
 		return fmt.Errorf("failed update org info: %w", err)
 	case rowsAffected == 0:
-		return pgx.ErrNoRows
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -436,7 +436,7 @@ func (p *PostgresRepo) OrgDeleteExpired(ctx context.Context) error {
 	case err != nil:
 		return fmt.Errorf("failed delete expired org's accounts: %w", err)
 	case rowsAffected == 0:
-		return pgx.ErrNoRows
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
