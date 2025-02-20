@@ -163,14 +163,13 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		);
 	`
 	for _, v := range schedule.Schedule {
-		rows, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over)
-		if err != nil {
-			return err
-		}
-		if rows != nil {
-			if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-				return fmt.Errorf("no rows inserted")
-			}
+		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over)
+		rowsAffected, _ := res.RowsAffected()
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to add worker schedule: %w", err)
+		case rowsAffected == 0:
+			return ErrNoRowsAffected
 		}
 	}
 	query = `
@@ -180,14 +179,13 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		WHERE is_delete = false
 		AND worker_id = $2;
 	`
-	rows, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	res, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to add worker schedule: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -235,14 +233,13 @@ func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmo
 		);
 	`
 	for _, v := range schedule.Schedule {
-		rows, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.WorkerScheduleID, v.Start, v.Over)
-		if err != nil {
-			return err
-		}
-		if rows != nil {
-			if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-				return fmt.Errorf("no rows inserted")
-			}
+		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.WorkerScheduleID, v.Start, v.Over)
+		rowsAffected, _ := res.RowsAffected()
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to update worker schedule: %w", err)
+		case rowsAffected == 0:
+			return ErrNoRowsAffected
 		}
 	}
 	if tx.Commit() != nil {
@@ -273,14 +270,13 @@ func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmo
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3);
 	`
-	rows, err := tx.ExecContext(ctx, query, metainfo.WorkerID, metainfo.OrgID, metainfo.Weekday)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return ErrScheduleNotFound
-		}
+	res, err := tx.ExecContext(ctx, query, metainfo.WorkerID, metainfo.OrgID, metainfo.Weekday)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete worker schedule: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)

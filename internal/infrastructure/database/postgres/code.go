@@ -199,9 +199,15 @@ func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
 		FROM orgs_verify
 		WHERE expires_at <= (CURRENT_TIMESTAMP - INTERVAL '5 minute');
 		`
-	if _, err = tx.ExecContext(ctx, query); err != nil {
+	res, err := tx.ExecContext(ctx, query)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to delete expired codes: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
+
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}

@@ -109,13 +109,12 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) 
 		new.About,
 		new.UserID,
 	)
-	if err != nil {
-		return fmt.Errorf("failed update user info: %w", err)
-	}
-	if res != nil {
-		if _, errNoRowsAffected := res.RowsAffected(); errNoRowsAffected != nil {
-			return ErrOrgNotFound
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed update user's info: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -138,8 +137,13 @@ func (p *PostgresRepo) UserDeleteExpired(ctx context.Context) error {
 		WHERE verified IS NOT true
 		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
 	`
-	if _, err := tx.ExecContext(ctx, query); err != nil {
-		return err
+	res, err := tx.ExecContext(ctx, query)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete expired user's accounts: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -161,8 +165,13 @@ func (p *PostgresRepo) UserDelete(ctx context.Context, userID int) error {
 	query := `DELETE FROM users
 		WHERE user_id = $1;
 	`
-	if _, err := tx.ExecContext(ctx, query, userID); err != nil {
-		return err
+	res, err := tx.ExecContext(ctx, query, userID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete user: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -214,11 +223,13 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, NewUUID stri
 			uuid = $1
 		WHERE user_id = $2;
 	`
-	if rows, err := tx.ExecContext(ctx, query, NewUUID, userID); err != nil {
-		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {
-			return fmt.Errorf("nothing was added: %w", err)
-		}
-		return fmt.Errorf("failed to set user uuid: %w", err)
+	res, err := tx.ExecContext(ctx, query, NewUUID, userID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to set user's uuid: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -237,11 +248,13 @@ func (p *PostgresRepo) UserDeleteURL(ctx context.Context, URL string) error {
 		}
 	}()
 	query := `UPDATE users SET uuid = '' WHERE uuid = $1;`
-	if rows, err := tx.ExecContext(ctx, query, URL); err != nil {
-		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {
-			return fmt.Errorf("failed user url wasn't deleted: %w", err)
-		}
-		return fmt.Errorf("failed to delete user url: %w", err)
+	res, err := tx.ExecContext(ctx, query, URL)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete user's url: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

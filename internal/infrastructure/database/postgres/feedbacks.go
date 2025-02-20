@@ -82,38 +82,36 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		WHERE r.record_id = $1
 		AND CURRENT_TIMESTAMP >= s.session_end;
 	`
-	rows, err := tx.ExecContext(
+	res, err := tx.ExecContext(
 		ctx,
 		query,
 		feedback.RecordID,
 		feedback.Stars,
 		feedback.Feedback,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to set feedback: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	query = `UPDATE records
 		SET
 			reviewed = true
 		WHERE record_id = $1;
 	`
-	rows, err = tx.ExecContext(
+	res, err = tx.ExecContext(
 		ctx,
 		query,
 		feedback.RecordID,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	rowsAffected, _ = res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to set feedback: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -137,20 +135,19 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 			feedback = $2
 		WHERE record_id = $3;
 	`
-	rows, err := tx.ExecContext(
+	res, err := tx.ExecContext(
 		ctx,
 		query,
 		feedback.Stars,
 		feedback.Feedback,
 		feedback.RecordID,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to update feedback: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -171,32 +168,30 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 	query := `DELETE FROM feedbacks
 		WHERE record_id = $1;
 	`
-	rows, err := tx.ExecContext(ctx, query, params.RecordID)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	res, err := tx.ExecContext(ctx, query, params.RecordID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete feedback: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	query = `UPDATE records
 		SET
 			reviewed = false
 		WHERE record_id = $1;
 	`
-	rows, err = tx.ExecContext(
+	res, err = tx.ExecContext(
 		ctx,
 		query,
 		params.RecordID,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	rowsAffected, _ = res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete feedback: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

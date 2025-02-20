@@ -127,11 +127,13 @@ func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string
 			uuid = $1
 		WHERE org_id = $2;
 	`
-	if rows, err := tx.ExecContext(ctx, query, NewUUID, orgID); err != nil {
-		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {
-			return fmt.Errorf("nothing was added: %w", err)
-		}
-		return fmt.Errorf("failed to set org uuid: %w", err)
+	res, err := tx.ExecContext(ctx, query, NewUUID, orgID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to set org's uuid: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -162,11 +164,13 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta)
 	default:
 		return fmt.Errorf("image type %s doesn't exist: %w", entity, err)
 	}
-	if rows, err := tx.ExecContext(ctx, query, meta.URL); err != nil {
-		if _, errNoRowsAffected := rows.RowsAffected(); errNoRowsAffected != nil {
-			return fmt.Errorf("failed %s urls wasn't deleted: %w", entity, err)
-		}
-		return fmt.Errorf("failed to delete %s urls: %w", entity, err)
+	res, err := tx.ExecContext(ctx, query, meta.URL)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete %s's urls: %w", entity, err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -406,8 +410,13 @@ func (p *PostgresRepo) OrgDelete(ctx context.Context, orgID int) error {
 	query := `DELETE FROM orgs
 		WHERE org_id = $1;
 	`
-	if _, err := tx.ExecContext(ctx, query, orgID); err != nil {
-		return err
+	res, err := tx.ExecContext(ctx, query, orgID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete org: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

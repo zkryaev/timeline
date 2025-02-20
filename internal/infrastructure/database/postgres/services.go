@@ -169,14 +169,13 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 		AND service_id = $1
 		AND org_id = $2;
 	`
-	rows, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if _, NoAffectedRows := rows.RowsAffected(); NoAffectedRows != nil {
-			return ErrServiceNotFound
-		}
+	res, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete selected service: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)

@@ -234,8 +234,13 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 			slot_id = $1
 		AND busy = false;
 	`
-	if _, err := tx.ExecContext(ctx, query, req.SlotID); err != nil {
-		return nil, err
+	res, err := tx.ExecContext(ctx, query, req.SlotID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return nil, fmt.Errorf("failed to update selected slot: %w", err)
+	case rowsAffected == 0:
+		return nil, ErrNoRowsAffected
 	}
 	query = `
 		SELECT 
@@ -293,7 +298,7 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 			reviewed = COALESCE($6, reviewed)
 		WHERE record_id = $7
 	`
-	rows, err := tx.ExecContext(
+	res, err := tx.ExecContext(
 		ctx,
 		query,
 		req.UserID,
@@ -304,13 +309,12 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 		req.Reviewed,
 		req.RecordID,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to patch selected record: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -337,18 +341,17 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 			AND CURRENT_TIME < (s.session_begin::time - INTERVAL '2 hours')
 		);
 	`
-	rows, err := tx.ExecContext(
+	res, err := tx.ExecContext(
 		ctx,
 		query,
 		req.RecordID,
 	)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted") // TODO: везде вот такую строку лучше отдавать, т.к err.Error() бывает пустая в таком случае
-		}
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete selected record: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

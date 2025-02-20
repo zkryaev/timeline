@@ -72,9 +72,13 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 			if custom.CompareTime(end, v.BreakStart) > 0 && custom.CompareTime(end, v.BreakEnd) <= 0 {
 				continue
 			}
-			_, err = tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
-			if err != nil {
-				return err
+			res, err := tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
+			rowsAffected, _ := res.RowsAffected()
+			switch {
+			case err != nil:
+				return fmt.Errorf("failed to generate slot: %w", err)
+			case rowsAffected == 0:
+				return ErrNoRowsAffected
 			}
 		}
 	}
@@ -102,9 +106,13 @@ func (p *PostgresRepo) DeleteExpiredSlots(ctx context.Context) error {
 		WHERE date <= CURRENT_DATE
 		AND busy = false;
 	`
-	_, err = tx.ExecContext(ctx, query)
-	if err != nil {
-		return err
+	res, err := tx.ExecContext(ctx, query)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete expired slots: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -130,14 +138,13 @@ func (p *PostgresRepo) UpdateSlot(ctx context.Context, busy bool, params *orgmod
 		WHERE slot_id = $2
 		AND worker_id = $3;
 	`
-	rows, err := tx.ExecContext(ctx, query, busy, params.SlotID, params.WorkerID)
-	if err != nil {
-		return err
-	}
-	if rows != nil {
-		if rowsAffected, _ := rows.RowsAffected(); rowsAffected == 0 {
-			return fmt.Errorf("no rows inserted")
-		}
+	res, err := tx.ExecContext(ctx, query, busy, params.SlotID, params.WorkerID)
+	rowsAffected, _ := res.RowsAffected()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to take a slot: %w", err)
+	case rowsAffected == 0:
+		return ErrNoRowsAffected
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
