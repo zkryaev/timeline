@@ -54,12 +54,13 @@ func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, new []*orgmo
 			hours.BreakEnd,
 			orgID,
 		)
-		rowsAffected, _ := res.RowsAffected()
 		switch {
 		case err != nil:
 			return fmt.Errorf("failed to add timetable: %w", err)
-		case rowsAffected == 0:
-			return ErrNoRowsAffected
+		default:
+			if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+				return ErrNoRowsAffected
+			}
 		}
 	}
 	if err = tx.Commit(); err != nil {
@@ -83,12 +84,13 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 			AND ($2 <= 0 OR weekday = $2);
 	`
 	res, err := tx.ExecContext(ctx, query, orgID, weekday)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete timetable: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -126,12 +128,13 @@ func (p *PostgresRepo) TimetableUpdate(ctx context.Context, orgID int, new []*or
 			hours.BreakEnd,
 			orgID,
 		)
-		rowsAffected, _ := res.RowsAffected()
 		switch {
 		case err != nil:
 			return fmt.Errorf("failed to update timetable: %w", err)
-		case rowsAffected == 0:
-			return ErrNoRowsAffected
+		default:
+			if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+				return ErrNoRowsAffected
+			}
 		}
 	}
 	if err = tx.Commit(); err != nil {

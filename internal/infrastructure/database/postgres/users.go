@@ -109,12 +109,13 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) 
 		new.About,
 		new.UserID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed update user's info: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -138,13 +139,52 @@ func (p *PostgresRepo) UserDeleteExpired(ctx context.Context) error {
 		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
 	`
 	res, err := tx.ExecContext(ctx, query)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete expired user's accounts: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+func (p *PostgresRepo) UserSoftDelete(ctx context.Context, userID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `UPDATE users
+		SET 
+			is_delete = TRUE
+		WHERE user_id = $1;
+	`
+	res, err := tx.ExecContext(ctx, query, userID)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete user: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	query = `
+		DELETE FROM users_verify 
+		WHERE user_id = $1;
+	`
+	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
@@ -166,12 +206,13 @@ func (p *PostgresRepo) UserDelete(ctx context.Context, userID int) error {
 		WHERE user_id = $1;
 	`
 	res, err := tx.ExecContext(ctx, query, userID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete user: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -224,12 +265,13 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, NewUUID stri
 		WHERE user_id = $2;
 	`
 	res, err := tx.ExecContext(ctx, query, NewUUID, userID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set user's uuid: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -249,12 +291,13 @@ func (p *PostgresRepo) UserDeleteURL(ctx context.Context, URL string) error {
 	}()
 	query := `UPDATE users SET uuid = '' WHERE uuid = $1;`
 	res, err := tx.ExecContext(ctx, query, URL)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete user's url: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

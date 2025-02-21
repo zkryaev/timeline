@@ -121,12 +121,13 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 		`
 	}
 	res, err := tx.ExecContext(ctx, query, true, id)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to activate account: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -200,12 +201,13 @@ func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
 		WHERE expires_at <= (CURRENT_TIMESTAMP - INTERVAL '5 minute');
 		`
 	res, err := tx.ExecContext(ctx, query)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete expired codes: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

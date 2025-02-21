@@ -72,12 +72,13 @@ func (p *PostgresRepo) OrgSaveShowcaseImageURL(ctx context.Context, meta *models
 		VALUES($1, $2, $3);
 	`
 	res, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID, meta.Type)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to save showcase url: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -128,12 +129,13 @@ func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string
 		WHERE org_id = $2;
 	`
 	res, err := tx.ExecContext(ctx, query, NewUUID, orgID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set org's uuid: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -165,12 +167,13 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta)
 		return fmt.Errorf("image type %s doesn't exist: %w", entity, err)
 	}
 	res, err := tx.ExecContext(ctx, query, meta.URL)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete %s's urls: %w", entity, err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -383,12 +386,13 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 		new.About,
 		new.OrgID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed update org info: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -411,12 +415,71 @@ func (p *PostgresRepo) OrgDelete(ctx context.Context, orgID int) error {
 		WHERE org_id = $1;
 	`
 	res, err := tx.ExecContext(ctx, query, orgID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete org: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+func (p *PostgresRepo) OrgSoftDelete(ctx context.Context, orgID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	mainQuery := `
+		UPDATE orgs
+		SET
+			is_delete = TRUE
+		WHERE org_id = $1;
+	`
+	res, err := tx.ExecContext(ctx, mainQuery, orgID)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete org: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	queries := []string{
+		`
+		UPDATE workers
+		SET
+			is_delete = TRUE
+		WHERE org_id = $1
+	`,
+		`
+		DELETE FROM orgs_verify
+		WHERE org_id = $1
+	`,
+		`
+		DELETE FROM timetables
+		WHERE org_id = $1
+	`,
+		`
+		UPDATE services
+		SET
+			is_delete = TRUE
+		WHERE org_id = $1;
+	`,
+	}
+	for _, query := range queries {
+		if _, err = tx.ExecContext(ctx, query, orgID); err != nil {
+			return fmt.Errorf("failed to delete org: %w", err)
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -440,12 +503,13 @@ func (p *PostgresRepo) OrgDeleteExpired(ctx context.Context) error {
 		AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 day';
 	`
 	res, err := tx.ExecContext(ctx, query)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed delete expired org's accounts: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

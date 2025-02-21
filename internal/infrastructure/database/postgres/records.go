@@ -235,12 +235,13 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		AND busy = false;
 	`
 	res, err := tx.ExecContext(ctx, query, req.SlotID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return nil, fmt.Errorf("failed to update selected slot: %w", err)
-	case rowsAffected == 0:
-		return nil, ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return nil, ErrNoRowsAffected
+		}
 	}
 	query = `
 		SELECT 
@@ -309,12 +310,13 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 		req.Reviewed,
 		req.RecordID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to patch selected record: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -346,12 +348,13 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 		query,
 		req.RecordID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete selected record: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -390,7 +393,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	`
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
-	defer func(){
+	defer func() {
 		err = rows.Close()
 	}()
 	if err != nil {

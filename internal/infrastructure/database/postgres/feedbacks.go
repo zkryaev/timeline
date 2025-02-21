@@ -89,12 +89,13 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		feedback.Stars,
 		feedback.Feedback,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set feedback: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	query = `UPDATE records
 		SET
@@ -106,12 +107,13 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		query,
 		feedback.RecordID,
 	)
-	rowsAffected, _ = res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set feedback: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -142,12 +144,13 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 		feedback.Feedback,
 		feedback.RecordID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to update feedback: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -169,12 +172,13 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		WHERE record_id = $1;
 	`
 	res, err := tx.ExecContext(ctx, query, params.RecordID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete feedback: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	query = `UPDATE records
 		SET
@@ -186,12 +190,13 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		query,
 		params.RecordID,
 	)
-	rowsAffected, _ = res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete feedback: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

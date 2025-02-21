@@ -58,7 +58,7 @@ func (p *PostgresRepo) Worker(ctx context.Context, WorkerID, OrgID int) (*orgmod
 		}
 	}()
 	query := `
-		SELECT worker_id, uuid, org_id, first_name, last_name, position, degree, session_duration
+		SELECT worker_id, COALESCE(uuid, '') AS uuid, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
 		WHERE is_delete = false
 		AND worker_id = $1
@@ -184,12 +184,13 @@ func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *orgm
 		assignInfo.ServiceID,
 		assignInfo.OrgID,
 	)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to update worker: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -227,12 +228,13 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *or
 							);
 	`
 	res, err := tx.ExecContext(ctx, query, &assignInfo.OrgID, &assignInfo.WorkerID, &assignInfo.ServiceID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to unassign worker from service: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -265,7 +267,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int)
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
 	}
 	query = `
-		SELECT worker_id, uuid, org_id, first_name, last_name, position, degree, session_duration
+		SELECT worker_id, COALESCE(uuid, '') AS uuid, org_id, first_name, last_name, position, degree, session_duration
 		FROM workers
 		WHERE is_delete = false 
 		AND org_id = $1
@@ -282,7 +284,61 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, OrgID, Limit, Offset int)
 	return Workers, found, nil
 }
 
-// Удаляет работника из организации, а также связи с предоставляемыми услугами
+func (p *PostgresRepo) WorkerSoftDelete(ctx context.Context, WorkerID, OrgID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	mainQuery := `
+		UPDATE workers
+		SET
+			is_delete = TRUE
+		WHERE is_delete = FALSE
+		AND worker_id = $1
+		AND org_id = $2;
+	`
+	res, err := tx.ExecContext(ctx, mainQuery, WorkerID, OrgID)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete worker: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	queries := []string{
+		`
+		UPDATE worker_schedules
+		SET
+			is_delete = TRUE
+		WHERE worker_id = $1
+		AND is_delete = FALSE;
+	`,
+		`
+		UPDATE worker_services
+		SET
+			is_delete = TRUE
+		WHERE worker_id = $1
+		AND is_delete = FALSE;
+	`,
+	}
+	for _, query := range queries {
+		if _, err := tx.ExecContext(ctx, query, WorkerID); err != nil {
+			return fmt.Errorf("failed to delete worker's deps: %w", err)
+		}
+	}
+	if tx.Commit() != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+// Only for tests!
 func (p *PostgresRepo) WorkerDelete(ctx context.Context, WorkerID, OrgID int) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
@@ -295,17 +351,17 @@ func (p *PostgresRepo) WorkerDelete(ctx context.Context, WorkerID, OrgID int) er
 	}()
 	query := `
 		DELETE FROM workers
-		WHERE is_delete = false
-		AND worker_id = $1
+		WHERE worker_id = $1
 		AND org_id = $2;
 	`
 	res, err := tx.ExecContext(ctx, query, &WorkerID, &OrgID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete worker: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -357,12 +413,13 @@ func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, NewUUID 
 		WHERE worker_id = $2;
 	`
 	res, err := tx.ExecContext(ctx, query, NewUUID, workerID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set worker's uuid: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
@@ -382,12 +439,13 @@ func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, URL string) error {
 	}()
 	query := `UPDATE workers SET uuid = '' WHERE uuid = $1;`
 	res, err := tx.ExecContext(ctx, query, URL)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete worker's url: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)

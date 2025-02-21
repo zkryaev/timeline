@@ -150,8 +150,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 	return Services, found, nil
 }
 
-// Удаление услуги, предоставляемой организации и удаление связи с работниками
-func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
+func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, ServiceID, OrgID int) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -164,18 +163,58 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 	query := `
 		UPDATE services
 		SET
-			is_delete = true
-		WHERE is_delete = false 
+			is_delete = TRUE
+		WHERE is_delete = FALSE 
 		AND service_id = $1
 		AND org_id = $2;
 	`
 	res, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
-	rowsAffected, _ := res.RowsAffected()
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete selected service: %w", err)
-	case rowsAffected == 0:
-		return ErrNoRowsAffected
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	query = `
+		UPDATE worker_services
+		SET
+			is_delete = TRUE
+		WHERE service_id = $1;
+	`
+	if _, err = tx.ExecContext(ctx, query, &ServiceID); err != nil {
+		return fmt.Errorf("failed to delete selected service: %w", err)
+	}
+	if tx.Commit() != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		DELETE FROM services
+		WHERE service_id = $1
+		AND org_id = $2;
+	`
+	res, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete selected service: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
 	if tx.Commit() != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
