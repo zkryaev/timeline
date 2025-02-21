@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS showcase (
     url VARCHAR(100) PRIMARY KEY,
     type VARCHAR(100),
     org_id INT NOT NULL,
-    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE
+    FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE  
 );
 CREATE INDEX idx_showcase_org_id ON showcase (org_id);
 
@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS services (
     cost NUMERIC(15,2) NOT NULL,
     description VARCHAR(400),
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
-    is_delete BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS workers (
@@ -87,7 +88,8 @@ CREATE TABLE IF NOT EXISTS workers (
     session_duration INT,
     degree VARCHAR(300),
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
-    is_delete BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS worker_services (
@@ -96,7 +98,8 @@ CREATE TABLE IF NOT EXISTS worker_services (
     PRIMARY KEY (worker_id, service_id),
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE,
-    is_delete BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS worker_schedules (
@@ -108,7 +111,8 @@ CREATE TABLE IF NOT EXISTS worker_schedules (
     over TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES orgs(org_id) ON DELETE CASCADE,
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE,
-    is_delete BOOLEAN DEFAULT FALSE
+    is_delete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS slots (
@@ -120,7 +124,8 @@ CREATE TABLE IF NOT EXISTS slots (
     session_end TIMESTAMP,
     busy BOOLEAN,
     FOREIGN KEY (worker_schedule_id) REFERENCES worker_schedules(worker_schedule_id),
-    FOREIGN KEY (worker_id) REFERENCES workers(worker_id)
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS records (
@@ -136,7 +141,8 @@ CREATE TABLE IF NOT EXISTS records (
     FOREIGN KEY (worker_id) REFERENCES workers(worker_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (org_id) REFERENCES orgs(org_id),
-    UNIQUE (slot_id)
+    UNIQUE (slot_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS feedbacks (
@@ -145,5 +151,6 @@ CREATE TABLE IF NOT EXISTS feedbacks (
     stars INT,
     feedback TEXT,
     FOREIGN KEY (record_id) REFERENCES records(record_id) ON DELETE CASCADE,
-    CONSTRAINT unique_record_id UNIQUE(record_id)
+    CONSTRAINT unique_record_id UNIQUE(record_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
