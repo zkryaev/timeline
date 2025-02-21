@@ -28,7 +28,7 @@ func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepos
 
 func (o *OrgUseCase) Organization(ctx context.Context, id int) (*orgdto.Organization, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("Id must be > 0")
+		return nil, fmt.Errorf("id must be > 0")
 	}
 	data, err := o.org.OrgByID(ctx, id)
 	if err != nil {
