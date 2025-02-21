@@ -37,8 +37,9 @@ type UserRepository interface {
 	UserUpdate(ctx context.Context, new *usermodel.UserInfo) error
 	UserSave(ctx context.Context, user *usermodel.UserRegister) (int, error)
 	UserByID(ctx context.Context, userID int) (*usermodel.UserInfo, error)
-	UserDeleteExpired(ctx context.Context) error
 	UserDelete(ctx context.Context, userID int) error
+	UserSoftDelete(ctx context.Context, userID int) error
+	UserDeleteExpired(ctx context.Context) error
 	UserUUID(ctx context.Context, userID int) (string, error)
 	UserSetUUID(ctx context.Context, userID int, NewUUID string) error
 	UserDeleteURL(ctx context.Context, URL string) error
@@ -51,6 +52,7 @@ type OrgRepository interface {
 	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
 	OrgDelete(ctx context.Context, orgID int) error
+	OrgSoftDelete(ctx context.Context, orgID int) error
 	OrgDeleteExpired(ctx context.Context) error
 	OrgSaveShowcaseImageURL(ctx context.Context, meta *models.ImageMeta) error
 	OrgUUID(ctx context.Context, orgID int) (string, error)
@@ -89,6 +91,7 @@ type WorkerRepository interface {
 	WorkerUnAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error
 	WorkerList(ctx context.Context, OrgID, Limit, Offset int) ([]*orgmodel.Worker, int, error)
 	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
+	WorkerSoftDelete(ctx context.Context, WorkerID, OrgID int) error
 	WorkerUUID(ctx context.Context, workerID int) (string, error)
 	WorkerSetUUID(ctx context.Context, workerID int, NewUUID string) error
 	WorkerDeleteURL(ctx context.Context, URL string) error
@@ -101,6 +104,7 @@ type ServiceRepository interface {
 	ServiceUpdate(ctx context.Context, service *orgmodel.Service) error
 	ServiceList(ctx context.Context, OrgID int, Limit, Offset int) ([]*orgmodel.Service, int, error)
 	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
+	ServiceSoftDelete(ctx context.Context, ServiceID, OrgID int) error
 }
 
 type SlotRepository interface {
