@@ -81,7 +81,7 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int, Limit int, Page
 }
 
 func (o *OrgUseCase) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
-	if err := o.org.ServiceDelete(ctx, ServiceID, OrgID); err != nil {
+	if err := o.org.ServiceSoftDelete(ctx, ServiceID, OrgID); err != nil {
 		o.Logger.Error(
 			"failed to delete service",
 			zap.Error(err),

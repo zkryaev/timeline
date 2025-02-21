@@ -97,7 +97,7 @@ func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID, Limit, Page int) (*o
 	return resp, nil
 }
 func (o *OrgUseCase) WorkerDelete(ctx context.Context, WorkerID, OrgID int) error {
-	if err := o.org.WorkerDelete(ctx, WorkerID, OrgID); err != nil {
+	if err := o.org.WorkerSoftDelete(ctx, WorkerID, OrgID); err != nil {
 		o.Logger.Error(
 			"failed to delete worker",
 			zap.Error(err),
