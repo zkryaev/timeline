@@ -51,7 +51,7 @@ func (suite *PostgresTestSuite) TestServiceQueries() {
 			suite.Equal(&expected.ServiceInfo, service.ServiceInfo)
 		}
 	}
-
+	suite.Require().NoError(suite.db.ServiceSoftDelete(ctx, expected.ServiceID, expected.OrgID))
 	suite.NoError(suite.db.ServiceDelete(ctx, expected.ServiceID, expected.OrgID))
 	serviceList, found, err = suite.db.ServiceList(ctx, expected.OrgID, 5, 0)
 	suite.NoError(err)

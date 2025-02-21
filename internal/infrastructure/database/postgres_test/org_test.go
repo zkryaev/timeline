@@ -94,5 +94,6 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 			suite.Equal(expOrg.Type, resp.Orgs[i].Type)
 		}
 	}
-	//suite.NoError(suite.db.OrgDelete(ctx, orgID))
+	suite.Require().NoError(suite.db.OrgSoftDelete(ctx, orgID))
+	suite.NoError(suite.db.OrgDelete(ctx, orgID))
 }

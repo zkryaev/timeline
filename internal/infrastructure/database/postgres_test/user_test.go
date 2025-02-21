@@ -63,5 +63,6 @@ func (suite *PostgresTestSuite) TestUserQueries() {
 	suite.Empty(userUUID)
 	suite.NotEqual(expUser.UUID, userUUID)
 
+	suite.Require().NoError(suite.db.UserSoftDelete(ctx, expUser.UserID))
 	suite.NoError(suite.db.UserDelete(ctx, expUser.UserID))
 }
