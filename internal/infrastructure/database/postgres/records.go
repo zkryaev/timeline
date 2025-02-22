@@ -195,10 +195,10 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	return recs, found, nil
 }
 
-func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, error) {
+func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -224,7 +224,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		req.SlotID,
 		req.WorkerID,
 	).Scan(&recordID); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	query = `
 		UPDATE slots
@@ -237,10 +237,10 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 	res, err := tx.ExecContext(ctx, query, req.SlotID)
 	switch {
 	case err != nil:
-		return nil, fmt.Errorf("failed to update selected slot: %w", err)
+		return nil, 0, fmt.Errorf("failed to update selected slot: %w", err)
 	default:
 		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
-			return nil, ErrNoRowsAffected
+			return nil, 0, ErrNoRowsAffected
 		}
 	}
 	query = `
@@ -271,12 +271,12 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		&record.Begin,
 		&record.End,
 	); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return record, nil
+	return record, recordID, nil
 }
 
 func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record) error {
@@ -297,7 +297,7 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 			slot_id = COALESCE(NULLIF($4, 0), slot_id),
 			worker_id = COALESCE(NULLIF($5, 0), worker_id),
 			reviewed = COALESCE($6, reviewed)
-		WHERE record_id = $7
+		WHERE record_id = $7;
 	`
 	res, err := tx.ExecContext(
 		ctx,
@@ -324,7 +324,8 @@ func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record)
 	return nil
 }
 
-func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record) error {
+// Only for tests!
+func (p *PostgresRepo) RecordDelete(ctx context.Context, recordID int) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -335,18 +336,51 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, req *recordmodel.Record
 		}
 	}()
 	query := `DELETE FROM records
+		WHERE record_id = $1;
+	`
+	res, err := tx.ExecContext(
+		ctx,
+		query,
+		recordID,
+	)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete selected record: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return nil
+}
+
+// Не софт, просто не дает удалить ранее чем за 2 часа
+func (p *PostgresRepo) RecordSoftDelete(ctx context.Context, recordID int) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}() // TODO: слот надо бы освобождать тоже если будет is_delete
+	query := `DELETE FROM records
 		WHERE record_id
 		IN (SELECT r.record_id
 			FROM records r
 			JOIN slots s ON r.slot_id = s.slot_id AND r.record_id = $1
 			WHERE s.date >= CURRENT_DATE
-			AND CURRENT_TIME < (s.session_begin::time - INTERVAL '2 hours')
+			AND CURRENT_TIMESTAMP < (s.session_begin - INTERVAL '2 hours')
 		);
 	`
 	res, err := tx.ExecContext(
 		ctx,
 		query,
-		req.RecordID,
+		recordID,
 	)
 	switch {
 	case err != nil:

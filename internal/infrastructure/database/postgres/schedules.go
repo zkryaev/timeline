@@ -31,7 +31,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			COUNT(worker_id)
 		FROM workers
 		WHERE is_delete = false 
-		AND ($1 <= 0 OR worker_id = $1)
+		AND ($1 <= 0 OR org_id = $1)
 		AND org_id = $1
 		AND ($2 <= 0 OR worker_id = $2);
 	`
@@ -152,7 +152,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		AND EXISTS (
 			SELECT 1
 			FROM orgschedule
-			WHERE $6::time >= open_time 
+			WHERE $6::time >= open_time
 			AND $6::time <= close_time
 			AND $7::time >= open_time 
 			AND $7::time <= close_time
@@ -253,7 +253,7 @@ func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmo
 
 // Если weekday = 0, то удаляется расписание на всю неделю
 // Иначе заданный день. (1.Пн...7.Вс)
-func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error {
+func (p *PostgresRepo) SoftDeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -270,6 +270,39 @@ func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmo
 			is_delete = true
 		WHERE is_delete = false
 		AND worker_id = $1
+		AND org_id = $2
+		AND ($3 <= 0 OR weekday = $3);
+	`
+	res, err := tx.ExecContext(ctx, query, metainfo.WorkerID, metainfo.OrgID, metainfo.Weekday)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to delete worker schedule: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	if tx.Commit() != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+// Only for tests!
+func (p *PostgresRepo) DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	query := `
+		DELETE FROM worker_schedules
+		WHERE worker_id = $1
 		AND org_id = $2
 		AND ($3 <= 0 OR weekday = $3);
 	`
