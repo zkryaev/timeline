@@ -3,6 +3,7 @@ version: '3'
 dotenv: ['.env']
 
 vars:
+  PROJECT_ROOT: /home/${USER}/timeline/
   ENTRYPOINT: ./cmd/timeline/
   OUTPUT_BINARY: bin/timeline
   LINTER_LOG: linter_logs
@@ -97,17 +98,21 @@ tasks:
   coverage:
     desc: "run tests and show coverage"
     cmds:
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
+      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage-nohup.out; docker stop test-postgres; echo "> removed:" &>> coverage-nohup.out; docker rm test-postgres' &>> coverage-nohup.out &
       - go test -short -count=1 -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o ./coverage.html
       - rm coverage.out
 
   test-db:
-    desc: "deploy db -> apply migrations -> run repo tests"
+    desc: "deploy db -> apply migrations -> run repo tests -> remove db"
     silent: true
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
       - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
-      - go test -v -count=1 ./internal/infrastructure/database/postgres_test
+      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test-db-docker.out; docker stop test-postgres; echo "> removed:" &>> test-db-docker.out; docker rm test-postgres' &>> test-db-docker.out &
+      - go test -v -count=1 ./internal/infrastructure/database/postgres
   build:
     silent: true
     cmds:
