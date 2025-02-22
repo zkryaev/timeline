@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/recordmap"
 )
@@ -16,7 +17,7 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 		Feedback: "Хорошая тренировка, но хотелось бы больше внимания.",
 	}
 
-	suite.NoError(suite.db.FeedbackSet(ctx, recordmap.FeedbackToModel(exp)))
+	suite.Require().NoError(suite.db.FeedbackSet(ctx, recordmap.FeedbackToModel(exp)), fmt.Sprintf("record_id=%d", exp.RecordID))
 
 	params := &recordto.FeedbackParams{
 		Limit: 5,
