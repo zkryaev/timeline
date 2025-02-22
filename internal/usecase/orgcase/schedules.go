@@ -76,7 +76,7 @@ func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.
 }
 
 func (o *OrgUseCase) DeleteWorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) error {
-	if err := o.org.DeleteWorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params)); err != nil {
+	if err := o.org.SoftDeleteWorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params)); err != nil {
 		if errors.Is(err, postgres.ErrScheduleNotFound) {
 			return err
 		}

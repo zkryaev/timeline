@@ -58,7 +58,7 @@ func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordL
 }
 
 func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) error {
-	record, err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec))
+	record, _, err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec))
 	if err != nil {
 		r.Logger.Error(
 			"failed to add record",
@@ -88,7 +88,7 @@ func (r *RecordUseCase) RecordPatch(ctx context.Context, rec *recordto.Record) e
 }
 
 func (r *RecordUseCase) RecordDelete(ctx context.Context, rec *recordto.Record) error {
-	if err := r.records.RecordDelete(ctx, recordmap.RecordToModel(rec)); err != nil {
+	if err := r.records.RecordSoftDelete(ctx, rec.RecordID); err != nil {
 		r.Logger.Error(
 			"failed to add record",
 			zap.Error(err),
