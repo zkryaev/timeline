@@ -68,9 +68,10 @@ type OrgRepository interface {
 type RecordRepository interface {
 	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
 	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error)
-	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, error)
+	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, int, error)
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
-	RecordDelete(ctx context.Context, req *recordmodel.Record) error
+	RecordDelete(ctx context.Context, recordID int) error
+	RecordSoftDelete(ctx context.Context, recordID int) error
 	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)
 	FeedbackRepository
 }
@@ -119,6 +120,7 @@ type ScheduleRepository interface {
 	AddWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
 	UpdateWorkerSchedule(ctx context.Context, Schedule *orgmodel.WorkerSchedule) error
 	DeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error
+	SoftDeleteWorkerSchedule(ctx context.Context, metainfo *orgmodel.ScheduleParams) error
 }
 
 type FeedbackRepository interface {
