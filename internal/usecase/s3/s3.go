@@ -59,16 +59,29 @@ func (s *S3UseCase) Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error 
 		return ErrGenUUID
 	}
 	URL := NewUUID.String()
+	var prevURL string
 	switch {
 	case dto.Entity == ORG:
+		prevURL, err = s.org.OrgUUID(ctx, dto.EntityID)
+		if err != nil {
+			return fmt.Errorf("%s: %w", ErrGetUUID, err)
+		}
 		if err := s.org.OrgSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
 	case dto.Entity == USER:
+		prevURL, err = s.user.UserUUID(ctx, dto.EntityID)
+		if err != nil {
+			return fmt.Errorf("%s: %w", ErrGetUUID, err)
+		}
 		if err := s.user.UserSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
 	case dto.Entity == WORKER:
+		prevURL, err = s.org.WorkerUUID(ctx, dto.EntityID)
+		if err != nil {
+			return fmt.Errorf("%s: %w", ErrGetUUID, err)
+		}
 		if err := s.org.WorkerSetUUID(ctx, dto.EntityID, URL); err != nil {
 			return fmt.Errorf("%s: %w", ErrSetUUID, err)
 		}
@@ -94,6 +107,11 @@ func (s *S3UseCase) Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error 
 	}
 	if err := s.minio.Upload(ctx, URL, dto.Name, dto.Size, dto.Reader); err != nil {
 		return fmt.Errorf("failed to upload file to s3: %w", err)
+	}
+	if prevURL != "" {
+		if err := s.minio.Delete(ctx, prevURL); err != nil {
+			s.Logger.Error("image delete failed at the end of uploading new image", zap.Error(err))
+		}
 	}
 	return nil
 }
