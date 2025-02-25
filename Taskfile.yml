@@ -95,6 +95,27 @@ tasks:
       - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
       - mockery --all --dir ./internal/controller/ --output ./mocks/controller
 
+  img-upload:
+    desc: "launch script that make requests to upload images to S3"
+    silent: true
+    vars:
+      API_URL: "http://localhost:8100/v1/media"
+      IMAGES_DIR: "internal/controller/s3/test-requests/images"
+    cmds:
+      - |
+        find {{.IMAGES_DIR}} -type f | while IFS= read -r FILE; do
+          ENTITY_ID=$(dirname "$FILE" | awk -F/ '{print $(NF-1)}')
+          ENTITY=$(dirname "$FILE" | awk -F/ '{print $NF}')
+
+          echo "Uploading $FILE with entity=$ENTITY and entityID=$ENTITY_ID"
+
+          curl -X POST "{{.API_URL}}" \
+            -F "entity=$ENTITY" \
+            -F "entityID=$ENTITY_ID" \
+            -F "file=@$FILE"
+
+          echo "Done."
+        done
   coverage:
     desc: "run tests and show coverage"
     cmds:
