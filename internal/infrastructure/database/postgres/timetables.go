@@ -92,6 +92,17 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 			return ErrNoRowsAffected
 		}
 	}
+	query = `
+		UPDATE worker_schedules
+		SET 
+			is_delete = true
+		WHERE is_delete = false
+		AND org_id = $1
+		AND ($2 <= 0 OR weekday = $2);
+	`
+	if _, err := tx.ExecContext(ctx, query, orgID, weekday); err != nil {
+		return fmt.Errorf("failed to delete timetable: %w", err)
+	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
