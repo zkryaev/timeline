@@ -125,7 +125,7 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 	case err != nil:
 		return fmt.Errorf("failed to activate account: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
@@ -205,7 +205,7 @@ func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
 	case err != nil:
 		return fmt.Errorf("failed to delete expired codes: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
