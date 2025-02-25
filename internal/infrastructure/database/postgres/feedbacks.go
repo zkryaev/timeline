@@ -93,7 +93,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 	case err != nil:
 		return fmt.Errorf("failed to set feedback: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
@@ -111,7 +111,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 	case err != nil:
 		return fmt.Errorf("failed to set feedback: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
@@ -148,7 +148,7 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 	case err != nil:
 		return fmt.Errorf("failed to update feedback: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
@@ -176,7 +176,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 	case err != nil:
 		return fmt.Errorf("failed to delete feedback: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
@@ -194,7 +194,7 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 	case err != nil:
 		return fmt.Errorf("failed to delete feedback: %w", err)
 	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0{
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
 		}
 	}
