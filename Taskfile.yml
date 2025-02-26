@@ -35,6 +35,7 @@ tasks:
     silent: true
     cmds:
       - echo {{.DSN}}
+      
   migrate-up:
     desc: "migrations [applying...]"
     silent: true
@@ -69,16 +70,6 @@ tasks:
     desc: "delete containers"
     cmds:
       - docker-compose down
-
-  docker-s3:
-    desc: "run s3"
-    cmds:
-      - docker-compose up minio -d
-
-  docker-db:
-    desc: "run db"
-    cmds:
-      - docker-compose up postgres -d
 
   swagger:
     desc: "generate swagger docs"
