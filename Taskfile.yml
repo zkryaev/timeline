@@ -3,13 +3,14 @@ version: '3'
 dotenv: ['.env']
 
 vars:
-  PROJECT_ROOT: /home/${USER}/timeline/
-  ENTRYPOINT: ./cmd/timeline/
-  OUTPUT_BINARY: bin/timeline
-  LINTER_LOG: linter_logs
-  SWAGGER_SRC: ./cmd/timeline/main.go
-  SWAGGER_OUT: ./docs/swagger
-  MIGRATION_PATH: ./migrations
+  PROJECT_ROOT: /home/${USER}/timeline
+  ENTRYPOINT: cmd/timeline
+  OUTPUT_BINARY: bin
+  LINTER_OUT: linter.out
+  APP_LOGS: logs/logs.txt
+  SWAGGER_SRC: cmd/timeline/main.go
+  SWAGGER_OUT: docs/swagger
+  MIGRATION_PATH: migrations
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
   DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
   TEST_DSN: "postgres://user:passwd@localhost:5555/testdb?sslmode=disable"
@@ -87,7 +88,7 @@ tasks:
   lint:
     desc: "run GolangCI-Lint and save output to file"
     cmds:
-      - golangci-lint run > {{.LINTER_LOG}}.txt
+      - golangci-lint run > {{.LINTER_OUT}}
   
   mocks:
     desc: "generate mocks for every domen"
@@ -147,16 +148,24 @@ tasks:
       - ./{{.OUTPUT_BINARY}}
 
   clean:
-    desc: "remove generated swagger docs, binary, and linter log"
+    desc: "remove generated swagger docs, binary, and \".out\" files"
+    silent: true
     cmds:
-      - rm -r ./{{.SWAGGER_DOCS}}/*
-      - rm -r ./{{.OUTPUT_BINARY}}/*
-      - rm -r ./{{.LINTER_LOG}}/*
+      - |
+        find "{{.SWAGGER_OUT}}" -mindepth 1 -maxdepth 1 -type f -delete 2>/dev/null || true
+        find "{{.SWAGGER_OUT}}" -mindepth 1 -maxdepth 1 -type d -delete 2>/dev/null || true
+        find "{{.OUTPUT_BINARY}}" -mindepth 1 -maxdepth 1 -type f -delete 2>/dev/null || true
+        find "{{.OUTPUT_BINARY}}" -mindepth 1 -maxdepth 1 -type d -delete 2>/dev/null || true
+        find "{{.APP_LOGS}}" -delete 2>/dev/null || true  
+        find . -name "*.out" -delete 2>/dev/null || true 
+        find "coverage.html" -delete 2>/dev/null || true 
+        echo "clean up!"
 
   deploy:
     desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
     deps: [check-envs, docker-all, migrate-up, build]
     cmds:
+      - nohup bash -c 'sleep 5; task img-upload' &> img-upload-logs.out &
       - ./{{.OUTPUT_BINARY}}
 
   default:
