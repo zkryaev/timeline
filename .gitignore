@@ -1,11 +1,10 @@
-logs/*
-coverage*
+*.out
 .task
-/config/local.yml
 .env
-private_key.pem
-linter_logs*
+*.pem
 bin
-db_init_user
-docs/swagger
+logs/*
 mocks/*
+coverage.html
+config/local.yml
+docs/swagger
