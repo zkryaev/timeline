@@ -23,7 +23,6 @@ require (
 	github.com/minio/minio-go/v7 v7.0.82
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/http-swagger v1.3.4
-	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.31.0
 )
 
@@ -54,6 +53,7 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
+	github.com/swaggo/swag v1.16.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
