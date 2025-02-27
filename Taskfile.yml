@@ -106,7 +106,7 @@ tasks:
             -F "entityID=$ENTITY_ID" \
             -F "file=@$FILE"
 
-          echo "Done."
+          echo "===================================="
         done
   coverage:
     desc: "run tests and show coverage"
