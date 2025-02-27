@@ -50,37 +50,43 @@ func New(storage S3UseCase, Logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 	const maxUploadSize = 2 << 20 // 2 MB
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil && err != io.EOF {
-		http.Error(w, "error parsing form", http.StatusBadRequest)
-		return
-	}
-	metainfo := s3dto.DomenInfo{
-		Entity: r.FormValue("entity"),
-		EntityID: func() int {
-			id, _ := strconv.Atoi(r.FormValue("entityID"))
-			return id
-		}(),
-	}
-	files, ok := r.MultipartForm.File["file"]
-	if !ok || len(files) <= 0 {
-		http.Error(w, "file is required", http.StatusBadRequest)
-		return
-	}
-	fileInfo := files[0]
-	contentType := fileInfo.Header.Get("Content-Type")
-	if !validation.IsImage(contentType) {
-		http.Error(w, "wrong image format", http.StatusBadRequest)
-		return
-	}
-	fileReader, err := fileInfo.Open()
-	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	entityID, err := strconv.Atoi(r.FormValue("entityID"))
+	entity := r.FormValue("entity")
+	switch {
+	case err != nil || entityID <= 0:
+		http.Error(w, "entityID: "+err.Error(), http.StatusBadRequest)
+		return
+	case entity == "":
+		http.Error(w, "entity empty", http.StatusBadRequest)
+		return
+	}
+	file, meta, err := r.FormFile("file")
+	switch {
+	case err != nil || meta.Size == 0:
+		http.Error(w, "file not found", http.StatusBadRequest)
+		return
+	case meta.Size > maxUploadSize:
+		http.Error(w, "file is too big", http.StatusBadRequest)
+		return
+	}
+	contentType := meta.Header.Get("Content-Type")
+	if !validation.IsImage(contentType) {
+		http.Error(w, "invalid image format", http.StatusBadRequest)
+		return
+	}
+	domen := s3dto.DomenInfo{
+		Entity:   entity,
+		EntityID: entityID,
+	}
 	dto := s3dto.CreateFileDTO{
-		DomenInfo: metainfo,
-		Name:      fileInfo.Filename,
-		Size:      fileInfo.Size,
-		Reader:    fileReader,
+		DomenInfo: domen,
+		Name:      meta.Filename,
+		Size:      meta.Size,
+		Reader:    file,
 	}
 	if err := s3.usecase.Upload(r.Context(), &dto); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
