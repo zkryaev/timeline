@@ -1,7 +1,7 @@
 package entity
 
 type Worker struct {
-	UUID            string   `json:"uuid"`
+	UUID            string   `json:"uuid,omitempty"`
 	FirstName       string   `json:"first_name,omitempty"`
 	LastName        string   `json:"last_name,omitempty"`
 	Position        string   `json:"position,omitempty"`
