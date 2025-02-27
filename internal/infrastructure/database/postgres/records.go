@@ -119,11 +119,13 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	query = `
 		SELECT 
 			srvc.name AS service_name, 
-			srvc.cost, 
+			srvc.cost,
+			COALESCE(w.uuid, '') AS worker_uuid,
 			w.first_name AS worker_first_name, 
-			w.last_name AS worker_last_name, 
+			w.last_name AS worker_last_name,
 			o.name AS org_name,
 			o.type AS org_type,
+			COALESCE(u.uuid, '') AS user_uuid,
 			u.first_name AS user_first_name,
 			u.last_name AS user_last_name, 
 			s.date,
@@ -167,10 +169,12 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		err := rows.Scan(
 			&rec.Service.Name,
 			&rec.Service.Cost,
+			&rec.Worker.UUID,
 			&rec.Worker.FirstName,
 			&rec.Worker.LastName,
 			&rec.Org.Name,
 			&rec.Org.Type,
+			&rec.User.UUID,
 			&rec.User.FirstName,
 			&rec.User.LastName,
 			&rec.Slot.Date,
