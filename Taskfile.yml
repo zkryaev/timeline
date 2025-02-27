@@ -3,9 +3,9 @@ version: '3'
 dotenv: ['.env']
 
 vars:
-  PROJECT_ROOT: /home/${USER}/timeline
-  ENTRYPOINT: cmd/timeline
-  OUTPUT_BINARY: bin
+  PROJECT_ROOT: /home/${USER}/timeline/
+  ENTRYPOINT: cmd/timeline/main.go
+  OUTPUT_BINARY: bin/timeline
   LINTER_OUT: linter.out
   APP_LOGS: logs/logs.txt
   SWAGGER_SRC: cmd/timeline/main.go
@@ -92,7 +92,7 @@ tasks:
     silent: true
     vars:
       API_URL: "http://localhost:8100/v1/media"
-      IMAGES_DIR: "internal/controller/s3/test-requests/images"
+      IMAGES_DIR: "internal/controller/s3/test-image"
     cmds:
       - |
         find {{.IMAGES_DIR}} -type f | while IFS= read -r FILE; do
@@ -113,7 +113,7 @@ tasks:
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
       - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
-      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage-nohup.out; docker stop test-postgres; echo "> removed:" &>> coverage-nohup.out; docker rm test-postgres' &>> coverage-nohup.out &
+      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
       - go test -short -count=1 -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o ./coverage.html
       - rm coverage.out
@@ -124,7 +124,7 @@ tasks:
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
       - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
-      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test-db-docker.out; docker stop test-postgres; echo "> removed:" &>> test-db-docker.out; docker rm test-postgres' &>> test-db-docker.out &
+      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
       - go test -v -count=1 ./internal/infrastructure/database/postgres
   build:
     silent: true
@@ -156,7 +156,7 @@ tasks:
     desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
     deps: [check-envs, docker-all, migrate-up, build]
     cmds:
-      - nohup bash -c 'sleep 5; task img-upload' &> img-upload-logs.out &
+      - nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
       - ./{{.OUTPUT_BINARY}}
 
   default:
