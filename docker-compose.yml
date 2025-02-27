@@ -34,19 +34,19 @@ services:
         MINIO_USE_SSL: ${S3_SSLMODE}
         MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
         MINIO_CACHE: /mnt/minio_cache
-      volumes:
-        - minio_data:/data # Хранилище данных MinIO
-        - minio_config:/root/.minio # Конфигурационные файлы MinIO
+      #volumes:
+        #- minio_data:/data
+        #- minio_config:/root/.minio
       healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
         interval: 30s
         timeout: 20s
         retries: 3
-volumes:
+#volumes:
 #  pgdata:
-  minio_data:
-  minio_config:
-  minio_cache:
+#  minio_data:
+#  minio_config:
+#  minio_cache:
 
 networks:
   default:
