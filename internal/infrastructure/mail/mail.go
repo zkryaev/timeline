@@ -163,7 +163,6 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 					)
 				}
 			}
-			open = false
 			return
 		}
 	}

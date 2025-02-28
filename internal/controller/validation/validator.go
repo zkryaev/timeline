@@ -7,15 +7,14 @@ import (
 )
 
 const (
-	dateFormat = "2001-01-01"
-	timeFormat = "15:04"
+	TimeOnlyHM = "15:04"
 )
 
 func validTime(fl validator.FieldLevel) bool {
 	inputTime := fl.Field().String()
 
 	// Парсим строку в time.Time
-	_, err := time.Parse(timeFormat, inputTime)
+	_, err := time.Parse(TimeOnlyHM, inputTime)
 	// Если ошибка парсинга, то возвращаем false (значит, время некорректное)
 	return err == nil
 }
@@ -23,17 +22,33 @@ func validTime(fl validator.FieldLevel) bool {
 func validDate(fl validator.FieldLevel) bool {
 	inputDate := fl.Field().String()
 
-	_, err := time.Parse(dateFormat, inputDate)
+	_, err := time.Parse(time.DateOnly, inputDate)
 
 	return err == nil
 }
 
-func NewCustomValidator() *validator.Validate {
+func NewCustomValidator() (*validator.Validate, error) {
 	validate := validator.New()
+	
+	validationList := []struct{
+		field string
+		check func (fl validator.FieldLevel) bool
+	}{
+		{
+			field: "time",
+			check: validTime,
+		},
+		{
+			field: "date",
+			check: validDate,
+		},
+	}
 
-	// Регистрация кастомных функций валидации полей
-	validate.RegisterValidation("time", validTime)
-	validate.RegisterValidation("date", validDate)
+	for _, v := range validationList {
+		if err := validate.RegisterValidation(v.field, v.check); err != nil {
+			return nil, err
+		}
+	}
 
-	return validate
+	return validate, nil
 }

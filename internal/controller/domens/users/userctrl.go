@@ -200,5 +200,4 @@ func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}
-
 }

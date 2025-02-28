@@ -128,7 +128,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		Type:  mail.VerificationType,
 		Value: code,
 	})
-	return &authdto.RegisterResp{Id: userID}, nil
+	return &authdto.RegisterResp{ID: userID}, nil
 }
 
 func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
@@ -166,7 +166,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 		Type:  mail.VerificationType,
 		Value: code,
 	})
-	return &authdto.RegisterResp{Id: orgID}, nil
+	return &authdto.RegisterResp{ID: orgID}, nil
 }
 
 func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq) {

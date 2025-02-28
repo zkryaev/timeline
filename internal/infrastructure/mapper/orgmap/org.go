@@ -118,23 +118,23 @@ func OrgUpdateToModel(dto *orgdto.OrgUpdateReq) *orgmodel.Organization {
 	return resp
 }
 
-func TimetableToEntity(Timetable []*orgmodel.OpenHours) []*entity.OpenHours {
-	if len(Timetable) == 0 {
+func TimetableToEntity(timetable []*orgmodel.OpenHours) []*entity.OpenHours {
+	if len(timetable) == 0 {
 		return nil
 	}
-	resp := make([]*entity.OpenHours, 0, len(Timetable))
-	for _, v := range Timetable {
+	resp := make([]*entity.OpenHours, 0, len(timetable))
+	for _, v := range timetable {
 		resp = append(resp, OpenHoursToDTO(v))
 	}
 	return resp
 }
 
-func TimetableToModel(Timetable []*entity.OpenHours) []*orgmodel.OpenHours {
-	if len(Timetable) == 0 {
+func TimetableToModel(timetable []*entity.OpenHours) []*orgmodel.OpenHours {
+	if len(timetable) == 0 {
 		return nil
 	}
 	resp := make([]*orgmodel.OpenHours, 0, 2)
-	for _, v := range Timetable {
+	for _, v := range timetable {
 		resp = append(resp, OpenHoursToModel(v))
 	}
 	return resp

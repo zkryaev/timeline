@@ -59,7 +59,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		Limit:    queryParams["limit"].(int),
 		Page:     queryParams["page"].(int),
 	}
-	if err := rec.validator.Struct(req); err != nil {
+	if err = rec.validator.Struct(req); err != nil {
 		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -136,7 +136,6 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks/info [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
-
 	query := map[string]bool{
 		"record_id": true,
 	}
@@ -151,11 +150,11 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := &recordto.FeedbackParams{RecordID: recordid}
-	if err := rec.validator.Struct(req); err != nil {
+	if err = rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.FeedbackDelete(r.Context(), req); err != nil {
+	if err = rec.usecase.FeedbackDelete(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

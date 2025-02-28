@@ -112,7 +112,7 @@ func (p *PostgresRepo) OrgUUID(ctx context.Context, orgID int) (string, error) {
 	}
 	return uuid, nil
 }
-func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string) error {
+func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, newUUID string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -128,7 +128,7 @@ func (p *PostgresRepo) OrgSetUUID(ctx context.Context, orgID int, NewUUID string
 			uuid = $1
 		WHERE org_id = $2;
 	`
-	res, err := tx.ExecContext(ctx, query, NewUUID, orgID)
+	res, err := tx.ExecContext(ctx, query, newUUID, orgID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set org's uuid: %w", err)

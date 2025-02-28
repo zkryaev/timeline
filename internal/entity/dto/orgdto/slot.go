@@ -24,6 +24,6 @@ type SlotResp struct {
 type SlotUpdate struct {
 	SlotID   int `json:"slot_id" validate:"required"`
 	WorkerID int `json:"worker_id" validate:"required"`
-	//WorkerScheduleID int  `json:"worker_schedule_id"`
+	// WorkerScheduleID int  `json:"worker_schedule_id"`
 	Busy bool `json:"busy" validate:"required"`
 }

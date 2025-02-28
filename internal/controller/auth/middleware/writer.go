@@ -5,7 +5,6 @@ import "net/http"
 type respWriterCustom struct {
 	http.ResponseWriter
 	statusCode int
-	header     http.Header
 }
 
 func (rw *respWriterCustom) WriteHeader(statusCode int) {

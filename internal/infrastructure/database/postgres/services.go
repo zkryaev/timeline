@@ -81,7 +81,7 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Serv
 	return nil
 }
 
-func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgmodel.Service, error) {
+func (p *PostgresRepo) Service(ctx context.Context, serviceID, orgID int) (*orgmodel.Service, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -98,18 +98,18 @@ func (p *PostgresRepo) Service(ctx context.Context, ServiceID, OrgID int) (*orgm
 		AND service_id = $1
 		AND org_id = $2;
 	`
-	var Service orgmodel.Service
-	if err = tx.GetContext(ctx, &Service, query, &ServiceID, &OrgID); err != nil {
+	var service orgmodel.Service
+	if err = tx.GetContext(ctx, &service, query, &serviceID, &orgID); err != nil {
 		return nil, err
 	}
 	if tx.Commit() != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return &Service, nil
+	return &service, nil
 }
 
 // Получение списка услуг, предоставляемых организацией
-func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Offset int) ([]*orgmodel.Service, int, error) {
+func (p *PostgresRepo) ServiceList(ctx context.Context, orgID int, limit int, offset int) ([]*orgmodel.Service, int, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
@@ -126,7 +126,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 		AND org_id = $1;
 	`
 	var found int
-	if err = tx.QueryRowxContext(ctx, query, OrgID).Scan(&found); err != nil {
+	if err = tx.QueryRowxContext(ctx, query, orgID).Scan(&found); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, ErrServiceNotFound
 		}
@@ -141,7 +141,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 		OFFSET $3;
 	`
 	Services := make([]*orgmodel.Service, 0, 3)
-	if err = tx.SelectContext(ctx, &Services, query, &OrgID, Limit, Offset); err != nil {
+	if err = tx.SelectContext(ctx, &Services, query, &orgID, limit, offset); err != nil {
 		return nil, 0, err
 	}
 	if tx.Commit() != nil {
@@ -150,7 +150,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, OrgID int, Limit int, Of
 	return Services, found, nil
 }
 
-func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, ServiceID, OrgID int) error {
+func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, serviceID, orgID int) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -168,7 +168,7 @@ func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, ServiceID, OrgID i
 		AND service_id = $1
 		AND org_id = $2;
 	`
-	res, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
+	res, err := tx.ExecContext(ctx, query, &serviceID, &orgID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete selected service: %w", err)
@@ -183,7 +183,7 @@ func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, ServiceID, OrgID i
 			is_delete = TRUE
 		WHERE service_id = $1;
 	`
-	if _, err = tx.ExecContext(ctx, query, &ServiceID); err != nil {
+	if _, err = tx.ExecContext(ctx, query, &serviceID); err != nil {
 		return fmt.Errorf("failed to delete selected service: %w", err)
 	}
 	if tx.Commit() != nil {

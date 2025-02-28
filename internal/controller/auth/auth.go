@@ -21,7 +21,7 @@ type AuthUseCase interface {
 }
 
 type Middleware interface {
-	ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.Token, error)
+	ExtractToken(r *http.Request) (*jwt.Token, error)
 	IsAccessTokenValid(next http.Handler) http.Handler
 	HandlerLogs(next http.Handler) http.Handler
 }
@@ -235,7 +235,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/tokens/refresh [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
-	token, err := a.Middleware.ExtractToken(w, r)
+	token, err := a.Middleware.ExtractToken(r)
 	if err != nil {
 		a.Logger.Error(
 			"failed update access token",

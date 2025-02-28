@@ -69,7 +69,6 @@ func (suite *PostgresTestSuite) TestScheduleQueries() {
 		}
 	}
 	suite.Require().True(isFound, "added schedule not found")
-	isFound = false
 
 	addReq.Schedule[0].WorkerScheduleID = scheduleList.Workers[indExpected[0]].Schedule[indExpected[1]].WorkerScheduleID
 	addReq.Schedule[0].Weekday = 4
@@ -85,7 +84,6 @@ func (suite *PostgresTestSuite) TestScheduleQueries() {
 			scheds := orgmap.WorkerScheduleToDTO(workerSched)
 			for _, sched := range scheds.Schedule {
 				if addReq.Schedule[0].Weekday == sched.Weekday && addReq.Schedule[0].Start == sched.Start && addReq.Schedule[0].Over == sched.Over {
-					isFound = true
 					break
 				}
 			}

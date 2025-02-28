@@ -48,7 +48,6 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	req := &orgdto.ScheduleParams{
 		WorkerID: queryParams["worker_id"].(int),
 		OrgID:    params["orgID"],
@@ -107,7 +106,7 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.DeleteWorkerSchedule(r.Context(), req); err != nil {
+	if err = o.usecase.DeleteWorkerSchedule(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

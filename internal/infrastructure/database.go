@@ -34,7 +34,7 @@ type CodeRepository interface {
 }
 
 type UserRepository interface {
-	UserUpdate(ctx context.Context, new *usermodel.UserInfo) error
+	UserUpdate(ctx context.Context, upd *usermodel.UserInfo) error
 	UserSave(ctx context.Context, user *usermodel.UserRegister) (int, error)
 	UserByID(ctx context.Context, userID int) (*usermodel.UserInfo, error)
 	UserDelete(ctx context.Context, userID int) error
@@ -47,7 +47,7 @@ type UserRepository interface {
 
 type OrgRepository interface {
 	OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (int, error)
-	OrgUpdate(ctx context.Context, new *orgmodel.Organization) error
+	OrgUpdate(ctx context.Context, upd *orgmodel.Organization) error
 	OrgByID(ctx context.Context, id int) (*orgmodel.Organization, error)
 	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
@@ -78,8 +78,8 @@ type RecordRepository interface {
 
 type TimetableRepository interface {
 	Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error)
-	TimetableAdd(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
-	TimetableUpdate(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error
+	TimetableAdd(ctx context.Context, orgID int, newTime []*orgmodel.OpenHours) error
+	TimetableUpdate(ctx context.Context, orgID int, upd []*orgmodel.OpenHours) error
 	TimetableDelete(ctx context.Context, orgID, weekday int) error
 }
 

@@ -26,10 +26,10 @@ type S3Ctrl struct {
 	logger  *zap.Logger
 }
 
-func New(storage S3UseCase, Logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
+func New(storage S3UseCase, logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
 	return &S3Ctrl{
 		usecase: storage,
-		logger:  Logger,
+		logger:  logger,
 		json:    jsoniter,
 	}
 }
@@ -163,7 +163,7 @@ func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := s3.usecase.Delete(r.Context(), query["entity"].(string), query["url"].(string)); err != nil {
+	if err = s3.usecase.Delete(r.Context(), query["entity"].(string), query["url"].(string)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

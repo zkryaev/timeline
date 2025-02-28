@@ -11,8 +11,8 @@ var (
 	}
 )
 
-func IsImage(ContentType string) bool {
-	if _, ok := ImageTypes[ContentType]; !ok {
+func IsImage(contentType string) bool {
+	if _, ok := ImageTypes[contentType]; !ok {
 		return false
 	}
 	return true

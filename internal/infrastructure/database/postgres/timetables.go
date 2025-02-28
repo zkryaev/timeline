@@ -31,7 +31,7 @@ func (p *PostgresRepo) Timetable(ctx context.Context, OrgID int) ([]*orgmodel.Op
 	return timetable, nil
 }
 
-func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error {
+func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, newTime []*orgmodel.OpenHours) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -45,7 +45,7 @@ func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, new []*orgmo
 			(weekday, open, close, break_start, break_end, org_id)
 			VALUES($1, $2, $3, $4, $5, $6);
 	`
-	for _, hours := range new {
+	for _, hours := range newTime {
 		res, err := tx.ExecContext(ctx, query,
 			hours.Weekday,
 			hours.Open,

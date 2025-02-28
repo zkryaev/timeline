@@ -18,17 +18,17 @@ var (
 )
 
 func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata) (*authdto.TokenPair, error) {
-	AccessToken, err := NewToken(secret, cfg, metadata, "access")
+	accessToken, err := NewToken(secret, cfg, metadata, "access")
 	if err != nil {
 		return nil, err
 	}
-	RefreshToken, err := NewToken(secret, cfg, metadata, "refresh")
+	refreshToken, err := NewToken(secret, cfg, metadata, "refresh")
 	if err != nil {
 		return nil, err
 	}
 	return &authdto.TokenPair{
-		AccessToken:  AccessToken,
-		RefreshToken: RefreshToken,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 

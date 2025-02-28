@@ -70,7 +70,10 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 		a.log,
 	)
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
-	validator := validation.NewCustomValidator()
+	validator, err := validation.NewCustomValidator()
+	if err != nil {
+		return err
+	}
 
 	authAPI := authctrl.New(
 		usecaseAuth,

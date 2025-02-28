@@ -6,10 +6,10 @@ import (
 )
 
 // Конвертация
-func URLToDTO(URLs []*models.ImageMeta) []*s3dto.FileURL {
-	resp := make([]*s3dto.FileURL, 0, len(URLs))
-	for i := range URLs {
-		resp = append(resp, &s3dto.FileURL{URL: URLs[i].URL, Type: URLs[i].Type})
+func URLToDTO(urls []*models.ImageMeta) []*s3dto.FileURL {
+	resp := make([]*s3dto.FileURL, 0, len(urls))
+	for i := range urls {
+		resp = append(resp, &s3dto.FileURL{URL: urls[i].URL, Type: urls[i].Type})
 	}
 	return resp
 }

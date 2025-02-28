@@ -122,7 +122,7 @@ func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday); err != nil {
+	if err = o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

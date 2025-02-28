@@ -8,6 +8,6 @@ import "net/http"
 // @Success 200
 // @Failure 500
 // @Router /health [get]
-func HealthCheck(w http.ResponseWriter, r *http.Request) {
+func HealthCheck(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

@@ -33,7 +33,7 @@ type UserRegisterReq struct {
 }
 
 type RegisterResp struct {
-	Id int `json:"id"`
+	ID int `json:"id"`
 }
 
 type OrgRegisterReq struct {

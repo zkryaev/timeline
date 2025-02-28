@@ -37,22 +37,22 @@ func (m *Minio) Connect() error {
 		return err
 	}
 	m.conn = minioClient
-	StopHealthChecking, err := m.conn.HealthCheck(5 * time.Second)
-	defer StopHealthChecking()
+	stopHealthChecking, _ := m.conn.HealthCheck(5 * time.Second)
+	defer stopHealthChecking()
 	if !m.conn.IsOnline() {
 		return ErrConnection
 	}
 	return nil
 }
 
-func (m *Minio) Upload(ctx context.Context, URL string, fileName string, fileSize int64, reader io.Reader) error {
+func (m *Minio) Upload(ctx context.Context, url string, fileName string, fileSize int64, reader io.Reader) error {
 	if exists, errBucketExists := m.conn.BucketExists(ctx, m.cfg.DefaultBucket); errBucketExists != nil || !exists {
 		err := m.conn.MakeBucket(ctx, m.cfg.DefaultBucket, minio.MakeBucketOptions{})
 		if err != nil {
 			return fmt.Errorf("%s -> %w", errBucketExists, err)
 		}
 	}
-	_, err := m.conn.PutObject(ctx, m.cfg.DefaultBucket, URL, reader, fileSize, minio.PutObjectOptions{
+	_, err := m.conn.PutObject(ctx, m.cfg.DefaultBucket, url, reader, fileSize, minio.PutObjectOptions{
 		UserMetadata: map[string]string{
 			"Name": fileName,
 		},
@@ -64,16 +64,16 @@ func (m *Minio) Upload(ctx context.Context, URL string, fileName string, fileSiz
 	return nil
 }
 
-func (m *Minio) Download(ctx context.Context, URL string) (*minio.Object, error) {
-	obj, err := m.conn.GetObject(ctx, m.cfg.DefaultBucket, URL, minio.GetObjectOptions{})
+func (m *Minio) Download(ctx context.Context, url string) (*minio.Object, error) {
+	obj, err := m.conn.GetObject(ctx, m.cfg.DefaultBucket, url, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return obj, err
 }
 
-func (m *Minio) Delete(ctx context.Context, URL string) error {
-	if err := m.conn.RemoveObject(ctx, m.cfg.DefaultBucket, URL, minio.RemoveObjectOptions{}); err != nil {
+func (m *Minio) Delete(ctx context.Context, url string) error {
+	if err := m.conn.RemoveObject(ctx, m.cfg.DefaultBucket, url, minio.RemoveObjectOptions{}); err != nil {
 		return err
 	}
 	return nil

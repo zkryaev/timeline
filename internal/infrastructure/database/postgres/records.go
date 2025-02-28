@@ -157,6 +157,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	if err != nil {
 		return nil, 0, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		rec := &recordmodel.RecordScrap{
 			Org:      &orgmodel.OrgInfo{},
@@ -431,12 +432,10 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	`
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
-	defer func() {
-		err = rows.Close()
-	}()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	rec := &recordmodel.ReminderRecord{}
 	for rows.Next() {
 		err := rows.Scan(

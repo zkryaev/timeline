@@ -154,7 +154,7 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 		OrgID:     params["orgID"],
 		WorkerID:  params["workerID"],
 	}
-	if err := o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
+	if err = o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
@@ -214,7 +214,7 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]); err != nil {
+	if err = o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)

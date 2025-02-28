@@ -19,7 +19,6 @@ func LoadPrivateKey() (*rsa.PrivateKey, error) {
 	}
 	key, err := os.ReadFile(pathToSecret)
 	if err != nil {
-		fmt.Println(key)
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 

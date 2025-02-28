@@ -52,9 +52,8 @@ func (suite *MiddlewareTestSuite) TestValidToken() {
 
 	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
 	r.Header.Set("Authorization", "Bearer "+validToken)
-	w := httptest.NewRecorder()
 
-	token, err := suite.Middeware.ExtractToken(w, r)
+	token, err := suite.Middeware.ExtractToken(r)
 	suite.NoError(err)
 	suite.NotNil(token)
 }
@@ -62,18 +61,16 @@ func (suite *MiddlewareTestSuite) TestValidToken() {
 func (suite *MiddlewareTestSuite) TestEmptyAuthHeader() {
 	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
 	r.Header.Set("Authorization", "")
-	w := httptest.NewRecorder()
 
-	_, err := suite.Middeware.ExtractToken(w, r)
+	_, err := suite.Middeware.ExtractToken(r)
 	suite.Equal(ErrAuthHeaderEmpty, err)
 }
 
 func (suite *MiddlewareTestSuite) TestTokenNotFound() {
 	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
 	r.Header.Set("Authorization", "Bearer ")
-	w := httptest.NewRecorder()
 
-	_, err := suite.Middeware.ExtractToken(w, r)
+	_, err := suite.Middeware.ExtractToken(r)
 	suite.Equal(ErrTokenNotFound, err)
 }
 
@@ -86,9 +83,8 @@ func (suite *MiddlewareTestSuite) TestSuspectToken() {
 
 	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
 	r.Header.Set("Authorization", "Bearer "+suspectToken)
-	w := httptest.NewRecorder()
 
-	_, err = suite.Middeware.ExtractToken(w, r)
+	_, err = suite.Middeware.ExtractToken(r)
 	suite.Error(err)
 }
 
@@ -98,12 +94,11 @@ func (suite *MiddlewareTestSuite) TestAnotherTokenSign() {
 	suite.Require().NoError(err)
 	suspectToken, err := jwtlib.NewToken(privateKey, suite.tokenCfg, metadata, "access")
 	suite.NoError(err)
-	suite.Greater(len(suspectToken), 0)
+	suite.NotEmpty(len(suspectToken), 0)
 
 	r := httptest.NewRequest(http.MethodGet, "/test", bytes.NewBufferString(""))
 	r.Header.Set("Authorization", "Bearer "+suspectToken)
-	w := httptest.NewRecorder()
 
-	_, err = suite.Middeware.ExtractToken(w, r)
+	_, err = suite.Middeware.ExtractToken(r)
 	suite.Contains(err.Error(), jwt.ErrTokenSignatureInvalid.Error())
 }

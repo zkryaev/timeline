@@ -110,7 +110,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		Limit:  queryParams["limit"].(int),
 		Page:   queryParams["page"].(int),
 	}
-	if err := rec.validator.Struct(req); err != nil {
+	if err = rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -174,11 +174,11 @@ func (rec *RecordCtrl) RecordDelete(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.Record{
 		RecordID: params["recordID"],
 	}
-	if err := rec.validator.Struct(req); err != nil {
+	if err = rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.RecordDelete(r.Context(), req); err != nil {
+	if err = rec.usecase.RecordDelete(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

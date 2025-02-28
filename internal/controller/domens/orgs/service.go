@@ -180,7 +180,7 @@ func (o *OrgCtrl) ServiceDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.ServiceDelete(r.Context(), path["serviceID"], path["orgID"]); err != nil {
+	if err = o.usecase.ServiceDelete(r.Context(), path["serviceID"], path["orgID"]); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)

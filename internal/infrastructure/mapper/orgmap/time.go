@@ -13,15 +13,15 @@ const (
 )
 
 func OpenHoursToModel(day *entity.OpenHours) *orgmodel.OpenHours {
-	open, _ := time.Parse(timeFormat, day.Open)
-	close, _ := time.Parse(timeFormat, day.Close)
+	openTime, _ := time.Parse(timeFormat, day.Open)
+	closeTime, _ := time.Parse(timeFormat, day.Close)
 	breakstart, _ := time.Parse(timeFormat, day.BreakStart)
 	breakend, _ := time.Parse(timeFormat, day.BreakEnd)
 
 	return &orgmodel.OpenHours{
 		Weekday:    sql.NullInt32{Int32: int32(day.Weekday), Valid: true},
-		Open:       sql.NullTime{Time: open, Valid: true},
-		Close:      sql.NullTime{Time: close, Valid: true},
+		Open:       sql.NullTime{Time: openTime, Valid: true},
+		Close:      sql.NullTime{Time: closeTime, Valid: true},
 		BreakStart: sql.NullTime{Time: breakstart, Valid: true},
 		BreakEnd:   sql.NullTime{Time: breakend, Valid: true},
 	}

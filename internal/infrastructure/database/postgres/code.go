@@ -16,7 +16,7 @@ var (
 )
 
 // Сохранить код отправленный на почту
-func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, Info *models.CodeInfo) error {
+func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, info *models.CodeInfo) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -28,7 +28,7 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, Info *models.CodeInfo
 	}()
 
 	var query string
-	switch Info.IsOrg {
+	switch info.IsOrg {
 	case false:
 		query = `
 		INSERT INTO users_verify (code, user_id)
@@ -41,7 +41,7 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, Info *models.CodeInfo
 	`
 	}
 
-	if err = tx.QueryRowContext(ctx, query, Info.Code, Info.ID).Err(); err != nil {
+	if err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Err(); err != nil {
 		return fmt.Errorf("failed to save code: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
@@ -52,7 +52,7 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, Info *models.CodeInfo
 }
 
 // Получает код и id, если находит код, возвращает его время сгорания
-func (p *PostgresRepo) VerifyCode(ctx context.Context, Info *models.CodeInfo) (time.Time, error) {
+func (p *PostgresRepo) VerifyCode(ctx context.Context, info *models.CodeInfo) (time.Time, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to start tx: %w", err)
@@ -63,7 +63,7 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, Info *models.CodeInfo) (t
 		}
 	}()
 	var query string
-	switch Info.IsOrg {
+	switch info.IsOrg {
 	case false:
 		query = `
 		SELECT expires_at FROM users_verify
@@ -77,7 +77,7 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, Info *models.CodeInfo) (t
 	}
 
 	var expires_at time.Time
-	err = tx.QueryRowContext(ctx, query, Info.Code, Info.ID).Scan(&expires_at)
+	err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Scan(&expires_at)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return time.Time{}, ErrCodeNotFound
@@ -91,7 +91,7 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, Info *models.CodeInfo) (t
 }
 
 // Устанавливает поле verified у сущности в true
-func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) error {
+func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, isOrg bool) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -104,7 +104,7 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 	}()
 
 	var query string
-	switch IsOrg {
+	switch isOrg {
 	case false:
 		query = `
 		UPDATE users
@@ -136,7 +136,7 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, IsOrg bool) 
 }
 
 // Проверяет наличие организации в БД по ее почте/логину и возвращаем хеш пароля и ошибку
-func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOrg bool) (*models.ExpInfo, error) {
+func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, isOrg bool) (*models.ExpInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -148,7 +148,7 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOr
 		}
 	}()
 	var query string
-	switch IsOrg {
+	switch isOrg {
 	case false:
 		query = `
         SELECT user_id, passwd_hash, created_at, verified FROM users
@@ -163,8 +163,8 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOr
     	`
 	}
 
-	var Data models.ExpInfo
-	if err = tx.QueryRowContext(ctx, query, email).Scan(&Data.ID, &Data.Hash, &Data.CreatedAt, &Data.Verified); err != nil {
+	var data models.ExpInfo
+	if err = tx.QueryRowContext(ctx, query, email).Scan(&data.ID, &data.Hash, &data.CreatedAt, &data.Verified); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
@@ -175,7 +175,7 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, IsOr
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
 
-	return &Data, nil
+	return &data, nil
 }
 
 // [CRON]: удаление стухших кодов

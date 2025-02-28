@@ -55,7 +55,7 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.Token, error) {
+func (m *Middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return nil, ErrAuthHeaderEmpty
@@ -66,7 +66,6 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Проверяем алгоритм подписи токена
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.Join(ErrInvalidSign, fmt.Errorf("token sign: %s", token.Method.Alg()))
 		}
@@ -79,13 +78,13 @@ func (m *Middleware) ExtractToken(w http.ResponseWriter, r *http.Request) (*jwt.
 // Валидацпия access токена
 func (m *Middleware) IsAccessTokenValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := m.ExtractToken(w, r)
+		token, err := m.ExtractToken(r)
 
 		if err != nil || !token.Valid {
 			http.Error(w, "token expired", http.StatusUnauthorized)
 			return
 		}
-		if err := validation.ValidateTokenClaims(token.Claims); err != nil {
+		if err = validation.ValidateTokenClaims(token.Claims); err != nil {
 			http.Error(w, "token claims are invalid", http.StatusUnauthorized)
 			return
 		}

@@ -64,12 +64,12 @@ type S3 struct {
 func MustLoad() Config {
 	configPath := envars.GetPathByEnv("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("the cfg file doesn't exist at the path: %s", configPath)
+		log.Fatal("the cfg file doesn't exist at the path: ", configPath)
 	}
 
 	var cfg Config
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("failed with reading config: %s", err)
+		log.Fatal("failed with reading config: ", err.Error())
 	}
 	return cfg
 }
