@@ -18,7 +18,6 @@ import (
 	"timeline/internal/libs/cronjob"
 	"timeline/pkg/logger"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	_ "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
