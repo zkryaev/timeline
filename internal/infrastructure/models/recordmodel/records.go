@@ -34,6 +34,7 @@ type RecordScrap struct {
 	Service  *orgmodel.Service
 	Worker   *orgmodel.Worker
 	Feedback *Feedback
+	CreatedAt time.Time
 }
 
 type ReminderRecord struct {

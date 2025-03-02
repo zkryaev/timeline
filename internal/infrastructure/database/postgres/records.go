@@ -39,7 +39,8 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 			s.session_end,
 			f.stars,
 			f.feedback,
-			r.reviewed
+			r.reviewed,
+			r.created_at AS created_at
 		FROM records r
 		JOIN slots s ON r.slot_id = s.slot_id
 		JOIN orgs o ON r.org_id = o.org_id
@@ -72,6 +73,7 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		&rec.Feedback.Stars,
 		&rec.Feedback.Feedback,
 		&rec.Reviewed,
+		&rec.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -123,8 +125,10 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			COALESCE(w.uuid, '') AS worker_uuid,
 			w.first_name AS worker_first_name, 
 			w.last_name AS worker_last_name,
+			r.org_id AS org_id,
 			o.name AS org_name,
 			o.type AS org_type,
+			r.user_id AS user_id,
 			COALESCE(u.uuid, '') AS user_uuid,
 			u.first_name AS user_first_name,
 			u.last_name AS user_last_name, 
@@ -173,8 +177,10 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			&rec.Worker.UUID,
 			&rec.Worker.FirstName,
 			&rec.Worker.LastName,
+			&rec.Org.OrgID,
 			&rec.Org.Name,
 			&rec.Org.Type,
+			&rec.User.UserID,
 			&rec.User.UUID,
 			&rec.User.FirstName,
 			&rec.User.LastName,
