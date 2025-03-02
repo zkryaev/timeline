@@ -7,7 +7,7 @@ import (
 )
 
 func GenerateCode() (string, error) {
-	min, max := 1000, 9999 // nolint:revive -- faster
+	min, max := 1000, 9999 // nolint revive -- faster
 	rangeVal := max - min + 1
 
 	n, err := rand.Int(rand.Reader, big.NewInt(int64(rangeVal)))

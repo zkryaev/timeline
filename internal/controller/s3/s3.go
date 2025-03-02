@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,7 +50,7 @@ func New(storage S3UseCase, logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
 // @Router /media [post]
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 	const maxUploadSize = 2 << 20 // 2 MB
-	if err := r.ParseMultipartForm(maxUploadSize); err != nil && err != io.EOF {
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil && !errors.Is(err, io.EOF) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
