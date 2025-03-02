@@ -6,6 +6,7 @@ import (
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/usermap"
 	"timeline/internal/infrastructure/models"
+	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/recordmodel"
 )
 
@@ -48,7 +49,7 @@ func RecordScrapToDTO(model *recordmodel.RecordScrap) *recordto.RecordScrap {
 	return &recordto.RecordScrap{
 		RecordID: model.RecordID,
 		Reviewed: model.Reviewed,
-		Org:      orgmap.OrgInfoToEntity(model.Org),
+		Org:      orgmap.OrganizationToDTO(&orgmodel.Organization{OrgInfo: *model.Org}),
 		User:     usermap.UserInfoToDTO(model.User),
 		Slot:     orgmap.SlotInfoToDTO(model.Slot),
 		Service:  orgmap.ServiceToEntity(model.Service),

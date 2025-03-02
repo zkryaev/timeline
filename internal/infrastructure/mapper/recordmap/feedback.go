@@ -19,14 +19,16 @@ func FeedbackToModel(dto *recordto.Feedback) *recordmodel.Feedback {
 func FeedbackToDTO(model *recordmodel.Feedback) *recordto.Feedback {
 	if model.Stars.Valid {
 		return &recordto.Feedback{
-			FeedbackID: int(model.FeedbackID.Int32),
-			RecordID:   int(model.RecordID.Int32),
-			Stars:      int(model.Stars.Int32),
-			Feedback:   model.Feedback.String,
-			Service:    model.Service.String,
-			FirstName:  model.FirstName.String,
-			LastName:   model.LastName.String,
-			RecordDate: model.RecordDate.Time.Format(time.DateOnly),
+			FeedbackID:      int(model.FeedbackID.Int32),
+			RecordID:        int(model.RecordID.Int32),
+			Stars:           int(model.Stars.Int32),
+			Feedback:        model.Feedback.String,
+			Service:         model.Service.String,
+			WorkerFirstName: model.WorkerFirstName.String,
+			WorkerLastName:  model.WorkerLastName.String,
+			UserFirstName:   model.UserFirstName.String,
+			UserLastName:    model.UserLastName.String,
+			RecordDate:      model.RecordDate.Time.Format(time.DateOnly),
 		}
 	}
 	return nil
