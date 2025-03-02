@@ -47,15 +47,15 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 			f.feedback, 
 			s.name AS service_name, 
 			w.first_name AS worker_first_name, 
-			w.last_name worker_last_name, 
+			w.last_name worker_last_name,
+			u.first_name AS user_first_name,
+			u.last_name AS user_last_name,
 			r.created_at AS record_date
 		FROM feedbacks f
-		JOIN records r
-		ON r.record_id = f.record_id AND r.reviewed = true
-        JOIN workers w
-        ON r.worker_id = w.worker_id
-        JOIN services s
-        ON r.service_id = s.service_id
+		JOIN records r ON r.record_id = f.record_id AND r.reviewed = true
+		JOIN users u ON r.user_id = u.user_id
+        JOIN workers w ON r.worker_id = w.worker_id
+        JOIN services s ON r.service_id = s.service_id
 		WHERE ($1 <= 0 OR f.record_id = $1)
 		AND ($2 <= 0 OR r.user_id = $2)
 		AND ($3 <= 0 OR r.org_id = $3)

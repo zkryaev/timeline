@@ -16,13 +16,15 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	suite.Require().NoError(err)
 
 	exp := &recordto.Feedback{
-		RecordID:   recordID,
-		Stars:      4,
-		Feedback:   "Хорошая тренировка, но хотелось бы больше внимания.",
-		Service:    recScrap.Service.Name,
-		FirstName:  recScrap.Worker.FirstName,
-		LastName:   recScrap.Worker.LastName,
-		RecordDate: recScrap.CreatedAt.Format(time.DateOnly),
+		RecordID:        recordID,
+		Stars:           4,
+		Feedback:        "Хорошая тренировка, но хотелось бы больше внимания.",
+		Service:         recScrap.Service.Name,
+		WorkerFirstName: recScrap.Worker.FirstName,
+		WorkerLastName:  recScrap.Worker.LastName,
+		UserFirstName:   recScrap.User.FirstName,
+		UserLastName:    recScrap.User.LastName,
+		RecordDate:      recScrap.CreatedAt.Format(time.DateOnly),
 	}
 
 	suite.Require().NoError(suite.db.FeedbackSet(ctx, recordmap.FeedbackToModel(exp)), fmt.Sprintf("record_id=%d", exp.RecordID))
