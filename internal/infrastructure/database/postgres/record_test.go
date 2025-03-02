@@ -95,9 +95,11 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 			break
 		}
 	}
-	// TODO: когда реальное будет мягкое удаление, тогда и проверять на ошибку последний запрос,
-	// 		 а пока это работает только для записей, что не подпадают под мягкое удаление
-	suite.NoError(suite.db.RecordSoftDelete(ctx, recordID), fmt.Sprintf("record_id=%d | slot_id=%d slot.date=%s slot.begin=%s slot-end=%s",
+	cancelReq := &recordto.RecordCancelation{
+		RecordID: recordID,
+		CancelReason: "TESTING REASON",
+	}
+	suite.NoError(suite.db.RecordCancel(ctx, recordmap.CancelationToModel(cancelReq)), fmt.Sprintf("record_id=%d | slot_id=%d slot.date=%s slot.begin=%s slot-end=%s",
 		recordID, dbSlots[freeSlot].SlotID, dbSlots[freeSlot].Date.String(), dbSlots[freeSlot].Begin.Format("15:04"), dbSlots[freeSlot].End.Format("15:04")))
 	//suite.db.RecordDelete(ctx, recordID)
 }

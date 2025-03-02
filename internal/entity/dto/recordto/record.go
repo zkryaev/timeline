@@ -39,3 +39,8 @@ type RecordList struct {
 	List  []*RecordScrap `json:"record_list"`
 	Found int            `json:"found"`
 }
+
+type RecordCancelation struct {
+	RecordID int `json:"record_id"`
+	CancelReason string `json:"cancel_reason"`
+}

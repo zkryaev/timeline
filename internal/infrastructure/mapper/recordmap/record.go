@@ -82,3 +82,11 @@ func RecordToReminder(model *recordmodel.ReminderRecord) *models.ReminderMsg {
 		SessionDate: model.Date,
 	}
 }
+
+func CancelationToModel(dto *recordto.RecordCancelation) *recordmodel.RecordCancelation {
+	return &recordmodel.RecordCancelation{
+		RecordID:     dto.RecordID,
+		IsCanceled:   true,
+		CancelReason: dto.CancelReason,
+	}
+}

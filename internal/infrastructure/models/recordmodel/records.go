@@ -26,14 +26,14 @@ type RecordListParams struct {
 }
 
 type RecordScrap struct {
-	RecordID int  `db:"record_id"`
-	Reviewed bool `db:"reviewed"`
-	Org      *orgmodel.OrgInfo
-	User     *usermodel.UserInfo
-	Slot     *orgmodel.Slot
-	Service  *orgmodel.Service
-	Worker   *orgmodel.Worker
-	Feedback *Feedback
+	RecordID  int  `db:"record_id"`
+	Reviewed  bool `db:"reviewed"`
+	Org       *orgmodel.OrgInfo
+	User      *usermodel.UserInfo
+	Slot      *orgmodel.Slot
+	Service   *orgmodel.Service
+	Worker    *orgmodel.Worker
+	Feedback  *Feedback
 	CreatedAt time.Time
 }
 
@@ -46,4 +46,10 @@ type ReminderRecord struct {
 	Date               time.Time
 	Begin              time.Time
 	End                time.Time
+}
+
+type RecordCancelation struct {
+	RecordID     int
+	IsCanceled     bool
+	CancelReason string
 }

@@ -17,7 +17,7 @@ type Record interface {
 	Record(ctx context.Context, recordID int) (*recordto.RecordScrap, error)
 	RecordList(ctx context.Context, params *recordto.RecordListParams) (*recordto.RecordList, error)
 	RecordAdd(ctx context.Context, rec *recordto.Record) error
-	RecordDelete(ctx context.Context, rec *recordto.Record) error
+	RecordCancel(ctx context.Context, rec *recordto.RecordCancelation) error
 	Feedback
 }
 
@@ -155,30 +155,23 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete a future record
 // @Description Delete a future record. If record was done, it won't be deleted!
 // @Tags Records
-// @Param   recordID path int true "record_id"
+// @Param   cancelReq body recordto.RecordCancelation true "cancel description"
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /info/records/{recordID} [delete]
+// @Router /info/records/{recordID} [put]
 // Удаление только ожидаемой записи, а не уже совершённой.
-func (rec *RecordCtrl) RecordDelete(w http.ResponseWriter, r *http.Request) {
-	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
-	if err != nil {
+func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
+	req := &recordto.RecordCancelation{}
+	if rec.json.NewDecoder(r.Body).Decode(req) != nil {
+		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+		return
+	}
+	if err := rec.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if params["recordID"] <= 0 {
-		http.Error(w, "record_id must be > 0", http.StatusBadRequest)
-		return
-	}
-	req := &recordto.Record{
-		RecordID: params["recordID"],
-	}
-	if err = rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err = rec.usecase.RecordDelete(r.Context(), req); err != nil {
+	if err := rec.usecase.RecordCancel(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

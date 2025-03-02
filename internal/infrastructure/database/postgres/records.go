@@ -372,8 +372,7 @@ func (p *PostgresRepo) RecordDelete(ctx context.Context, recordID int) error {
 	return nil
 }
 
-// Не софт, просто не дает удалить ранее чем за 2 часа
-func (p *PostgresRepo) RecordSoftDelete(ctx context.Context, recordID int) error {
+func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.RecordCancelation) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -382,24 +381,46 @@ func (p *PostgresRepo) RecordSoftDelete(ctx context.Context, recordID int) error
 		if err != nil {
 			tx.Rollback()
 		}
-	}() // TODO: слот надо бы освобождать тоже если будет is_delete
-	query := `DELETE FROM records
-		WHERE record_id
-		IN (SELECT r.record_id
+	}()
+	query := `
+		WITH recslot AS (
+			SELECT s.date AS slot_date
 			FROM records r
-			JOIN slots s ON r.slot_id = s.slot_id AND r.record_id = $1
-			WHERE s.date >= CURRENT_DATE
-			AND CURRENT_TIMESTAMP < (s.session_begin - INTERVAL '2 hours')
-		);
+			JOIN slots s ON r.record_id = $3 AND r.slot_id = s.slot_id
+		)
+		UPDATE records
+		SET
+			is_canceled = $1,
+			cancel_reason = $2
+		WHERE record_id = $3
+		AND EXISTS (SELECT 1 FROM recslot WHERE slot_date >= CURRENT_TIMESTAMP)
+		RETURNING slot_id;
 	`
-	res, err := tx.ExecContext(
+	var slotID int
+	err = tx.QueryRowxContext(
 		ctx,
 		query,
-		recordID,
-	)
+		rec.IsCanceled,
+		rec.CancelReason,
+		rec.RecordID,
+	).Scan(&slotID)
 	switch {
 	case err != nil:
-		return fmt.Errorf("failed to delete selected record: %w", err)
+		return fmt.Errorf("failed to cancel selected record: %w", err)
+	case slotID == 0:
+		return fmt.Errorf("returned slot_id mustn't equal 0")
+	}
+
+	query = `
+		UPDATE slots
+		SET
+			busy = FALSE
+		WHERE slot_id = $1
+	`
+	res, err := tx.ExecContext(ctx, query, slotID)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to cancel selected record: %w", err)
 	default:
 		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected

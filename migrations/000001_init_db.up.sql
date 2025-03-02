@@ -142,6 +142,8 @@ CREATE TABLE IF NOT EXISTS records (
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (org_id) REFERENCES orgs(org_id),
     UNIQUE (slot_id),
+    is_canceled BOOL DEFAULT FALSE,
+    cancel_reason VARCHAR(300) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

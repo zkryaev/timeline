@@ -87,8 +87,8 @@ func (r *RecordUseCase) RecordPatch(ctx context.Context, rec *recordto.Record) e
 	return nil
 }
 
-func (r *RecordUseCase) RecordDelete(ctx context.Context, rec *recordto.Record) error {
-	if err := r.records.RecordSoftDelete(ctx, rec.RecordID); err != nil {
+func (r *RecordUseCase) RecordCancel(ctx context.Context, rec *recordto.RecordCancelation) error {
+	if err := r.records.RecordCancel(ctx, recordmap.CancelationToModel(rec)); err != nil {
 		r.Logger.Error(
 			"failed to add record",
 			zap.Error(err),

@@ -71,7 +71,7 @@ type RecordRepository interface {
 	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, int, error)
 	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, recordID int) error
-	RecordSoftDelete(ctx context.Context, recordID int) error
+	RecordCancel(ctx context.Context, req *recordmodel.RecordCancelation) error
 	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)
 	FeedbackRepository
 }
