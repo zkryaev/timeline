@@ -153,7 +153,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete a future record
-// @Description Delete a future record. If record was done, it won't be deleted!
+// @Description Cancel a future record. If record was done, it couldn't be deleted!
 // @Tags Records
 // @Param   cancelReq body recordto.RecordCancelation true "cancel description"
 // @Success 200
