@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 
@@ -336,11 +337,26 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		WHERE o.is_delete = false
 		AND ($1 = '' OR name ILIKE '%' || $1 || '%')
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
-		LIMIT $3
-		OFFSET $4;
 	`
+	sort := "ORDER BY o.rating DESC, o.name ASC"
+	boundaires := "LIMIT $3 OFFSET $4;"
+	stmt := strings.Builder{}
+	stmt.Grow(len(query) + len(sort) + len(boundaires))
+	switch {
+	case params.IsRateSort && params.IsNameSort:
+		stmt.WriteString(sort)
+	case params.IsRateSort:
+		sort = "ORDER BY o.rating DESC"
+	case params.IsNameSort:
+		sort = "ORDER BY o.name ASC"
+	default:
+		sort = ""
+	}
+	stmt.WriteString(query)
+	stmt.WriteString(sort)
+	stmt.WriteString(boundaires)
 	orgList := make([]*orgmodel.OrgsBySearch, 0, 3)
-	if err = tx.SelectContext(ctx, &orgList, query, params.Name, params.Type, params.Limit, params.Offset); err != nil {
+	if err = tx.SelectContext(ctx, &orgList, stmt.String(), params.Name, params.Type, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, ErrOrgsNotFound
 		}

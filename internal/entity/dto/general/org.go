@@ -5,10 +5,12 @@ import (
 )
 
 type SearchReq struct {
-	Page  int    `json:"page" validate:"required,min=1"`
-	Limit int    `json:"limit" validate:"required,min=1"`
-	Name  string `json:"name,omitempty"`
-	Type  string `json:"type,omitempty"`
+	Page       int    `json:"page" validate:"required,min=1"`
+	Limit      int    `json:"limit" validate:"required,min=1"`
+	Name       string `json:"name,omitempty"`
+	Type       string `json:"type,omitempty"`
+	IsRateSort bool   `json:"is_rate_sort,omitempty"`
+	IsNameSort bool   `json:"is_name_sort,omitempty"`
 }
 
 type SearchResp struct {

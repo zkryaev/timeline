@@ -81,11 +81,13 @@ func OrgInfoToEntity(model *orgmodel.OrgInfo) *entity.OrgInfo {
 
 func SearchToModel(dto *general.SearchReq) *orgmodel.SearchParams {
 	return &orgmodel.SearchParams{
-		Page:   dto.Page,
-		Limit:  dto.Limit,
-		Offset: (dto.Page - 1) * dto.Limit,
-		Name:   dto.Name,
-		Type:   dto.Type,
+		Page:       dto.Page,
+		Limit:      dto.Limit,
+		Offset:     (dto.Page - 1) * dto.Limit,
+		Name:       dto.Name,
+		Type:       dto.Type,
+		IsRateSort: dto.IsRateSort,
+		IsNameSort: dto.IsNameSort,
 	}
 }
 

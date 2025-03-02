@@ -69,6 +69,8 @@ type SearchParams struct {
 	Offset int
 	Name   string
 	Type   string
+	IsRateSort bool
+	IsNameSort bool
 }
 
 type AreaParams struct {
