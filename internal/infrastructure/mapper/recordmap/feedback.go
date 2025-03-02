@@ -2,6 +2,7 @@ package recordmap
 
 import (
 	"database/sql"
+	"time"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/models/recordmodel"
 )
@@ -22,6 +23,10 @@ func FeedbackToDTO(model *recordmodel.Feedback) *recordto.Feedback {
 			RecordID:   int(model.RecordID.Int32),
 			Stars:      int(model.Stars.Int32),
 			Feedback:   model.Feedback.String,
+			Service:    model.Service.String,
+			FirstName:  model.FirstName.String,
+			LastName:   model.LastName.String,
+			RecordDate: model.RecordDate.Time.Format(time.DateOnly),
 		}
 	}
 	return nil

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/recordmap"
 )
@@ -10,11 +11,18 @@ import (
 func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	ctx := context.Background()
 
-	// (2, 4, 'Хорошая тренировка, но хотелось бы больше внимания.');
+	recordID := 2
+	recScrap, err := suite.db.Record(ctx, recordID)
+	suite.Require().NoError(err)
+
 	exp := &recordto.Feedback{
-		RecordID: 2, // хардкод!
-		Stars:    4,
-		Feedback: "Хорошая тренировка, но хотелось бы больше внимания.",
+		RecordID:   recordID,
+		Stars:      4,
+		Feedback:   "Хорошая тренировка, но хотелось бы больше внимания.",
+		Service:    recScrap.Service.Name,
+		FirstName:  recScrap.Worker.FirstName,
+		LastName:   recScrap.Worker.LastName,
+		RecordDate: recScrap.CreatedAt.Format(time.DateOnly),
 	}
 
 	suite.Require().NoError(suite.db.FeedbackSet(ctx, recordmap.FeedbackToModel(exp)), fmt.Sprintf("record_id=%d", exp.RecordID))

@@ -40,10 +40,22 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
 	}
-	query = `SELECT f.record_id, f.stars, f.feedback
+	query = `
+		SELECT 
+			f.record_id, 
+			f.stars, 
+			f.feedback, 
+			s.name AS service_name, 
+			w.first_name AS worker_first_name, 
+			w.last_name worker_last_name, 
+			r.created_at AS record_date
 		FROM feedbacks f
 		JOIN records r
 		ON r.record_id = f.record_id AND r.reviewed = true
+        JOIN workers w
+        ON r.worker_id = w.worker_id
+        JOIN services s
+        ON r.service_id = s.service_id
 		WHERE ($1 <= 0 OR f.record_id = $1)
 		AND ($2 <= 0 OR r.user_id = $2)
 		AND ($3 <= 0 OR r.org_id = $3)
