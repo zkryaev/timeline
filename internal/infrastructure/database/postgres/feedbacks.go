@@ -59,6 +59,7 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 		WHERE ($1 <= 0 OR f.record_id = $1)
 		AND ($2 <= 0 OR r.user_id = $2)
 		AND ($3 <= 0 OR r.org_id = $3)
+		ORDER BY f.created_at DESC
 		LIMIT $4
 		OFFSET $5;
 	`
