@@ -14,12 +14,22 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-var (
+const (
 	// Получено экспериментальным путем.
 	// Верхняя замеренная граница отправки 10 секунд, в случае сервиса gmail.com
 	DefaultSendTimeout  = 10 * time.Second
 	DefaulMsgBucketSize = 10000
 	DefaulWorkers       = 4
+
+	DialAttempts = 2
+	DialInterval = 500 * time.Millisecond
+	DialTimeout  = 1 * time.Second
+
+	SendAttempts = 2
+	SendInterval = 1 * time.Second
+
+	CloseInterval = 1 * time.Second
+	CloseAttempts = 2
 )
 
 type MailServer struct {
@@ -33,29 +43,29 @@ type MailServer struct {
 }
 
 // При передаче 0 в параметры будут выставлены default значения
-func New(cfg config.Mail, logger *zap.Logger, WriteTimeout time.Duration, MsgBucketSize, Workers int) infrastructure.Mail {
-	if WriteTimeout == 0 {
-		WriteTimeout = DefaultSendTimeout
+func New(cfg config.Mail, logger *zap.Logger, writeTimeout time.Duration, msgBucketSize, workers int) infrastructure.Mail {
+	if writeTimeout == 0 {
+		writeTimeout = DefaultSendTimeout
 	}
-	if MsgBucketSize == 0 {
-		MsgBucketSize = DefaulMsgBucketSize
+	if msgBucketSize == 0 {
+		msgBucketSize = DefaulMsgBucketSize
 	}
-	if Workers == 0 {
-		Workers = DefaulWorkers
+	if workers == 0 {
+		workers = DefaulWorkers
 	}
 	return &MailServer{
-		WriteTimeout: WriteTimeout,
+		WriteTimeout: writeTimeout,
 		conn:         gomail.NewDialer("smtp."+cfg.Host, cfg.Port, cfg.User, cfg.Password),
-		msgs:         make(chan *gomail.Message, MsgBucketSize),
-		workers:      Workers,
-		contexts:     make([]models.WorkerContext, Workers),
+		msgs:         make(chan *gomail.Message, msgBucketSize),
+		workers:      workers,
+		contexts:     make([]models.WorkerContext, workers),
 		wg:           sync.WaitGroup{},
 		Logger:       logger,
 	}
 }
 
 func (s *MailServer) Start() {
-	for i := 0; i < s.workers; i++ {
+	for i := range s.workers {
 		s.wg.Add(1)
 		s.contexts[i].Context, s.contexts[i].Close = context.WithCancel(context.Background())
 		go s.worker(s.contexts[i].Context, i)
@@ -94,12 +104,18 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 	if len(s.contexts) == 0 {
 		s.Logger.Error("mail server didn't launch")
 	}
-	DialRetries := 2
-	DialFailed := 0
-	DialRetryInterval := 500 * time.Millisecond
-	DialTimeout := 1 * time.Second
-	SendRetries := 2
-	SendRetryInterval := 1 * time.Second
+	closer := func(conn gomail.SendCloser, isOpen bool) {
+		if conn != nil && isOpen {
+			for range CloseAttempts {
+				err := conn.Close()
+				if err == nil {
+					break
+				}
+				s.Logger.Fatal("closer", zap.String("failed to close conn", err.Error()))
+				time.Sleep(CloseInterval)
+			}
+		}
+	}
 	defer s.wg.Done()
 	var conn gomail.SendCloser
 	var err error
@@ -111,28 +127,30 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 				continue
 			}
 			if conn == nil {
-				conn, err = s.conn.Dial()
-				if err != nil {
-					DialFailed++
+				var failedDialCnt int
+				for failedDialCnt < DialAttempts {
+					conn, err = s.conn.Dial()
+					if err == nil {
+						break
+					}
 					s.Logger.Error(
 						"failed to dial smtp connection",
 						zap.Error(err),
 						zap.Int("workerID", workerID),
 					)
-					if DialFailed < DialRetries {
-						time.Sleep(DialRetryInterval)
-						continue
-					} else {
-						s.Logger.Warn("smtp dial failed, shutting down worker", zap.Int("workerID", workerID))
-						s.contexts[workerID].Close()
-						return
-					}
+					failedDialCnt++
+					time.Sleep(DialInterval)
+				}
+				if failedDialCnt >= DialAttempts {
+					s.Logger.Warn(fmt.Sprintf("smtp dial failed, stop running worker_%d...", workerID))
+					s.contexts[workerID].Close()
+					return
 				}
 				open = true
 			}
-			for retry := 0; retry < SendRetries; retry++ {
+			for range SendAttempts {
 				if err = gomail.Send(conn, msg); err != nil {
-					time.Sleep(SendRetryInterval)
+					time.Sleep(SendInterval)
 				} else {
 					s.Logger.Info("Email successfuly sent")
 					break
@@ -145,24 +163,11 @@ func (s *MailServer) worker(ctx context.Context, workerID int) {
 					zap.Int("workerID", workerID),
 				)
 			}
-		// Close the connection to the SMTP server if no email was sent
 		case <-time.After(DialTimeout):
-			if open {
-				if err := conn.Close(); err != nil {
-					panic(err)
-				}
-				open = false
-			}
+			closer(conn, open)
+			return
 		case <-ctx.Done():
-			if conn != nil && open {
-				if err := conn.Close(); err != nil {
-					s.Logger.Error(
-						"failed to close smtp connection",
-						zap.Error(err),
-						zap.Int("workerID", workerID),
-					)
-				}
-			}
+			closer(conn, open)
 			return
 		}
 	}

@@ -84,7 +84,7 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 		body = fmt.Sprintf(reminderTemplate,
 			fields.Organization,
 			fields.Service,
-			//fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
+			// fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
 		)
 		if data.IsAttach {
 			icsContent = icsCreate(fields)
