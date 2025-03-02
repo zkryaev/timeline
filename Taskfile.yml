@@ -79,7 +79,7 @@ tasks:
   lint:
     desc: "run GolangCI-Lint and save output to file"
     cmds:
-      - golangci-lint run > {{.LINTER_OUT}}
+      - golangci-lint run --color=always > {{.LINTER_OUT}}
   
   mocks:
     desc: "generate mocks for every domen"
