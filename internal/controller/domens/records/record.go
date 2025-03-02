@@ -159,7 +159,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /info/records/{recordID} [put]
+// @Router /records/info/{recordID} [put]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.RecordCancelation{}
