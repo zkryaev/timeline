@@ -31,7 +31,7 @@ func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *orgmodel.Service
 		RETURNING service_id;
 	`
 	var serviceID int
-	if err := tx.QueryRowContext(ctx, query,
+	if err = tx.QueryRowContext(ctx, query,
 		service.OrgID,
 		service.Name,
 		service.Cost,
@@ -140,14 +140,14 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, orgID int, limit int, of
 		LIMIT $2
 		OFFSET $3;
 	`
-	Services := make([]*orgmodel.Service, 0, 3)
-	if err = tx.SelectContext(ctx, &Services, query, &orgID, limit, offset); err != nil {
+	services := make([]*orgmodel.Service, 0, 3)
+	if err = tx.SelectContext(ctx, &services, query, &orgID, limit, offset); err != nil {
 		return nil, 0, err
 	}
 	if tx.Commit() != nil {
 		return nil, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return Services, found, nil
+	return services, found, nil
 }
 
 func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, serviceID, orgID int) error {
@@ -192,7 +192,7 @@ func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, serviceID, orgID i
 	return nil
 }
 
-func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
+func (p *PostgresRepo) ServiceDelete(ctx context.Context, serviceID, orgID int) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -207,7 +207,7 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 		WHERE service_id = $1
 		AND org_id = $2;
 	`
-	res, err := tx.ExecContext(ctx, query, &ServiceID, &OrgID)
+	res, err := tx.ExecContext(ctx, query, &serviceID, &orgID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete selected service: %w", err)
@@ -222,7 +222,7 @@ func (p *PostgresRepo) ServiceDelete(ctx context.Context, ServiceID, OrgID int) 
 	return nil
 }
 
-func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgmodel.Worker, error) {
+func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, serviceID, orgID int) ([]*orgmodel.Worker, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -244,12 +244,12 @@ func (p *PostgresRepo) ServiceWorkerList(ctx context.Context, ServiceID, OrgID i
 		)
 		AND org_id = $2;
 	`
-	Workers := make([]*orgmodel.Worker, 0, 1)
-	if err = tx.SelectContext(ctx, &Workers, query, &ServiceID, &OrgID); err != nil {
+	workers := make([]*orgmodel.Worker, 0, 1)
+	if err = tx.SelectContext(ctx, &workers, query, &serviceID, &orgID); err != nil {
 		return nil, err
 	}
 	if tx.Commit() != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return Workers, nil
+	return workers, nil
 }

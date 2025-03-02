@@ -64,7 +64,7 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 		OFFSET $5;
 	`
 	feedbacks := make([]*recordmodel.Feedback, 0, 1)
-	if err := tx.SelectContext(ctx, &feedbacks, query, params.RecordID, params.UserID, params.OrgID, params.Limit, params.Offset); err != nil {
+	if err = tx.SelectContext(ctx, &feedbacks, query, params.RecordID, params.UserID, params.OrgID, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrFeedbackNotFound
 		}

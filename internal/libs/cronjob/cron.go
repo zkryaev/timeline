@@ -11,7 +11,6 @@ import (
 //   - slots: генерирует и удаляет стухшие
 //   - user_codes, org_codes: удаляет стухшие
 //   - users, orgs: удаляет стухшие
-//
 func InitCronScheduler(db infrastructure.Database) gocron.Scheduler {
 	s, err := gocron.NewScheduler()
 	if err != nil {
@@ -56,7 +55,6 @@ func InitCronScheduler(db infrastructure.Database) gocron.Scheduler {
 				ctx := context.Background()
 				users.UserDeleteExpired(ctx)
 				orgs.OrgDeleteExpired(ctx)
-
 			},
 			db, db,
 		),

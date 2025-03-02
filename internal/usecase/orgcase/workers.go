@@ -8,8 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (o *OrgUseCase) Worker(ctx context.Context, WorkerID, OrgID int) (*orgdto.WorkerResp, error) {
-	worker, err := o.org.Worker(ctx, WorkerID, OrgID)
+func (o *OrgUseCase) Worker(ctx context.Context, workerID, orgID int) (*orgdto.WorkerResp, error) {
+	worker, err := o.org.Worker(ctx, workerID, orgID)
 	if err != nil {
 		o.Logger.Error(
 			"failed to get worker",
@@ -76,9 +76,9 @@ func (o *OrgUseCase) WorkerUnAssignService(ctx context.Context, assignInfo *orgd
 	return nil
 }
 
-func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.WorkerList, error) {
-	Offset := (Page - 1) * Limit
-	data, found, err := o.org.WorkerList(ctx, OrgID, Limit, Offset)
+func (o *OrgUseCase) WorkerList(ctx context.Context, orgID, limit, page int) (*orgdto.WorkerList, error) {
+	offset := (page - 1) * limit
+	data, found, err := o.org.WorkerList(ctx, orgID, limit, offset)
 	if err != nil {
 		o.Logger.Error(
 			"failed to get worker list",
@@ -96,8 +96,8 @@ func (o *OrgUseCase) WorkerList(ctx context.Context, OrgID, Limit, Page int) (*o
 	}
 	return resp, nil
 }
-func (o *OrgUseCase) WorkerDelete(ctx context.Context, WorkerID, OrgID int) error {
-	if err := o.org.WorkerSoftDelete(ctx, WorkerID, OrgID); err != nil {
+func (o *OrgUseCase) WorkerDelete(ctx context.Context, workerID, orgID int) error {
+	if err := o.org.WorkerSoftDelete(ctx, workerID, orgID); err != nil {
 		o.Logger.Error(
 			"failed to delete worker",
 			zap.Error(err),

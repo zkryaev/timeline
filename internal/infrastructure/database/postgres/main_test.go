@@ -28,7 +28,7 @@ func (suite *PostgresTestSuite) SetupTest() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	if err := db.Open(); err != nil {
+	if err = db.Open(); err != nil {
 		log.Fatal(err.Error())
 	}
 	suite.db = db

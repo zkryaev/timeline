@@ -68,7 +68,7 @@ func (a *AuthUseCase) Login(ctx context.Context, req *authdto.LoginReq) (*authdt
 			return nil, ErrAccountExpired
 		}
 	}
-	if err := passwd.CompareWithHash(req.Password, exp.Hash); err != nil {
+	if err = passwd.CompareWithHash(req.Password, exp.Hash); err != nil {
 		a.Logger.Error(
 			"failed login account",
 			zap.String("CompareWithHash", err.Error()),
@@ -169,7 +169,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 	return &authdto.RegisterResp{ID: orgID}, nil
 }
 
-func (a *AuthUseCase) SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq) {
+func (a *AuthUseCase) SendCodeRetry(_ context.Context, req *authdto.SendCodeReq) {
 	code, err := verification.GenerateCode()
 	if err != nil {
 		a.Logger.Error(
@@ -229,7 +229,7 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UpdateAccessToken(ctx context.Context, req *jwt.Token) (*authdto.AccessToken, error) {
+func (a *AuthUseCase) UpdateAccessToken(_ context.Context, req *jwt.Token) (*authdto.AccessToken, error) {
 	// Валидируем Claims токена. Есть ли они и нормальные ли.
 	err := validation.ValidateTokenClaims(req.Claims)
 	if err != nil {

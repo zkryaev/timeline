@@ -76,8 +76,8 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, info *models.CodeInfo) (t
 	`
 	}
 
-	var expires_at time.Time
-	err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Scan(&expires_at)
+	var expiresAt time.Time
+	err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Scan(&expiresAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return time.Time{}, ErrCodeNotFound
@@ -87,7 +87,7 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, info *models.CodeInfo) (t
 	if err = tx.Commit(); err != nil {
 		return time.Time{}, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return expires_at, nil
+	return expiresAt, nil
 }
 
 // Устанавливает поле verified у сущности в true

@@ -163,7 +163,7 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 		);
 	`
 	for _, v := range schedule.Schedule {
-		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over)
+		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.Start, v.Over) //nolint:govet // ...
 		switch {
 		case err != nil:
 			return fmt.Errorf("failed to add worker schedule: %w", err)
@@ -235,7 +235,7 @@ func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmo
 		);
 	`
 	for _, v := range schedule.Schedule {
-		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.WorkerScheduleID, v.Start, v.Over)
+		res, err := tx.ExecContext(ctx, query, v.Weekday, v.Start, v.Over, schedule.OrgID, schedule.WorkerID, v.WorkerScheduleID, v.Start, v.Over) //nolint:govet // ...
 		switch {
 		case err != nil:
 			return fmt.Errorf("failed to update worker schedule: %w", err)

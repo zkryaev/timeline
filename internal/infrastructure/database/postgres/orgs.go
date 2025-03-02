@@ -102,7 +102,7 @@ func (p *PostgresRepo) OrgUUID(ctx context.Context, orgID int) (string, error) {
 		WHERE org_id = $1;
 	`
 	var uuid string
-	if err := tx.QueryRowContext(ctx, query, orgID).Scan(&uuid); err != nil {
+	if err = tx.QueryRowContext(ctx, query, orgID).Scan(&uuid); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrOrgNotFound
 		}
@@ -210,7 +210,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		FROM timetables
 		WHERE org_id = $1;
 	`
-	if err := tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
+	if err = tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
@@ -222,7 +222,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		FROM showcase
 		WHERE org_id = $1;
 	`
-	if err := tx.SelectContext(ctx, &org.ShowcasesURL, query, id); err != nil {
+	if err = tx.SelectContext(ctx, &org.ShowcasesURL, query, id); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
@@ -366,7 +366,7 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	return orgList, found, nil
 }
 
-func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization) error {
+func (p *PostgresRepo) OrgUpdate(ctx context.Context, org *orgmodel.Organization) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -390,15 +390,15 @@ func (p *PostgresRepo) OrgUpdate(ctx context.Context, new *orgmodel.Organization
 		AND org_id = $9;
 	`
 	res, err := tx.ExecContext(ctx, query,
-		new.Name,
-		new.Type,
-		new.City,
-		new.Address,
-		new.Telephone,
-		new.Lat,
-		new.Long,
-		new.About,
-		new.OrgID,
+		org.Name,
+		org.Type,
+		org.City,
+		org.Address,
+		org.Telephone,
+		org.Lat,
+		org.Long,
+		org.About,
+		org.OrgID,
 	)
 	switch {
 	case err != nil:

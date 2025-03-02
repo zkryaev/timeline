@@ -6,7 +6,7 @@ import (
 	"timeline/internal/infrastructure/models/orgmodel"
 )
 
-func (p *PostgresRepo) Timetable(ctx context.Context, OrgID int) ([]*orgmodel.OpenHours, error) {
+func (p *PostgresRepo) Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -22,7 +22,7 @@ func (p *PostgresRepo) Timetable(ctx context.Context, OrgID int) ([]*orgmodel.Op
 		WHERE org_id = $1;
 	`
 	timetable := make([]*orgmodel.OpenHours, 0, 1)
-	if err = tx.SelectContext(ctx, &timetable, query, OrgID); err != nil {
+	if err = tx.SelectContext(ctx, &timetable, query, orgID); err != nil {
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -46,7 +46,7 @@ func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, newTime []*o
 			VALUES($1, $2, $3, $4, $5, $6);
 	`
 	for _, hours := range newTime {
-		res, err := tx.ExecContext(ctx, query,
+		res, err := tx.ExecContext(ctx, query, //nolint:govet // ...
 			hours.Weekday,
 			hours.Open,
 			hours.Close,
@@ -100,7 +100,7 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 		AND org_id = $1
 		AND ($2 <= 0 OR weekday = $2);
 	`
-	if _, err := tx.ExecContext(ctx, query, orgID, weekday); err != nil {
+	if _, err = tx.ExecContext(ctx, query, orgID, weekday); err != nil {
 		return fmt.Errorf("failed to delete timetable: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
@@ -110,7 +110,7 @@ func (p *PostgresRepo) TimetableDelete(ctx context.Context, orgID, weekday int) 
 }
 
 // Принимает org_id и расписание организации. Если
-func (p *PostgresRepo) TimetableUpdate(ctx context.Context, orgID int, new []*orgmodel.OpenHours) error {
+func (p *PostgresRepo) TimetableUpdate(ctx context.Context, orgID int, timeList []*orgmodel.OpenHours) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -130,8 +130,8 @@ func (p *PostgresRepo) TimetableUpdate(ctx context.Context, orgID int, new []*or
 		WHERE org_id = $6
 		AND weekday = $1;
 	`
-	for _, hours := range new {
-		res, err := tx.ExecContext(ctx, query,
+	for _, hours := range timeList {
+		res, err := tx.ExecContext(ctx, query, //nolint:govet // ...
 			hours.Weekday,
 			hours.Open,
 			hours.Close,

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	ErrNoOrgs = errors.New("There are no organizations")
+	ErrNoOrgs = errors.New("no organizations was found")
 )
 
 type UserUseCase struct {
@@ -33,15 +33,16 @@ type UserUseCase struct {
 
 func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository, logger *zap.Logger) *UserUseCase {
 	return &UserUseCase{
-		user:   userRepo,
-		org:    orgRepo,
-		Logger: logger,
+		user:    userRepo,
+		org:     orgRepo,
+		records: recRepo,
+		Logger:  logger,
 	}
 }
 
 func (u *UserUseCase) User(ctx context.Context, id int) (*entity.User, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("Id must be > 0")
+		return nil, fmt.Errorf("id < 0")
 	}
 	data, err := u.user.UserByID(ctx, id)
 	if err != nil {
@@ -120,7 +121,7 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
 			Value:    recordmap.RecordToReminder(data[i]),
 			IsAttach: false,
 		}
-		if err := u.mail.SendMsg(msg); err != nil {
+		if err = u.mail.SendMsg(msg); err != nil {
 			u.Logger.Error(
 				"failed to notify users",
 				zap.Error(err),

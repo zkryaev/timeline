@@ -89,7 +89,7 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		Size:      meta.Size,
 		Reader:    file,
 	}
-	if err := s3.usecase.Upload(r.Context(), &dto); err != nil {
+	if err = s3.usecase.Upload(r.Context(), &dto); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

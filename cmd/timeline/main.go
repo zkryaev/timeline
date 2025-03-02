@@ -36,23 +36,23 @@ func main() {
 	// Подгружаем конфиг
 	cfg := config.MustLoad()
 	successConnection := "Successfuly connected to"
-	//Инициализация логгера
-	Logs := logger.New(cfg.App.Env)
-	Logs.Info("Application initializing...")
-	defer Logs.Sync()
+	// Инициализация логгера
+	logs := logger.New(cfg.App.Env)
+	logs.Info("application initializing...")
+	defer logs.Sync()
 	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
-		Logs.Fatal("incorrect db type", zap.Error(err))
+		logs.Fatal("incorrect db type", zap.Error(err))
 	}
 	err = db.Open()
 	if err != nil {
-		Logs.Fatal(
+		logs.Fatal(
 			fmt.Sprintf("failed to connect %s", os.Getenv("DB")),
 			zap.Error(err),
 		)
 	}
-	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")))
-	Logs.Info(
+	logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")))
+	logs.Info(
 		"",
 		zap.String("database server", cfg.DB.Host+":"+cfg.DB.Port),
 		zap.String("ssl", cfg.DB.SSLmode),
@@ -60,10 +60,10 @@ func main() {
 	defer db.Close()
 
 	// Поднимаем почтовый сервис параметрами по умолчанию
-	post := mail.New(cfg.Mail, Logs, 0, 0, 0)
+	post := mail.New(cfg.Mail, logs, 0, 0, 0)
 	post.Start()
-	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
-	Logs.Info(
+	logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
+	logs.Info(
 		"",
 		zap.String("mail server", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
 	)
@@ -71,21 +71,21 @@ func main() {
 
 	// Подключение к S3
 	s3storage := s3.New(cfg.S3)
-	if err := s3storage.Connect(); err != nil {
-		Logs.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
+	if err = s3storage.Connect(); err != nil {
+		logs.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
 	}
-	Logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
-	Logs.Info(
+	logs.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
+	logs.Info(
 		"",
 		zap.String("storage", cfg.S3.Host+":"+cfg.S3.DataPort),
 		zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
 		zap.Bool("ssl", cfg.S3.SSLmode),
 	)
 
-	App := app.New(cfg.App, Logs)
-	err = App.SetupControllers(cfg.Token, db, post, s3storage)
+	app := app.New(cfg.App, logs)
+	err = app.SetupControllers(cfg.Token, db, post, s3storage)
 	if err != nil {
-		Logs.Fatal(
+		logs.Fatal(
 			"failed setup controllers",
 			zap.Error(err),
 		)
@@ -99,30 +99,30 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	errorChan := make(chan error, 1)
 	go func() {
-		err := App.Run()
+		err = app.Run()
 		if err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
-				Logs.Error("failed to run server", zap.Error(err))
+				logs.Error("failed to run server", zap.Error(err))
 				errorChan <- err
 			}
 		}
 	}()
-	Logs.Info("Application is running")
-	Logs.Info("", zap.String("app server", cfg.App.Host+":"+cfg.App.Port))
+	logs.Info("application is running")
+	logs.Info("", zap.String("app server", cfg.App.Host+":"+cfg.App.Port))
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
 	case sig := <-quit:
 		cancel()
-		Logs.Info("Received signal",
+		logs.Info("Received signal",
 			zap.String("signal", sig.String()),
 		)
-	case err := <-errorChan:
+	case err = <-errorChan:
 		cancel()
-		Logs.Error("error occurred",
+		logs.Error("error occurred",
 			zap.Error(err),
 		)
 	}
-	App.Stop(ctx)
-	Logs.Info("Application stopped")
+	app.Stop(ctx)
+	logs.Info("application stopped")
 }

@@ -32,7 +32,7 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *usermodel.UserRegiste
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING user_id;
 	`
-	var UserID int
+	var userID int
 	if err = tx.QueryRowContext(
 		ctx,
 		query,
@@ -43,17 +43,17 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *usermodel.UserRegiste
 		user.Telephone,
 		user.City,
 		user.About,
-	).Scan(&UserID); err != nil {
+	).Scan(&userID); err != nil {
 		return 0, fmt.Errorf("failed to save user: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
 
-	return UserID, nil
+	return userID, nil
 }
 
-func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.UserInfo, error) {
+func (p *PostgresRepo) UserByID(ctx context.Context, userID int) (*usermodel.UserInfo, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -69,7 +69,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.Use
 		AND user_id = $1;
 	`
 	var user usermodel.UserInfo
-	if err = tx.GetContext(ctx, &user, query, UserID); err != nil {
+	if err = tx.GetContext(ctx, &user, query, userID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -81,7 +81,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, UserID int) (*usermodel.Use
 	return &user, nil
 }
 
-func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) error {
+func (p *PostgresRepo) UserUpdate(ctx context.Context, user *usermodel.UserInfo) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -102,12 +102,12 @@ func (p *PostgresRepo) UserUpdate(ctx context.Context, new *usermodel.UserInfo) 
 		AND user_id = $6;
 		`
 	res, err := tx.ExecContext(ctx, query,
-		new.FirstName,
-		new.LastName,
-		new.City,
-		new.Telephone,
-		new.About,
-		new.UserID,
+		user.FirstName,
+		user.LastName,
+		user.City,
+		user.Telephone,
+		user.About,
+		user.UserID,
 	)
 	switch {
 	case err != nil:
@@ -236,7 +236,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 		WHERE user_id = $1;
 	`
 	var uuid string
-	if err := tx.QueryRowContext(ctx, query, userID).Scan(&uuid); err != nil {
+	if err = tx.QueryRowContext(ctx, query, userID).Scan(&uuid); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrOrgNotFound
 		}
@@ -248,7 +248,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 	return uuid, nil
 }
 
-func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, NewUUID string) error {
+func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, newUUID string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -264,7 +264,7 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, NewUUID stri
 			uuid = $1
 		WHERE user_id = $2;
 	`
-	res, err := tx.ExecContext(ctx, query, NewUUID, userID)
+	res, err := tx.ExecContext(ctx, query, newUUID, userID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set user's uuid: %w", err)
@@ -279,7 +279,7 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, NewUUID stri
 	return nil
 }
 
-func (p *PostgresRepo) UserDeleteURL(ctx context.Context, URL string) error {
+func (p *PostgresRepo) UserDeleteURL(ctx context.Context, url string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -290,7 +290,7 @@ func (p *PostgresRepo) UserDeleteURL(ctx context.Context, URL string) error {
 		}
 	}()
 	query := `UPDATE users SET uuid = '' WHERE uuid = $1;`
-	res, err := tx.ExecContext(ctx, query, URL)
+	res, err := tx.ExecContext(ctx, query, url)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete user's url: %w", err)

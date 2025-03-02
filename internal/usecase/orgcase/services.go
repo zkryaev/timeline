@@ -67,7 +67,7 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, orgID int, limit int, page
 			"failed to retrieve list of services",
 			zap.Error(err),
 		)
-		return nil, nil
+		return nil, nil //nolint:nilnil // correct
 	}
 	serviceList := make([]*orgdto.ServiceResp, 0, len(data))
 	for _, v := range data {

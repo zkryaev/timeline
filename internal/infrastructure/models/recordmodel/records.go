@@ -50,6 +50,6 @@ type ReminderRecord struct {
 
 type RecordCancelation struct {
 	RecordID     int
-	IsCanceled     bool
+	IsCanceled   bool
 	CancelReason string
 }

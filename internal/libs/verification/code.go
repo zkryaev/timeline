@@ -7,15 +7,15 @@ import (
 )
 
 func GenerateCode() (string, error) {
-	min, max := 1000, 9999 // nolint revive -- faster
-	rangeVal := max - min + 1
+	minCode, maxCode := 1000, 9999 //nolint:revive // simple and fast
+	codesRange := minCode - maxCode + 1
 
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(rangeVal)))
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(codesRange)))
 	if err != nil {
 		return "", err
 	}
 
 	// Приводим результат к 4-значному числу и преобразуем его в строку
-	code := int(n.Int64()) + min
+	code := int(n.Int64()) + minCode
 	return strconv.Itoa(code), nil
 }

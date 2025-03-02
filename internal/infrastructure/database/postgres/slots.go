@@ -39,7 +39,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 		BreakStart       time.Time `db:"break_start"`
 		BreakEnd         time.Time `db:"break_end"`
 	}, 0, 10)
-	if err := tx.SelectContext(ctx, &workerSchedules, query); err != nil {
+	if err = tx.SelectContext(ctx, &workerSchedules, query); err != nil {
 		return err
 	}
 	// формула для вычисления будущей даты:
@@ -62,7 +62,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 	busy := false
 	for _, v := range workerSchedules {
 		periods := int(v.Over.Sub(v.Start) / (time.Duration(v.SessionDuration) * time.Minute))
-		for i := 0; i < periods; i++ {
+		for i := range periods {
 			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
 			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute) // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
 			// Слот не создается, если время начала или конца сеанса попадает в перерыв работника
@@ -72,7 +72,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 			if custom.CompareTime(end, v.BreakStart) > 0 && custom.CompareTime(end, v.BreakEnd) <= 0 {
 				continue
 			}
-			res, err := tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID)
+			res, err := tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID) //nolint:govet // ...
 			switch {
 			case err != nil:
 				return fmt.Errorf("failed to generate slot: %w", err)
@@ -173,7 +173,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		AND ($1 <= 0 OR worker_id = $1);
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
-	if err := tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
+	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
 		return nil, err
 	}
 	if tx.Commit() != nil {

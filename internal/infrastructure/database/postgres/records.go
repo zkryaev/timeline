@@ -61,7 +61,7 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		Worker:   &orgmodel.Worker{},
 		Feedback: &recordmodel.Feedback{},
 	}
-	if err := tx.QueryRowxContext(ctx, query, recordID).Scan(
+	if err = tx.QueryRowxContext(ctx, query, recordID).Scan(
 		&rec.Service.Name,
 		&rec.Service.Cost,
 		&rec.Worker.FirstName,
@@ -175,7 +175,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			Worker:   &orgmodel.Worker{},
 			Feedback: &recordmodel.Feedback{},
 		}
-		err := rows.Scan(
+		err = rows.Scan(
 			&rec.Service.Name,
 			&rec.Service.Cost,
 			&rec.Worker.UUID,
@@ -201,7 +201,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		}
 		recs = append(recs, rec)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, 0, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -276,7 +276,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 		WHERE r.record_id = $1;
 	`
 	record := &recordmodel.ReminderRecord{}
-	if err := tx.QueryRowContext(ctx, query, recordID).Scan(
+	if err = tx.QueryRowContext(ctx, query, recordID).Scan(
 		&record.UserEmail,
 		&record.ServiceName,
 		&record.ServiceDescription,
@@ -469,7 +469,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	defer rows.Close()
 	rec := &recordmodel.ReminderRecord{}
 	for rows.Next() {
-		err := rows.Scan(
+		err = rows.Scan(
 			rec.UserEmail,
 			rec.ServiceName,
 			rec.ServiceDescription,
@@ -484,7 +484,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 		}
 		recs = append(recs, rec)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {

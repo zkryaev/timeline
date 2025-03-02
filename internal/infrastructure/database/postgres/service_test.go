@@ -61,5 +61,4 @@ func (suite *PostgresTestSuite) TestServiceQueries() {
 	for i := range serviceList {
 		suite.NotEqual(&expected.ServiceInfo, orgmap.ServiceToDTO(serviceList[i]).ServiceInfo)
 	}
-
 }
