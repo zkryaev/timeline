@@ -7,9 +7,9 @@ import (
 
 type Organization struct {
 	OrgID        int                 `json:"id"`
-	UUID         string              `json:"uuid"`
-	ShowcasesURL []*s3dto.FileURL    `json:"showcases_url"`
-	Info         *entity.OrgInfo     `json:"info"`
+	UUID         string              `json:"uuid,omitempty"`
+	ShowcasesURL []*s3dto.FileURL    `json:"showcases_url,omitempty"`
+	Info         *entity.OrgInfo     `json:"info,omitempty"`
 	Timetable    []*entity.OpenHours `json:"timetable,omitempty"`
 }
 

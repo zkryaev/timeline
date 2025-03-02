@@ -25,14 +25,14 @@ type RecordListParams struct {
 }
 
 type RecordScrap struct {
-	RecordID int             `json:"record_id"`
-	Reviewed bool            `json:"reviewed"`
-	Org      *entity.OrgInfo `json:"org,omitempty"`
-	User     *entity.User    `json:"user,omitempty"`
-	Slot     *orgdto.Slot    `json:"slot,omitempty"`
-	Service  *entity.Service `json:"service,omitempty"`
-	Worker   *entity.Worker  `json:"worker,omitempty"`
-	Feedback *Feedback       `json:"feedback,omitempty"`
+	RecordID int                  `json:"record_id"`
+	Reviewed bool                 `json:"reviewed"`
+	Org      *orgdto.Organization `json:"org,omitempty"`
+	User     *entity.User         `json:"user,omitempty"`
+	Slot     *orgdto.Slot         `json:"slot,omitempty"`
+	Service  *entity.Service      `json:"service,omitempty"`
+	Worker   *entity.Worker       `json:"worker,omitempty"`
+	Feedback *Feedback            `json:"feedback,omitempty"`
 }
 
 type RecordList struct {
@@ -41,6 +41,6 @@ type RecordList struct {
 }
 
 type RecordCancelation struct {
-	RecordID int `json:"record_id"`
+	RecordID     int    `json:"record_id"`
 	CancelReason string `json:"cancel_reason"`
 }
