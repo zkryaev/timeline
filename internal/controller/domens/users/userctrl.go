@@ -74,16 +74,20 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Param page query int true "Page number for pagination"
 // @Param name query string false "Name of the organization to search for"
 // @Param type query string false "Type of the organization"
+// @Param is_rate_sort query bool false "on/off rating sort"
+// @Param is_name_sort query bool false "on/off name sort"
 // @Success 200 {object} general.SearchResp
 // @Failure 400
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	query := map[string]bool{
-		"limit": true,
-		"page":  true,
-		"name":  false,
-		"type":  false,
+		"limit":        true,
+		"page":         true,
+		"name":         false,
+		"type":         false,
+		"is_rate_sort": false,
+		"is_name_sort": false,
 	}
 	if !validation.IsQueryValid(r, query) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
@@ -91,12 +95,16 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
 	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
+	rateSort, _ := strconv.ParseBool(r.URL.Query().Get("is_rate_sort"))
+	nameSort, _ := strconv.ParseBool(r.URL.Query().Get("is_name_sort"))
 
 	req := &general.SearchReq{
-		Page:  int(page),
-		Limit: int(limit),
-		Name:  r.URL.Query().Get("name"),
-		Type:  r.URL.Query().Get("type"),
+		Page:       int(page),
+		Limit:      int(limit),
+		Name:       r.URL.Query().Get("name"),
+		Type:       r.URL.Query().Get("type"),
+		IsRateSort: rateSort,
+		IsNameSort: nameSort,
 	}
 	if err := u.validator.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
