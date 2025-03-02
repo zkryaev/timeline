@@ -331,20 +331,18 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 			t.break_start, 
 			t.break_end
 		FROM orgs o
-		LEFT JOIN timetables t
-		ON t.org_id = o.org_id
-		AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
+		LEFT JOIN timetables t ON t.org_id = o.org_id AND t.weekday = EXTRACT(ISODOW FROM CURRENT_DATE)
 		WHERE o.is_delete = false
 		AND ($1 = '' OR name ILIKE '%' || $1 || '%')
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
+
 	`
 	sort := "ORDER BY o.rating DESC, o.name ASC"
-	boundaires := "LIMIT $3 OFFSET $4;"
+	boundaires := " LIMIT $3 OFFSET $4;"
 	stmt := strings.Builder{}
 	stmt.Grow(len(query) + len(sort) + len(boundaires))
 	switch {
 	case params.IsRateSort && params.IsNameSort:
-		stmt.WriteString(sort)
 	case params.IsRateSort:
 		sort = "ORDER BY o.rating DESC"
 	case params.IsNameSort:

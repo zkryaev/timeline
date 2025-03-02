@@ -47,12 +47,13 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	suite.Require().NoError(suite.db.OrgUpdate(ctx, orgmap.OrgUpdateToModel(updateInfo)))
 
 	params := &general.SearchReq{
-		Page:  1,
-		Limit: 5,
-		Name:  expOrg.Name,
+		Page:       1,
+		Limit:      5,
+		Name:       expOrg.Name,
+		IsRateSort: true,
 	}
 	foundOrgs, found, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
-	suite.NoError(err)
+	suite.NoError(err, "without sort")
 	suite.Greater(found, 0)
 	suite.NotNil(foundOrgs)
 	for i := range foundOrgs {
@@ -62,6 +63,25 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 			suite.Equal(expOrg.Type, org.Type)
 		}
 	}
+	params.IsRateSort = true
+	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	suite.NoError(err, "rate sort")
+	suite.Greater(found, 0)
+	suite.NotNil(foundOrgs)
+
+	params.IsRateSort = false
+	params.IsNameSort = true
+	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	suite.NoError(err, "name sort")
+	suite.Greater(found, 0)
+	suite.NotNil(foundOrgs)
+
+	params.IsRateSort = true
+	params.IsNameSort = true
+	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	suite.NoError(err, "rate & name sort")
+	suite.Greater(found, 0)
+	suite.NotNil(foundOrgs)
 
 	expOrg.Name = "WELL KNOWN COMPANY"
 	expOrg.Type = "Mega Corporation"
