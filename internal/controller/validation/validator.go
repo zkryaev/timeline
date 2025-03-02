@@ -29,10 +29,10 @@ func validDate(fl validator.FieldLevel) bool {
 
 func NewCustomValidator() (*validator.Validate, error) {
 	validate := validator.New()
-	
-	validationList := []struct{
+
+	validationList := []struct {
 		field string
-		check func (fl validator.FieldLevel) bool
+		check func(fl validator.FieldLevel) bool
 	}{
 		{
 			field: "time",

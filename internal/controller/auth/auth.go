@@ -262,7 +262,7 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// Отправляем JSON-ответ
-	if err := a.json.NewEncoder(w).Encode(refreshedAccessToken); err != nil {
+	if err = a.json.NewEncoder(w).Encode(refreshedAccessToken); err != nil {
 		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
 		return
 	}

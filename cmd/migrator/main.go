@@ -45,7 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatal("migrator: ", err.Error())
 	}
-	if err := m.Up(); err != nil {
+	if err = m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			log.Println("migrator: no migrations to apply")
 			return

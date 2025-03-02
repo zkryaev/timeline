@@ -95,8 +95,17 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 			break
 		}
 	}
+
+	recParams.OrgID = 0
+	recParams.UserID = 1
+	recParams.Fresh = false
+	recParams.Page = 1
+	_, found, err = suite.db.RecordList(ctx, recordmap.RecordParamsToModel(recParams))
+	suite.NoError(err)
+	suite.Greater(found, 0)
+
 	cancelReq := &recordto.RecordCancelation{
-		RecordID: recordID,
+		RecordID:     recordID,
 		CancelReason: "TESTING REASON",
 	}
 	suite.NoError(suite.db.RecordCancel(ctx, recordmap.CancelationToModel(cancelReq)), fmt.Sprintf("record_id=%d | slot_id=%d slot.date=%s slot.begin=%s slot-end=%s",

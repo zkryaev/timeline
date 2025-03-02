@@ -34,7 +34,7 @@ func New(env string) *zap.Logger {
 		if env == Prod {
 			timestamp = time.Now().Format("15:04:05_2006-01-02_")
 		}
-		_, err := os.Create(path + timestamp + filename)
+		_, err = os.Create(path + timestamp + filename)
 		if err != nil {
 			log.Println("couldn't create log.txt: ", err.Error())
 			os.Exit(1)

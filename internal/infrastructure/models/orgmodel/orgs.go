@@ -64,11 +64,11 @@ type OrgRegister struct {
 }
 
 type SearchParams struct {
-	Page   int
-	Limit  int
-	Offset int
-	Name   string
-	Type   string
+	Page       int
+	Limit      int
+	Offset     int
+	Name       string
+	Type       string
 	IsRateSort bool
 	IsNameSort bool
 }

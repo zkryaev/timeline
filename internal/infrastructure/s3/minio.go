@@ -49,7 +49,7 @@ func (m *Minio) Upload(ctx context.Context, url string, fileName string, fileSiz
 	if exists, errBucketExists := m.conn.BucketExists(ctx, m.cfg.DefaultBucket); errBucketExists != nil || !exists {
 		err := m.conn.MakeBucket(ctx, m.cfg.DefaultBucket, minio.MakeBucketOptions{})
 		if err != nil {
-			return fmt.Errorf("%s -> %w", errBucketExists, err)
+			return fmt.Errorf("%w -> %w", errBucketExists, err)
 		}
 	}
 	_, err := m.conn.PutObject(ctx, m.cfg.DefaultBucket, url, reader, fileSize, minio.PutObjectOptions{

@@ -28,7 +28,7 @@ func LoadPrivateKey() (*rsa.PrivateKey, error) {
 	}
 	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse RSA private key: %v", err)
+		return nil, fmt.Errorf("failed to parse RSA private key: %w", err)
 	}
 
 	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)

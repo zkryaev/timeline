@@ -18,8 +18,8 @@ func IsCodeExpired(createdAt time.Time) bool {
 // Проверяем что в формате UTC, что между текущей датой и датой создания не больше дня.
 func IsAccountExpired(createdAt time.Time) bool {
 	day := 24 * time.Hour
-	currentDate := time.Now().UTC()                   // Получаем текущее время в UTC
-	createdDate := createdAt.Truncate(24 * time.Hour) // Обрезаем до суток
+	currentDate := time.Now().UTC()        // Получаем текущее время в UTC
+	createdDate := createdAt.Truncate(day) // Обрезаем до суток
 	return currentDate.Sub(createdDate) > day
 }
 

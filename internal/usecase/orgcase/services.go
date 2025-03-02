@@ -8,8 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (o *OrgUseCase) Service(ctx context.Context, ServiceID, OrgID int) (*orgdto.ServiceResp, error) {
-	service, err := o.org.Service(ctx, ServiceID, OrgID)
+func (o *OrgUseCase) Service(ctx context.Context, serviceID, orgID int) (*orgdto.ServiceResp, error) {
+	service, err := o.org.Service(ctx, serviceID, orgID)
 	if err != nil {
 		o.Logger.Error(
 			"failed to get service",
@@ -20,8 +20,8 @@ func (o *OrgUseCase) Service(ctx context.Context, ServiceID, OrgID int) (*orgdto
 	return orgmap.ServiceToDTO(service), nil
 }
 
-func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgdto.WorkerResp, error) {
-	data, err := o.org.ServiceWorkerList(ctx, ServiceID, OrgID)
+func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, serviceID, orgID int) ([]*orgdto.WorkerResp, error) {
+	data, err := o.org.ServiceWorkerList(ctx, serviceID, orgID)
 	if err != nil {
 		o.Logger.Error(
 			"failed to get worker service list",
@@ -36,8 +36,8 @@ func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, ServiceID, OrgID int
 
 	return workers, nil
 }
-func (o *OrgUseCase) ServiceAdd(ctx context.Context, Service *orgdto.AddServiceReq) error {
-	_, err := o.org.ServiceAdd(ctx, orgmap.AddServiceToModel(Service))
+func (o *OrgUseCase) ServiceAdd(ctx context.Context, service *orgdto.AddServiceReq) error {
+	_, err := o.org.ServiceAdd(ctx, orgmap.AddServiceToModel(service))
 	if err != nil {
 		o.Logger.Error(
 			"failed to add service",
@@ -48,8 +48,8 @@ func (o *OrgUseCase) ServiceAdd(ctx context.Context, Service *orgdto.AddServiceR
 	return nil
 }
 
-func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateServiceReq) error {
-	if err := o.org.ServiceUpdate(ctx, orgmap.UpdateService(Service)); err != nil {
+func (o *OrgUseCase) ServiceUpdate(ctx context.Context, service *orgdto.UpdateServiceReq) error {
+	if err := o.org.ServiceUpdate(ctx, orgmap.UpdateService(service)); err != nil {
 		o.Logger.Error(
 			"failed to update service",
 			zap.Error(err),
@@ -59,9 +59,9 @@ func (o *OrgUseCase) ServiceUpdate(ctx context.Context, Service *orgdto.UpdateSe
 	return nil
 }
 
-func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int, Limit int, Page int) (*orgdto.ServiceList, error) {
-	Offset := (Page - 1) * Limit
-	data, found, err := o.org.ServiceList(ctx, OrgID, Limit, Offset)
+func (o *OrgUseCase) ServiceList(ctx context.Context, orgID int, limit int, page int) (*orgdto.ServiceList, error) {
+	offset := (page - 1) * limit
+	data, found, err := o.org.ServiceList(ctx, orgID, limit, offset)
 	if err != nil {
 		o.Logger.Error(
 			"failed to retrieve list of services",
@@ -80,8 +80,8 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, OrgID int, Limit int, Page
 	return resp, nil
 }
 
-func (o *OrgUseCase) ServiceDelete(ctx context.Context, ServiceID, OrgID int) error {
-	if err := o.org.ServiceSoftDelete(ctx, ServiceID, OrgID); err != nil {
+func (o *OrgUseCase) ServiceDelete(ctx context.Context, serviceID, orgID int) error {
+	if err := o.org.ServiceSoftDelete(ctx, serviceID, orgID); err != nil {
 		o.Logger.Error(
 			"failed to delete service",
 			zap.Error(err),
