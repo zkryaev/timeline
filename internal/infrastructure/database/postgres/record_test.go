@@ -101,5 +101,5 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	}
 	suite.NoError(suite.db.RecordCancel(ctx, recordmap.CancelationToModel(cancelReq)), fmt.Sprintf("record_id=%d | slot_id=%d slot.date=%s slot.begin=%s slot-end=%s",
 		recordID, dbSlots[freeSlot].SlotID, dbSlots[freeSlot].Date.String(), dbSlots[freeSlot].Begin.Format("15:04"), dbSlots[freeSlot].End.Format("15:04")))
-	//suite.db.RecordDelete(ctx, recordID)
+	suite.db.RecordDelete(ctx, recordID)
 }

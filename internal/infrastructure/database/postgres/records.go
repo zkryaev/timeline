@@ -153,9 +153,9 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		WHERE ($1 <= 0 OR r.user_id = $1)
 		AND ($2 <= 0 OR r.org_id = $2)
 		AND ( 
-				($3 = TRUE AND s.date >= CURRENT_DATE) 
+				($3 = TRUE AND s.date >= CURRENT_TIMESTAMP) 
 				OR 
-				($3 = FALSE AND s.date < CURRENT_DATE)   
+				($3 = FALSE AND s.date < CURRENT_TIMESTAMP)   
 			)
 		LIMIT $4
 		OFFSET $5;
