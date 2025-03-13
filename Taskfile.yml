@@ -144,6 +144,14 @@ tasks:
     cmds:
       - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
       - dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient ./cmd/timeline/main.go
+
+  deploy:
+    desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
+    deps: [check-envs, docker-all, migrate-up, build]
+    cmds:
+      - nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
+      - ./{{.OUTPUT_BINARY}}
+
   clean:
     desc: "remove generated swagger docs, binary, and \".out\" files"
     silent: true
@@ -158,14 +166,7 @@ tasks:
         find . -name "__*" -delete 2>/dev/null || true
         find "coverage.html" -delete 2>/dev/null || true 
         echo "cleanup!"
-
-  deploy:
-    desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
-    deps: [check-envs, docker-all, migrate-up, build]
-    cmds:
-      - nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
-      - ./{{.OUTPUT_BINARY}}
-
+        
   default:
     cmds: 
       - task -ac
