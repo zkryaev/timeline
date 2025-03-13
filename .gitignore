@@ -2,6 +2,7 @@
 .task
 .env
 *.pem
+__*
 bin
 logs/*
 mocks/*

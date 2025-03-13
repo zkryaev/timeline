@@ -138,6 +138,12 @@ tasks:
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
+  debug:
+    desc: "run debugger"
+    deps: [check-envs, docker-all, migrate-up]
+    cmds:
+      - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
+      - dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient ./cmd/timeline/main.go
   clean:
     desc: "remove generated swagger docs, binary, and \".out\" files"
     silent: true
@@ -149,8 +155,9 @@ tasks:
         find "{{.OUTPUT_BINARY}}" -mindepth 1 -maxdepth 1 -type d -delete 2>/dev/null || true
         find "{{.APP_LOGS}}" -delete 2>/dev/null || true  
         find . -name "*.out" -delete 2>/dev/null || true 
+        find . -name "__*" -delete 2>/dev/null || true
         find "coverage.html" -delete 2>/dev/null || true 
-        echo "clean up!"
+        echo "cleanup!"
 
   deploy:
     desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
