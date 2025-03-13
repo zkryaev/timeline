@@ -140,10 +140,10 @@ tasks:
 
   debug:
     desc: "run debugger"
-    deps: [check-envs, docker-all, migrate-up]
+    #deps: [check-envs, docker-all, migrate-up]
     cmds:
       - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
-      - dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient ./cmd/timeline/main.go
+      - dlv debug --headless --listen=:2345 --api-version=2 ./cmd/timeline
 
   deploy:
     desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
