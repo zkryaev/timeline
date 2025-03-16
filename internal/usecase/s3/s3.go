@@ -24,16 +24,16 @@ const (
 )
 
 var (
-	ErrGenUUID     = errors.New("failed to generate uuid")
-	ErrSetUUID     = errors.New("failed to set uuid")
-	ErrGetUUID     = errors.New("failed to get uuid")
-	ErrSaveURL     = errors.New("failed to save url")
-	ErrSaveFile    = errors.New("failed to save file")
-	ErrURLEmpty    = errors.New("empty url")
-	ErrInvalidURL  = errors.New("invalid url")
-	ErrDownloading = errors.New("failed to download file from s3")
-	ErrUploading   = errors.New("failed to upload file to s3")
-	ErrDeleting    = errors.New("failed to delete file into s3")
+	ErrGenUUID    = errors.New("failed to generate uuid")
+	ErrSetUUID    = errors.New("failed to set uuid")
+	ErrGetUUID    = errors.New("failed to get uuid")
+	ErrSaveURL    = errors.New("failed to save url")
+	ErrSaveFile   = errors.New("failed to save file")
+	ErrURLEmpty   = errors.New("empty url")
+	ErrInvalidURL = errors.New("invalid url")
+	ErrDownload   = errors.New("failed to download file from s3")
+	ErrUpload     = errors.New("failed to upload file to s3")
+	ErrDelete     = errors.New("failed to delete file into s3")
 )
 
 type S3UseCase struct {
@@ -122,18 +122,18 @@ func (s *S3UseCase) Download(ctx context.Context, url string) (*s3dto.File, erro
 	}
 	obj, err := s.minio.Download(ctx, url)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrDownloading, err)
+		return nil, fmt.Errorf("%w: %w", ErrDownload, err)
 	}
 	// Получение информации о файле
 	objInfo, err := obj.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrDownloading, err)
+		return nil, fmt.Errorf("%w: %w", ErrDownload, err)
 	}
 	buffer := make([]byte, objInfo.Size)
 	// Считывание файла
 	_, err = obj.Read(buffer)
 	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("%w: %w", ErrDownloading, err)
+		return nil, fmt.Errorf("%w: %w", ErrDownload, err)
 	}
 	defer obj.Close()
 	return &s3dto.File{
@@ -154,23 +154,23 @@ func (s *S3UseCase) Delete(ctx context.Context, entity string, url string) error
 	switch {
 	case entity == ORG:
 		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
-			return fmt.Errorf("%w: %w", ErrDeleting, err)
+			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
 	case (entity == GALLERY) || (entity == BANNER):
 		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
-			return fmt.Errorf("%w: %w", ErrDeleting, err)
+			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
 	case entity == USER:
 		if err := s.user.UserDeleteURL(ctx, url); err != nil {
-			return fmt.Errorf("%w: %w", ErrDeleting, err)
+			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
 	case entity == WORKER:
 		if err := s.org.WorkerDeleteURL(ctx, url); err != nil {
-			return fmt.Errorf("%w: %w", ErrDeleting, err)
+			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
 	}
 	if err := s.minio.Delete(ctx, url); err != nil {
-		return fmt.Errorf("%w: %w", ErrDeleting, err)
+		return fmt.Errorf("%w: %w", ErrDelete, err)
 	}
 	return nil
 }
