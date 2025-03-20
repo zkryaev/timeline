@@ -36,7 +36,7 @@ func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
 func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		rw := &common.ResponseWriter{ResponseWriter: w}
+		rw := common.NewResponseWriter(w)
 
 		next.ServeHTTP(rw, r)
 		duration := time.Since(start)
@@ -44,11 +44,11 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 		if err != nil {
 			decodedURI = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
-		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.StatusCode, duration)
+		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.StatusCode(), duration)
 		switch {
-		case rw.StatusCode >= http.StatusBadRequest && rw.StatusCode < http.StatusInternalServerError:
+		case rw.StatusCode() >= http.StatusBadRequest && rw.StatusCode() < http.StatusInternalServerError:
 			m.logger.Warn(logsText)
-		case rw.StatusCode >= http.StatusInternalServerError:
+		case rw.StatusCode() >= http.StatusInternalServerError:
 			m.logger.Error(logsText)
 		default:
 			m.logger.Info(logsText)
