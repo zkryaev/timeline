@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"timeline/internal/controller/common"
 	"timeline/internal/usecase/auth/validation"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,7 +36,7 @@ func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
 func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		rw := &respWriterCustom{ResponseWriter: w}
+		rw := &common.ResponseWriter{ResponseWriter: w}
 
 		next.ServeHTTP(rw, r)
 		duration := time.Since(start)
@@ -43,11 +44,11 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 		if err != nil {
 			decodedURI = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
-		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.statusCode, duration)
+		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.StatusCode, duration)
 		switch {
-		case rw.statusCode >= http.StatusBadRequest && rw.statusCode < http.StatusInternalServerError:
+		case rw.StatusCode >= http.StatusBadRequest && rw.StatusCode < http.StatusInternalServerError:
 			m.logger.Warn(logsText)
-		case rw.statusCode >= http.StatusInternalServerError:
+		case rw.StatusCode >= http.StatusInternalServerError:
 			m.logger.Error(logsText)
 		default:
 			m.logger.Info(logsText)
