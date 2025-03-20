@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/libs/custom"
@@ -59,18 +60,17 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		Limit:    queryParams["limit"].(int),
 		Page:     queryParams["page"].(int),
 	}
-	if err = rec.validator.Struct(req); err != nil {
-		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := rec.usecase.FeedbackList(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if rec.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -86,16 +86,12 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 // @Router /records/feedbacks [post]
 func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.Feedback{}
-	if rec.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.FeedbackSet(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -112,16 +108,12 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 // @Router /records/feedbacks [put]
 func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.Feedback{}
-	if rec.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.FeedbackUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -148,14 +140,13 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	req := &recordto.FeedbackParams{RecordID: recordid}
-	if err = rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err = rec.usecase.FeedbackDelete(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

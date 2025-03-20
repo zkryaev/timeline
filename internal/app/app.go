@@ -21,7 +21,6 @@ import (
 	s3usecase "timeline/internal/usecase/s3"
 	"timeline/internal/usecase/usercase"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -59,78 +58,67 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 	if err != nil {
 		return err
 	}
-	// Инициализация Auth
-	usecaseAuth := auth.New(
-		privateKey,
-		storage,
-		storage,
-		storage,
-		mailService,
-		tokenCfg,
-		a.log,
-	)
-	json := jsoniter.ConfigCompatibleWithStandardLibrary
-	validator, err := validation.NewCustomValidator()
+
+	validator, err := validation.NewCustomValidator() // singleton is right way to use it (thread-safe!)
 	if err != nil {
 		return err
 	}
 
+	s3API := s3ctrl.New(
+		s3usecase.New(
+			storage,
+			storage,
+			s3Service,
+			a.log,
+		),
+		a.log,
+	)
+
 	authAPI := authctrl.New(
-		usecaseAuth,
+		auth.New(
+			privateKey,
+			storage,
+			storage,
+			storage,
+			mailService,
+			tokenCfg,
+			a.log,
+		),
 		middleware.New(privateKey, a.log),
 		a.log,
-		json,
+	)
+
+	userAPI := users.New(
+		usercase.New(
+			storage,
+			storage,
+			storage,
+			a.log,
+		),
+		a.log,
 		validator,
 	)
 
-	// Инициализация User
-	usecaseUser := usercase.New(
-		storage,
-		storage,
-		storage,
+	orgAPI := orgs.New(
+		orgcase.New(
+			storage,
+			storage,
+			a.log,
+		),
 		a.log,
 	)
 
-	userAPI := users.NewUserCtrl(
-		usecaseUser,
-		a.log,
-		json,
-		validator,
-	)
-
-	// Инициализация Org
-	usecaseOrg := orgcase.New(
-		storage,
-		storage,
+	recordAPI := records.New(
+		recordcase.New(
+			storage,
+			storage,
+			storage,
+			mailService,
+			a.log,
+		),
 		a.log,
 	)
 
-	orgAPI := orgs.NewOrgCtrl(
-		usecaseOrg,
-		a.log,
-		json,
-		validator,
-	)
-
-	// Работа с записями
-	usecaseRecord := recordcase.New(
-		storage,
-		storage,
-		storage,
-		mailService,
-		a.log,
-	)
-
-	recordAPI := records.NewRecordCtrl(
-		usecaseRecord,
-		a.log,
-		json,
-		validator,
-	)
-
-	// Хранилище изображений
-	s3Usecase := s3usecase.New(storage, storage, s3Service, a.log)
-	s3API := s3ctrl.New(s3Usecase, a.log, json)
 	controllerSet := &controller.Controllers{
 		Auth:   authAPI,
 		User:   userAPI,

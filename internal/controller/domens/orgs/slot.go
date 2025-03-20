@@ -3,6 +3,7 @@ package orgs
 import (
 	"context"
 	"net/http"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
@@ -31,8 +32,8 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := &orgdto.SlotReq{WorkerID: params["workerID"], OrgID: params["orgID"]}
-	if err = o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.Slots(r.Context(), req)
@@ -40,10 +41,8 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -60,16 +59,13 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/{orgID}/slots [put]
 func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.SlotUpdate{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.UpdateSlot(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
-	}
-	if err := o.usecase.UpdateSlot(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
 }

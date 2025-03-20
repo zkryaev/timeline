@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/libs/custom"
@@ -55,19 +56,17 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		Limit:    queryParams["limit"].(int),
 		Page:     queryParams["page"].(int),
 	}
-	if err = o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.WorkerSchedule(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -88,7 +87,6 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// TODO: как то по умнее работать с query параметрами
 	var weekday int
 	if r.URL.Query().Get("weekday") != "" {
 		weekday, err = strconv.Atoi(r.URL.Query().Get("weekday"))
@@ -102,12 +100,12 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		OrgID:    params["orgID"],
 		Weekday:  weekday,
 	}
-	if err = o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = o.usecase.DeleteWorkerSchedule(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.DeleteWorkerSchedule(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -124,16 +122,12 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/schedules [put]
 func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.WorkerSchedule{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.UpdateWorkerSchedule(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.UpdateWorkerSchedule(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -151,16 +145,12 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/schedules [post]
 func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.WorkerSchedule{}
-	if err := o.json.NewDecoder(r.Body).Decode(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.AddWorkerSchedule(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.AddWorkerSchedule(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

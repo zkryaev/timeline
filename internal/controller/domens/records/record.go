@@ -3,13 +3,12 @@ package records
 import (
 	"context"
 	"net/http"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/libs/custom"
 
-	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -22,18 +21,14 @@ type Record interface {
 }
 
 type RecordCtrl struct {
-	usecase   Record
-	Logger    *zap.Logger
-	json      jsoniter.API
-	validator *validator.Validate
+	usecase Record
+	Logger  *zap.Logger
 }
 
-func NewRecordCtrl(usecase Record, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *RecordCtrl {
+func New(usecase Record, logger *zap.Logger) *RecordCtrl {
 	return &RecordCtrl{
-		usecase:   usecase,
-		Logger:    logger,
-		json:      jsoniter,
-		validator: validator,
+		usecase: usecase,
+		Logger:  logger,
 	}
 }
 
@@ -57,12 +52,11 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := rec.usecase.Record(r.Context(), params["recordID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if rec.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -100,7 +94,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	}
 	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
 	if err != nil {
-		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid query parameters: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	req := &recordto.RecordListParams{
@@ -110,18 +104,17 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		Limit:  queryParams["limit"].(int),
 		Page:   queryParams["page"].(int),
 	}
-	if err = rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := rec.usecase.RecordList(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if rec.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -137,16 +130,12 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 // @Router /records/creation [post]
 func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.Record{}
-	if rec.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.RecordAdd(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -163,16 +152,12 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.RecordCancelation{}
-	if rec.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := rec.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.RecordCancel(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

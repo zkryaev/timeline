@@ -3,11 +3,10 @@ package auth
 import (
 	"context"
 	"net/http"
+	"timeline/internal/controller/common"
 	"timeline/internal/entity/dto/authdto"
 
-	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -30,17 +29,13 @@ type AuthCtrl struct {
 	usecase    AuthUseCase
 	Logger     *zap.Logger
 	Middleware Middleware
-	json       jsoniter.API
-	validator  *validator.Validate
 }
 
-func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *AuthCtrl {
+func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCtrl {
 	return &AuthCtrl{
 		usecase:    usecase,
 		Logger:     logger,
 		Middleware: middleware,
-		json:       jsoniter,
-		validator:  validator,
 	}
 }
 
@@ -55,28 +50,19 @@ func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger, jsonite
 // @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
-	// декодируем json
 	var req authdto.LoginReq
-	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	// валидация полей
-	if a.validator.Struct(&req) != nil {
-		http.Error(w, "Data is not valid", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, &req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	ctx := r.Context()
 	data, err := a.usecase.Login(ctx, &req)
 	if err != nil {
-		http.Error(w, "Invalid username or password", http.StatusBadRequest)
+		http.Error(w, common.ErrFailedLogin, http.StatusBadRequest)
 		return
 	}
-	// отдаем токен
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if a.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -92,30 +78,19 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/users [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
-	// декодируем json
 	var req authdto.UserRegisterReq
-	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, &req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	// валидация полей
-	if err := a.validator.Struct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	ctx := r.Context()
 	data, err := a.usecase.UserRegister(ctx, &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	// отдаем токен
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err = a.json.NewEncoder(w).Encode(&data); err != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -133,26 +108,18 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	// декодируем json
 	var req authdto.OrgRegisterReq
-	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, &req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	// валидация полей
-	if err := a.validator.Struct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	ctx := r.Context()
 	data, err := a.usecase.OrgRegister(ctx, &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if a.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -168,18 +135,11 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/send [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
-	// декодируем json
 	var req authdto.SendCodeReq
-	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, &req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	// валидация полей
-	if err := a.validator.Struct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	ctx := r.Context()
 	a.usecase.SendCodeRetry(ctx, &req)
 	w.WriteHeader(http.StatusCreated)
@@ -196,29 +156,19 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/verify [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
-	// декодируем json
 	var req authdto.VerifyCodeReq
-	if a.json.NewDecoder(r.Body).Decode(&req) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, &req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	// валидация полей
-	if err := a.validator.Struct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	ctx := r.Context()
 	data, err := a.usecase.VerifyCode(ctx, &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	// отдаем токен
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if a.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -258,12 +208,8 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	// Отправляем JSON-ответ
-	if err = a.json.NewEncoder(w).Encode(refreshedAccessToken); err != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, refreshedAccessToken) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }

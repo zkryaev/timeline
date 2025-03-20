@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
@@ -38,12 +39,11 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Worker(r.Context(), path["workerID"], path["orgID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -60,22 +60,17 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/workers [post]
 func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.AddWorkerReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.WorkerAdd(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -91,16 +86,13 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/workers [put]
 func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.UpdateWorkerReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := o.usecase.WorkerUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -117,16 +109,13 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/workers/service [post]
 func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.AssignWorkerReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := o.usecase.WorkerAssignService(r.Context(), req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -155,7 +144,8 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 		WorkerID:  params["workerID"],
 	}
 	if err = o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -189,12 +179,11 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	data, err := o.usecase.WorkerList(r.Context(), path["orgID"], limit, page)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -214,8 +203,9 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err = o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]) != nil {
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
