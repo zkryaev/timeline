@@ -68,7 +68,7 @@ func (suite *AuthTestSuite) TestLoginSuccess() {
 
 	suite.mockAuthUseCase.On("Login", r.Context(), &input).Return(pair, nil)
 	suite.Auth.Login(w, r)
-	suite.Equal(http.StatusBadRequest, w.Result().StatusCode)
+	suite.Equal(http.StatusOK, w.Result().StatusCode, w.Body.String())
 }
 
 func (suite *AuthTestSuite) TestUpdateAccessTokenRefreshError() {

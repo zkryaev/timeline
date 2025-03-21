@@ -51,8 +51,8 @@ func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCt
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	var req authdto.LoginReq
-	if common.DecodeAndValidate(r, &req) != nil {
-		http.Error(w, "", http.StatusBadRequest)
+	if err := common.DecodeAndValidate(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	ctx := r.Context()
