@@ -32,7 +32,7 @@ func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.Tok
 	}, nil
 }
 
-func NewToken(secret interface{}, cfg config.Token, metadata *entity.TokenMetadata, tokenType string) (string, error) {
+func NewToken(secret any, cfg config.Token, metadata *entity.TokenMetadata, tokenType string) (string, error) {
 	var exp int64
 	switch tokenType {
 	case "access":

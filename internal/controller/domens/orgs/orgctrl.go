@@ -3,12 +3,11 @@ package orgs
 import (
 	"context"
 	"net/http"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
-	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -23,18 +22,14 @@ type Org interface {
 }
 
 type OrgCtrl struct {
-	usecase   Org
-	Logger    *zap.Logger
-	json      jsoniter.API
-	validator *validator.Validate
+	usecase Org
+	Logger  *zap.Logger
 }
 
-func NewOrgCtrl(usecase Org, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *OrgCtrl {
+func New(usecase Org, logger *zap.Logger) *OrgCtrl {
 	return &OrgCtrl{
-		usecase:   usecase,
-		Logger:    logger,
-		json:      jsoniter,
-		validator: validator,
+		usecase: usecase,
+		Logger:  logger,
 	}
 }
 
@@ -54,12 +49,10 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Organization(r.Context(), params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -75,12 +68,8 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.OrgUpdateReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := o.usecase.OrgUpdate(r.Context(), req); err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
@@ -37,12 +38,11 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Service(r.Context(), path["serviceID"], path["orgID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -65,12 +65,11 @@ func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.ServiceWorkerList(r.Context(), path["serviceID"], path["orgID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -87,16 +86,12 @@ func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/services [post]
 func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.AddServiceReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.ServiceAdd(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.ServiceAdd(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -112,16 +107,12 @@ func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/services [put]
 func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.UpdateServiceReq{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.ServiceUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.ServiceUpdate(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -155,12 +146,10 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	data, err := o.usecase.ServiceList(r.Context(), path["orgID"], limit, page)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -181,7 +170,7 @@ func (o *OrgCtrl) ServiceDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = o.usecase.ServiceDelete(r.Context(), path["serviceID"], path["orgID"]); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
 }

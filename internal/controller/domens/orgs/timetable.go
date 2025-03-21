@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
 
@@ -34,16 +35,13 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Timetable(r.Context(), path["orgID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if o.json.NewEncoder(w).Encode(&data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Add timetable
@@ -57,16 +55,12 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/timetable [post]
 func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.Timetable{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.TimetableAdd(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.TimetableAdd(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -83,16 +77,12 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /orgs/timetable [put]
 func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 	req := &orgdto.Timetable{}
-	if o.json.NewDecoder(r.Body).Decode(req) != nil {
+	if common.DecodeAndValidate(r, req) != nil {
 		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
 		return
 	}
-	if err := o.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.TimetableUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.TimetableUpdate(r.Context(), req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -122,8 +112,8 @@ func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err = o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

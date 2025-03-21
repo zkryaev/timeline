@@ -11,7 +11,6 @@ import (
 	"timeline/internal/entity/dto/s3dto"
 	"timeline/internal/libs/custom"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -23,15 +22,13 @@ type S3UseCase interface {
 
 type S3Ctrl struct {
 	usecase S3UseCase
-	json    jsoniter.API
 	logger  *zap.Logger
 }
 
-func New(storage S3UseCase, logger *zap.Logger, jsoniter jsoniter.API) *S3Ctrl {
+func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 	return &S3Ctrl{
 		usecase: storage,
 		logger:  logger,
-		json:    jsoniter,
 	}
 }
 

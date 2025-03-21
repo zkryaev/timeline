@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
-	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -23,18 +23,14 @@ type User interface {
 }
 
 type UserCtrl struct {
-	usecase   User
-	Logger    *zap.Logger
-	json      jsoniter.API
-	validator *validator.Validate
+	usecase User
+	Logger  *zap.Logger
 }
 
-func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, validator *validator.Validate) *UserCtrl {
+func New(usecase User, logger *zap.Logger, validator *validator.Validate) *UserCtrl {
 	return &UserCtrl{
-		usecase:   usecase,
-		Logger:    logger,
-		json:      jsoniter,
-		validator: validator,
+		usecase: usecase,
+		Logger:  logger,
 	}
 }
 
@@ -50,16 +46,12 @@ func NewUserCtrl(usecase User, logger *zap.Logger, jsoniter jsoniter.API, valida
 // @Router /users/update [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	req := &userdto.UserUpdateReq{}
-	if u.json.NewDecoder(r.Body).Decode(req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
-		return
-	}
-	if err := u.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.DecodeAndValidate(r, req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := u.usecase.UserUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -106,20 +98,18 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		IsRateSort: rateSort,
 		IsNameSort: nameSort,
 	}
-	if err := u.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	ctx := r.Context()
 	data, err := u.usecase.SearchOrgs(ctx, req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -162,21 +152,17 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 			Long: maxLong,
 		},
 	}
-	// валидация полей
-	if err := u.validator.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if common.Validate(req) != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := u.usecase.OrgsInArea(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	// отдаем токен
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
@@ -199,13 +185,11 @@ func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := u.usecase.User(r.Context(), params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if u.json.NewEncoder(w).Encode(data) != nil {
-		http.Error(w, "An error occurred while processing the response", http.StatusInternalServerError)
+	if common.WriteJSON(w, data) != nil {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 }
