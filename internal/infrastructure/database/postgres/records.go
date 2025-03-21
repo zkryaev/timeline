@@ -407,7 +407,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to cancel selected record: %w", err)
-	case slotID == 0:
+	case slotID <= 0:
 		return fmt.Errorf("returned slot_id mustn't equal 0")
 	}
 
