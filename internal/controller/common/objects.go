@@ -8,6 +8,6 @@ import (
 
 // singleton object
 var (
-	fastjson     = jsoniter.ConfigFastest // float with 6 digits
+	fastjson     = jsoniter.ConfigFastest // float with 6 digits, no sort
 	validator, _ = validation.NewCustomValidator()
 )
