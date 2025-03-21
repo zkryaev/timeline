@@ -66,7 +66,7 @@ func (m *Middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
 		return nil, ErrTokenNotFound
 	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.Join(ErrInvalidSign, fmt.Errorf("token sign: %s", token.Method.Alg()))
 		}
