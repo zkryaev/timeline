@@ -194,7 +194,7 @@ func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if token.Claims.(jwt.MapClaims)["type"] != "refresh" {
+	if token.Claims.(jwt.MapClaims)["type"].(string) != "refresh" {
 		http.Error(w, "Invalid token", http.StatusBadRequest)
 		return
 	}
