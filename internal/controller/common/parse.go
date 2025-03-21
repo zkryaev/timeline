@@ -8,7 +8,7 @@ func DecodeAndValidate(r *http.Request, dst any) (err error) {
 	if err = fastjson.NewDecoder(r.Body).Decode(dst); err != nil {
 		return err
 	}
-	if err = validator.Struct(dst); err != nil {
+	if err = Validate(dst); err != nil {
 		return err
 	}
 	return nil
