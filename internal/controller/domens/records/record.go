@@ -130,12 +130,12 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 // @Router /records/creation [post]
 func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.Record{}
-	if common.DecodeAndValidate(r, req) != nil {
-		http.Error(w, "", http.StatusBadRequest)
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.RecordAdd(r.Context(), req); err != nil {
-		http.Error(w, "", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -152,12 +152,12 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 	req := &recordto.RecordCancelation{}
-	if common.DecodeAndValidate(r, req) != nil {
-		http.Error(w, "", http.StatusBadRequest)
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.RecordCancel(r.Context(), req); err != nil {
-		http.Error(w, "", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

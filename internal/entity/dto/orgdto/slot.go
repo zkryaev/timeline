@@ -6,7 +6,7 @@ type Slot struct {
 	Date             string `json:"date,omitempty" validate:"date"`
 	Begin            string `json:"begin,omitempty" validate:"time"`
 	End              string `json:"end,omitempty" validate:"time"`
-	Busy             bool   `json:"busy"`
+	Busy             bool   `json:"busy,omitempty"`
 }
 
 type SlotReq struct {

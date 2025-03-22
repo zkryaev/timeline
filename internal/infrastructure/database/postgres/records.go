@@ -50,7 +50,8 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		JOIN services srvc ON r.service_id = srvc.service_id
 		JOIN workers w ON r.worker_id = w.worker_id
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
-		WHERE r.record_id = $1;
+		WHERE r.is_canceled = FALSE
+		AND r.record_id = $1;
 	`
 	rec := &recordmodel.RecordScrap{
 		RecordID: recordID,
@@ -107,7 +108,8 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		JOIN services srvc ON r.service_id = srvc.service_id
 		JOIN workers w ON r.worker_id = w.worker_id
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
-		WHERE ($1 <= 0 OR r.user_id = $1)
+		WHERE r.is_canceled = FALSE
+		AND ($1 <= 0 OR r.user_id = $1)
 		AND ($2 <= 0 OR r.org_id = $2)
 		AND ( 
 				($3 = TRUE AND s.date >= CURRENT_TIMESTAMP) 
@@ -150,7 +152,8 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 		JOIN services srvc ON r.service_id = srvc.service_id
 		JOIN workers w ON r.worker_id = w.worker_id
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
-		WHERE ($1 <= 0 OR r.user_id = $1)
+		WHERE r.is_canceled = FALSE 
+		AND ($1 <= 0 OR r.user_id = $1)
 		AND ($2 <= 0 OR r.org_id = $2)
 		AND ( 
 				($3 = TRUE AND s.date >= CURRENT_TIMESTAMP) 
