@@ -13,33 +13,29 @@ import (
 )
 
 const (
-	// Логи выводятся на консоль
-	Local = "LOCAL"
-	// Логи выводятся на консоль
-	Dev = "DEV"
-	// Логи выводятся в файл
+	Dev  = "DEV"
 	Prod = "PROD"
 )
 
 func New(env string) *zap.Logger {
-	filepath := envars.GetPathByEnv("APP_LOGS")
 	outputPaths := []string{"stdout"}
-	if _, err := os.Stat(filepath); err == nil {
-		outputPaths = append(outputPaths, filepath)
+	givenPath := envars.GetPathByEnv("APP_LOGS")
+	if _, err := os.Stat(givenPath); err == nil {
+		outputPaths = append(outputPaths, givenPath)
 	} else {
-		var timestamp string
-		log.Println("log.txt not found")
-		filename := strings.SplitAfter(filepath, "/")[len(strings.SplitAfter(filepath, "/"))-1]
-		path := strings.TrimSuffix(filepath, filename)
-		if env == Prod {
-			timestamp = time.Now().Format("15:04:05_2006-01-02_")
+		pathparts := strings.SplitAfter(givenPath, "/")
+		filename := pathparts[len(strings.SplitAfter(givenPath, "/"))-1]
+		timestamp := time.Now().Format("15:04:05_2006-01-02_")
+		pathDir := strings.TrimSuffix(givenPath, filename)
+		if err := os.Mkdir(pathDir, os.ModePerm); err != nil {
+			log.Fatalln("couldn't create logs dir: ", err.Error())
 		}
-		_, err = os.Create(path + timestamp + filename)
-		if err != nil {
-			log.Println("couldn't create log.txt: ", err.Error())
-			os.Exit(1)
+		filepath := pathDir + timestamp + filename
+		if _, err = os.Create(filepath); err != nil {
+			log.Fatalln("couldn't create log.txt: ", err.Error())
 		}
-		log.Println("log.txt has been created: ", path+filename)
+		log.Println("logs will be stored in: ", filepath)
+		outputPaths = append(outputPaths, filepath)
 	}
 
 	customTimeEncoder := func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
@@ -50,7 +46,7 @@ func New(env string) *zap.Logger {
 	encoder := zapcore.EncoderConfig{}
 
 	switch env {
-	case Local, Dev:
+	case Dev:
 		encoder = zap.NewDevelopmentEncoderConfig()
 		cfg = zap.NewDevelopmentConfig()
 
@@ -65,8 +61,8 @@ func New(env string) *zap.Logger {
 		cfg = zap.NewProductionConfig()
 
 		cfg.EncoderConfig = zap.NewProductionEncoderConfig()
-	case "":
-		log.Fatal("logger did't setup: ENV is empty")
+	default:
+		log.Fatal("unknown env type")
 	}
 	logger, err := cfg.Build()
 	if err != nil {
