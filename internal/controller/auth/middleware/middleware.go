@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"crypto/rsa"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"timeline/internal/usecase/auth/validation"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -35,24 +37,24 @@ func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
 
 func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		rw := common.NewResponseWriter(w)
-
-		next.ServeHTTP(rw, r)
-		duration := time.Since(start)
-		decodedURI, err := url.QueryUnescape(r.RequestURI)
+		rw := &common.ResponseWriter{
+			ResponseWriter: w,
+		}
+		uuid, err := uuid.NewRandom()
 		if err != nil {
-			decodedURI = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
+			m.logger.Error("HandlerLogs", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
 		}
-		logsText := fmt.Sprintf("method: %q, uri: %q, code: \"%d\", elapsed: %q", r.Method, decodedURI, rw.StatusCode(), duration)
-		switch {
-		case rw.StatusCode() >= http.StatusBadRequest && rw.StatusCode() < http.StatusInternalServerError:
-			m.logger.Warn(logsText)
-		case rw.StatusCode() >= http.StatusInternalServerError:
-			m.logger.Error(logsText)
-		default:
-			m.logger.Info(logsText)
+		uri, err := url.QueryUnescape(r.RequestURI)
+		if err != nil {
+			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
+		m.logger.Info(r.Method, zap.String("UUID", uuid.String()), zap.String("URI", uri))
+		ctx := context.WithValue(r.Context(), "uuid", uuid.String())
+		start := time.Now()
+		next.ServeHTTP(rw, r.WithContext(ctx))
+		m.logger.Info("", zap.String("UUID", uuid.String()), zap.Int("StatusCode", rw.StatusCode()), zap.Duration("Elapsed", time.Since(start)))
 	})
 }
 
