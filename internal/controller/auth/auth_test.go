@@ -66,7 +66,7 @@ func (suite *AuthTestSuite) TestLoginSuccess() {
 		IsOrg:       false,
 	}
 
-	suite.mockAuthUseCase.On("Login", r.Context(), &input).Return(pair, nil)
+	suite.mockAuthUseCase.On("Login", r.Context(), suite.Auth.Logger, &input).Return(pair, nil)
 	suite.Auth.Login(w, r)
 	suite.Equal(http.StatusOK, w.Result().StatusCode, w.Body.String())
 }
@@ -89,7 +89,7 @@ func (suite *AuthTestSuite) TestUpdateAccessTokenRefreshError() {
 	suite.Require().NoError(err)
 
 	suite.mockMiddleware.On("ExtractToken", r).Return(token, nil)
-	suite.mockAuthUseCase.On("UpdateAccessToken", r.Context(), token).Return(nil, errors.New("mustn't be called"))
+	suite.mockAuthUseCase.On("UpdateAccessToken", r.Context(), suite.Auth.Logger, token).Return(nil, errors.New("mustn't be called"))
 	suite.Auth.UpdateAccessToken(w, r)
 	suite.Require().Equal(http.StatusBadRequest, w.Result().StatusCode)
 }

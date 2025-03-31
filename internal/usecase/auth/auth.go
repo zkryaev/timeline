@@ -37,10 +37,9 @@ type AuthUseCase struct {
 	code     infrastructure.CodeRepository
 	mail     infrastructure.Mail
 	TokenCfg config.Token
-	Logger   *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, codeRepo infrastructure.CodeRepository, mailSrv infrastructure.Mail, cfg config.Token, logger *zap.Logger) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, codeRepo infrastructure.CodeRepository, mailSrv infrastructure.Mail, cfg config.Token) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
@@ -48,34 +47,23 @@ func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo in
 		code:     codeRepo,
 		mail:     mailSrv,
 		TokenCfg: cfg,
-		Logger:   logger,
 	}
 }
 
-func (a *AuthUseCase) Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error) {
+func (a *AuthUseCase) Login(ctx context.Context, logger *zap.Logger, req *authdto.LoginReq) (*authdto.TokenPair, error) {
 	exp, err := a.code.AccountExpiration(ctx, req.Email, req.IsOrg)
 	if err != nil {
-		a.Logger.Error(
-			"failed login account",
-			zap.String("AccountExpiration", err.Error()),
-		)
 		return nil, err
 	}
-	// если не активирован
-	if !exp.Verified {
-		// то проверяем не стух ли он еще
-		if validation.IsAccountExpired(exp.CreatedAt) {
+	logger.Info("Fetched account metadata from DB")
+	if !exp.Verified { // если не активирован
+		if validation.IsAccountExpired(exp.CreatedAt) { // проверяем не стух ли он еще
 			return nil, ErrAccountExpired
 		}
 	}
 	if err = passwd.CompareWithHash(req.Password, exp.Hash); err != nil {
-		a.Logger.Error(
-			"failed login account",
-			zap.String("CompareWithHash", err.Error()),
-		)
 		return nil, err
 	}
-
 	tokens, err := jwtlib.NewTokenPair(
 		a.secret,
 		a.TokenCfg,
@@ -85,22 +73,15 @@ func (a *AuthUseCase) Login(ctx context.Context, req *authdto.LoginReq) (*authdt
 		},
 	)
 	if err != nil {
-		a.Logger.Error(
-			"failed login account",
-			zap.Error(err),
-		)
 		return nil, err
 	}
+	logger.Info("Token pair have been generated")
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error) {
+func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("GetHash", err.Error()),
-		)
 		return nil, err
 	}
 	req.Credentials.Password = hash
@@ -108,19 +89,11 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 	req.UUID = id.String()
 	userID, err := a.user.UserSave(ctx, usermap.UserRegisterToModel(req))
 	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("UserSave", err.Error()),
-		)
 		return nil, err
 	}
-	// Генерируем код
+	logger.Info("User has been saved to DB")
 	code, err := verification.GenerateCode()
 	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("GenerateCode", err.Error()),
-		)
 		return nil, err
 	}
 	a.mail.SendMsg(&models.Message{
@@ -128,16 +101,13 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, req *authdto.UserRegiste
 		Type:  mail.VerificationType,
 		Value: code,
 	})
+	logger.Info("Email has been sent to user")
 	return &authdto.RegisterResp{ID: userID}, nil
 }
 
-func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
+func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
-		a.Logger.Error(
-			"failed to register org",
-			zap.String("GetHash", err.Error()),
-		)
 		return nil, err
 	}
 	req.Credentials.Password = hash
@@ -146,71 +116,51 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, req *authdto.OrgRegisterR
 	req.UUID = id.String()
 	orgID, err := a.org.OrgSave(ctx, orgmap.RegisterReqToModel(req))
 	if err != nil {
-		a.Logger.Error(
-			"failed to register org",
-			zap.String("OrgSave", err.Error()),
-		)
 		return nil, err
 	}
-
+	logger.Info("Org has been saved to DB")
 	code, err := verification.GenerateCode()
 	if err != nil {
-		a.Logger.Error(
-			"failed to register org",
-			zap.String("GenerateCode", err.Error()),
-		)
 		return nil, err
 	}
+	logger.Info("Code has been generated")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
 		Value: code,
 	})
+	logger.Info("Email has been sent to org")
 	return &authdto.RegisterResp{ID: orgID}, nil
 }
 
-func (a *AuthUseCase) SendCodeRetry(_ context.Context, req *authdto.SendCodeReq) {
+func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *authdto.SendCodeReq) {
 	code, err := verification.GenerateCode()
 	if err != nil {
-		a.Logger.Error(
-			"retry send code failed",
-			zap.String("GenerateCode", err.Error()),
-		)
 		return
 	}
+	logger.Info("Code has been generated")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
 		Value: code,
 	})
+	logger.Info("Email has been sent")
 }
 
-func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
+func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
 	exp, err := a.code.VerifyCode(ctx, codemap.ToModel(req))
 	if err != nil {
-		a.Logger.Error(
-			"failed to verify code",
-			zap.String("VerifyCode", err.Error()),
-		)
 		return nil, err
 	}
-
+	logger.Info("Code was found")
 	if ok := validation.IsCodeExpired(exp); ok {
-		a.Logger.Error(
-			"failed to verify code",
-			zap.String("IsCodeExpired", ErrCodeExpired.Error()),
-		)
 		return nil, ErrCodeExpired
 	}
-
+	logger.Info("Code is fresh")
 	if err = a.code.ActivateAccount(ctx, req.ID, req.IsOrg); err != nil {
-		a.Logger.Error(
-			"failed to verify code",
-			zap.String("UserActivateAccount", err.Error()),
-		)
 		return nil, err
 	}
-	// Генерим токен
+	logger.Info("Account is activated")
 	tokens, err := jwtlib.NewTokenPair(
 		a.secret,
 		a.TokenCfg,
@@ -220,22 +170,18 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq
 		},
 	)
 	if err != nil {
-		a.Logger.Error(
-			"failed to register user",
-			zap.String("NewTokenPair", err.Error()),
-		)
 		return nil, err
 	}
+	logger.Info("Token pair have been generated")
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UpdateAccessToken(_ context.Context, req *jwt.Token) (*authdto.AccessToken, error) {
-	// Валидируем Claims токена. Есть ли они и нормальные ли.
+func (a *AuthUseCase) UpdateAccessToken(_ context.Context, logger *zap.Logger, req *jwt.Token) (*authdto.AccessToken, error) {
 	err := validation.ValidateTokenClaims(req.Claims)
 	if err != nil {
 		return nil, err
 	}
-	// Здесь уже спокойно кастую если выше проблем не возникло
+	logger.Info("Token claims are correct")
 	tmp := req.Claims.(jwt.MapClaims)["id"].(float64)
 	id := uint64(tmp)
 	metadata := &entity.TokenMetadata{
@@ -246,6 +192,7 @@ func (a *AuthUseCase) UpdateAccessToken(_ context.Context, req *jwt.Token) (*aut
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("Access token has been generated")
 	return &authdto.AccessToken{
 		Token: token,
 	}, nil

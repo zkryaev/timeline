@@ -16,7 +16,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/zap"
 )
 
 type AuthUseCaseTestSuite struct {
@@ -47,7 +46,6 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 		suite.mockCodeRepo,
 		suite.mockMailRepo,
 		config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute},
-		zap.NewExample(),
 	)
 }
 

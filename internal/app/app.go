@@ -82,7 +82,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 			storage,
 			mailService,
 			tokenCfg,
-			a.log,
 		),
 		middleware.New(privateKey, a.log),
 		a.log,
