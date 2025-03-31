@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: test-postgres
-    image: postgres:latest
+    image: postgres:17.4
     environment:
       POSTGRES_DB: testdb
       POSTGRES_PASSWORD: passwd
