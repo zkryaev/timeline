@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/libs/custom"
@@ -61,6 +62,10 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 	`
 	busy := false
 	for _, v := range workerSchedules {
+		if v.SessionDuration == 0 {
+			log.Printf("WARN 	worker_id: %d worker_schedule_id: %d session_duration: %d", v.WorkerID, v.WorkerScheduleID, v.SessionDuration)
+			continue
+		}
 		periods := int(v.Over.Sub(v.Start) / (time.Duration(v.SessionDuration) * time.Minute))
 		for i := range periods {
 			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
