@@ -42,16 +42,21 @@ func New(usecase Org, logger *zap.Logger) *OrgCtrl {
 // @Failure 500
 // @Router /orgs/info/{id} [get]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.Organization(r.Context(), params["id"])
 	if err != nil {
+		logger.Error("Organization", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 	}
 	if common.WriteJSON(w, data) != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -67,13 +72,17 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.OrgUpdateReq{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := o.usecase.OrgUpdate(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("OrgUpdate", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

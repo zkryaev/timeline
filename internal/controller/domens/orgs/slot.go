@@ -8,6 +8,7 @@ import (
 	"timeline/internal/entity/dto/orgdto"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Slots interface {
@@ -26,22 +27,28 @@ type Slots interface {
 // @Failure 500
 // @Router /orgs/{orgID}/slots/workers/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "workerID", "orgID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &orgdto.SlotReq{WorkerID: params["workerID"], OrgID: params["orgID"]}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.Slots(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("Slots", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -58,12 +65,16 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/slots [put]
 func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.SlotUpdate{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.UpdateSlot(r.Context(), req) != nil {
+	if err := o.usecase.UpdateSlot(r.Context(), req); err != nil {
+		logger.Error("UpdateSlot", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}

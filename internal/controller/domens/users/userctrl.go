@@ -45,12 +45,16 @@ func New(usecase User, logger *zap.Logger, validator *validator.Validate) *UserC
 // @Failure 500
 // @Router /users/update [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := u.Logger.With(zap.String("uuid", uuid))
 	req := &userdto.UserUpdateReq{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := u.usecase.UserUpdate(r.Context(), req); err != nil {
+		logger.Error("UserUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -73,6 +77,8 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := u.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"limit":        true,
 		"page":         true,
@@ -81,8 +87,9 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		"is_rate_sort": false,
 		"is_name_sort": false,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
@@ -98,17 +105,19 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		IsRateSort: rateSort,
 		IsNameSort: nameSort,
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := u.usecase.SearchOrgs(ctx, req)
+	data, err := u.usecase.SearchOrgs(r.Context(), req)
 	if err != nil {
+		logger.Error("SearchOrgs", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -128,14 +137,17 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/map/orgs [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := u.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"min_lat":  true,
 		"min_long": true,
 		"max_lat":  true,
 		"max_long": true,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	minLat, _ := strconv.ParseFloat(r.URL.Query().Get("min_lat"), 64)
@@ -152,16 +164,19 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 			Long: maxLong,
 		},
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := u.usecase.OrgsInArea(r.Context(), req)
 	if err != nil {
+		logger.Error("OrgsInArea", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -178,17 +193,22 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/info/{id} [get]
 func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := u.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := u.usecase.User(r.Context(), params["id"])
 	if err != nil {
+		logger.Error("User", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}

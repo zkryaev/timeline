@@ -9,6 +9,7 @@ import (
 	"timeline/internal/entity/dto/orgdto"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Timetable interface {
@@ -28,17 +29,22 @@ type Timetable interface {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [get]
 func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := o.usecase.Timetable(r.Context(), path["orgID"])
 	if err != nil {
+		logger.Error("Timetable", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -54,12 +60,16 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/timetable [post]
 func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.Timetable{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.TimetableAdd(r.Context(), req) != nil {
+	if err := o.usecase.TimetableAdd(r.Context(), req); err != nil {
+		logger.Error("TimetableAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -76,12 +86,16 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/timetable [put]
 func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.Timetable{}
-	if common.DecodeAndValidate(r, req) != nil {
-		http.Error(w, "An error occurred while processing the request", http.StatusBadRequest)
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.TimetableUpdate(r.Context(), req) != nil {
+	if err := o.usecase.TimetableUpdate(r.Context(), req); err != nil {
+		logger.Error("TimetableUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -99,20 +113,25 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [delete]
 func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	var weekday int
 	if r.URL.Query().Get("weekday") != "" {
 		weekday, err = strconv.Atoi(r.URL.Query().Get("weekday"))
 		if err != nil {
+			logger.Error("Atoi", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
 	if o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday) != nil {
+		logger.Error("TimetableDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}

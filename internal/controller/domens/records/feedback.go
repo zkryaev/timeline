@@ -8,6 +8,8 @@ import (
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/libs/custom"
+
+	"go.uber.org/zap"
 )
 
 type Feedback interface {
@@ -30,6 +32,8 @@ type Feedback interface {
 // @Failure 500
 // @Router /records/feedbacks/info [get]
 func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"limit":     true,
 		"page":      true,
@@ -37,8 +41,9 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		"org_id":    false,
 		"user_id":   false,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	params := map[string]string{
@@ -50,7 +55,8 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 	}
 	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("QueryParamsConv", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &recordto.FeedbackParams{
@@ -60,16 +66,19 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		Limit:    queryParams["limit"].(int),
 		Page:     queryParams["page"].(int),
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	data, err := rec.usecase.FeedbackList(r.Context(), req)
 	if err != nil {
+		logger.Error("FeedbackList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -85,12 +94,16 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks [post]
 func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Feedback{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.FeedbackSet(r.Context(), req); err != nil {
+		logger.Error("FeedbackSet", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -107,12 +120,16 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks [put]
 func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Feedback{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err := rec.usecase.FeedbackUpdate(r.Context(), req); err != nil {
+		logger.Error("FeedbackUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -128,24 +145,30 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks/info [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"record_id": true,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	recordid, err := strconv.Atoi(r.URL.Query().Get("record_id"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("Atoi", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &recordto.FeedbackParams{RecordID: recordid}
 	if common.Validate(req) != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err = rec.usecase.FeedbackDelete(r.Context(), req); err != nil {
+		logger.Error("FeedbackDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
