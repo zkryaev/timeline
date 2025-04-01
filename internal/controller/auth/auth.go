@@ -60,6 +60,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.Login(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("Login", zap.Error(err))
 		http.Error(w, common.ErrFailedLogin, http.StatusBadRequest)
 		return
 	}
@@ -91,6 +92,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.UserRegister(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("UserRegister", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
@@ -122,6 +124,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.OrgRegister(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("OrgRegister", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
@@ -176,6 +179,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.VerifyCode(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("VerifyCode", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}

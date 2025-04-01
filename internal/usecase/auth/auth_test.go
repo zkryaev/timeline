@@ -16,10 +16,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
 )
 
 type AuthUseCaseTestSuite struct {
 	suite.Suite
+	logger         *zap.Logger
 	authUseCase    *AuthUseCase
 	mockUserRepo   *mocks.UserRepository
 	mockOrgRepo    *mocks.OrgRepository
@@ -38,7 +40,7 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 		suite.T().Fatal(err)
 	}
 	suite.mockPrivateKey = privateKey
-
+	suite.logger = zap.NewExample()
 	suite.authUseCase = New(
 		suite.mockPrivateKey,
 		suite.mockUserRepo,
@@ -80,7 +82,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 		},
 		IsOrg: isOrg,
 	}
-	tokens, err := suite.authUseCase.Login(ctx, req)
+	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
 	suite.NotNil(tokens)
 	suite.NotNil(tokens.AccessToken)
@@ -112,7 +114,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginFail() {
 
 	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
 
-	tokens, err := suite.authUseCase.Login(ctx, req)
+	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.Error(err)
 	suite.Nil(tokens)
 
@@ -142,7 +144,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginNotVerifiedAccountExpired() {
 
 	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
 
-	tokens, err := suite.authUseCase.Login(ctx, req)
+	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.Equal(ErrAccountExpired, err)
 	suite.Nil(tokens)
 
@@ -171,7 +173,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginVerifiedAccountExpired() {
 
 	suite.mockCodeRepo.On("AccountExpiration", mock.Anything, req.Email, req.IsOrg).Return(expectedExpiration, nil)
 
-	tokens, err := suite.authUseCase.Login(ctx, req)
+	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
 	suite.NotNil(tokens)
 
@@ -189,7 +191,7 @@ func (suite *AuthUseCaseTestSuite) TestVerifyCodeFresh() {
 	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
 	suite.mockCodeRepo.On("ActivateAccount", mock.Anything, req.ID, req.IsOrg).Return(nil)
 
-	tokens, err := suite.authUseCase.VerifyCode(ctx, req)
+	tokens, err := suite.authUseCase.VerifyCode(ctx, suite.logger, req)
 	suite.NoError(err)
 	suite.NotNil(tokens)
 
@@ -206,7 +208,7 @@ func (suite *AuthUseCaseTestSuite) TestVerifyCodeExpired() {
 
 	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
 
-	tokens, err := suite.authUseCase.VerifyCode(ctx, req)
+	tokens, err := suite.authUseCase.VerifyCode(ctx, suite.logger, req)
 	suite.Equal(ErrCodeExpired, err)
 	suite.Nil(tokens)
 
@@ -222,7 +224,7 @@ func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenSuccess() {
 		"exp":    time.Now(),
 	})
 
-	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, token)
+	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, suite.logger, token)
 	suite.NoError(err)
 	suite.NotNil(tokens)
 }
@@ -236,7 +238,7 @@ func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenBadClaims() {
 		"exp":    time.Now(),
 	})
 
-	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, token)
+	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, suite.logger, token)
 	suite.Error(err)
 	suite.Nil(tokens)
 }
