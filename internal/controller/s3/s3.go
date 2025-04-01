@@ -46,34 +46,41 @@ func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 // @Failure 500
 // @Router /media [post]
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := s3.logger.With(zap.String("uuid", uuid))
 	const maxUploadSize = 2 << 20 // 2 MB
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil && !errors.Is(err, io.EOF) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("ParseMultipartForm", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-
 	entityID, err := strconv.Atoi(r.FormValue("entityID"))
 	entity := r.FormValue("entity")
 	switch {
 	case err != nil || entityID <= 0:
-		http.Error(w, "entityID: "+err.Error(), http.StatusBadRequest)
+		logger.Error("entity invalid", zap.Int("entity_id", entityID), zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	case entity == "":
-		http.Error(w, "entity empty", http.StatusBadRequest)
+		logger.Error("entity is empty")
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	file, meta, err := r.FormFile("file")
 	switch {
 	case err != nil || meta.Size == 0:
-		http.Error(w, "file not found", http.StatusBadRequest)
+		logger.Error("file not found", zap.Int64("file size", meta.Size), zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	case meta.Size > maxUploadSize:
-		http.Error(w, "file is too big", http.StatusBadRequest)
+		logger.Error("file size is too big", zap.Int64("file size", meta.Size))
+		http.Error(w, "", http.StatusRequestEntityTooLarge)
 		return
 	}
 	contentType := meta.Header.Get("Content-Type")
 	if !validation.IsImage(contentType) {
-		http.Error(w, "invalid image format", http.StatusBadRequest)
+		logger.Error("IsImage", zap.String("invalid image type", contentType))
+		http.Error(w, "", http.StatusUnsupportedMediaType)
 		return
 	}
 	domen := s3dto.DomenInfo{
@@ -87,7 +94,8 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		Reader:    file,
 	}
 	if err = s3.usecase.Upload(r.Context(), &dto); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("Upload", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -105,11 +113,14 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /media [get]
 func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := s3.logger.With(zap.String("uuid", uuid))
 	params := map[string]bool{
 		"url": true,
 	}
-	if !validation.IsQueryValid(r, params) {
-		http.Error(w, "query invalid", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, params); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	queryContract := map[string]string{
@@ -117,12 +128,14 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 	}
 	query, err := custom.QueryParamsConv(queryContract, r.URL.Query())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("QueryParamsConv", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	f, err := s3.usecase.Download(r.Context(), query["url"].(string))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Error("Download", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -144,12 +157,15 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /media [delete]
 func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
+	uuid := r.Context().Value("uuid").(string)
+	logger := s3.logger.With(zap.String("uuid", uuid))
 	params := map[string]bool{
 		"url":    true,
 		"entity": true,
 	}
-	if !validation.IsQueryValid(r, params) {
-		http.Error(w, "query invalid", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, params); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	queryContract := map[string]string{
@@ -158,11 +174,13 @@ func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	query, err := custom.QueryParamsConv(queryContract, r.URL.Query())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("QueryParamsConv", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	if err = s3.usecase.Delete(r.Context(), query["entity"].(string), query["url"].(string)); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error("Delete", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
