@@ -42,7 +42,7 @@ func New(usecase Org, logger *zap.Logger) *OrgCtrl {
 // @Failure 500
 // @Router /orgs/info/{id} [get]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {
@@ -72,7 +72,7 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.OrgUpdateReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {

@@ -41,7 +41,7 @@ func New(usecase Record, logger *zap.Logger) *RecordCtrl {
 // @Failure 500
 // @Router /records/info/{recordID} [get]
 func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
 	if err != nil {
@@ -80,7 +80,7 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/list [get]
 func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"user_id": false,
@@ -142,7 +142,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/creation [post]
 func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Record{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -168,7 +168,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /records/info/{recordID} [put]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.RecordCancelation{}
 	if err := common.DecodeAndValidate(r, req); err != nil {

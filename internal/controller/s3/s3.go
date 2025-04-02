@@ -46,7 +46,7 @@ func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 // @Failure 500
 // @Router /media [post]
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := s3.logger.With(zap.String("uuid", uuid))
 	const maxUploadSize = 2 << 20 // 2 MB
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil && !errors.Is(err, io.EOF) {
@@ -113,7 +113,7 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /media [get]
 func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := s3.logger.With(zap.String("uuid", uuid))
 	params := map[string]bool{
 		"url": true,
@@ -157,7 +157,7 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /media [delete]
 func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := s3.logger.With(zap.String("uuid", uuid))
 	params := map[string]bool{
 		"url":    true,

@@ -50,7 +50,7 @@ func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCt
 // @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.LoginReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
@@ -82,7 +82,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/users [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.UserRegisterReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
@@ -114,7 +114,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/orgs [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.OrgRegisterReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
@@ -146,7 +146,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/send [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.SendCodeReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
@@ -169,7 +169,7 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/verify [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.VerifyCodeReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
@@ -202,7 +202,7 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/tokens/refresh [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := a.Logger.With(zap.String("uuid", uuid))
 	token, err := a.Middleware.ExtractToken(r)
 	if err != nil {

@@ -29,7 +29,7 @@ type Timetable interface {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [get]
 func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
@@ -60,7 +60,7 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/timetable [post]
 func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.Timetable{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -86,7 +86,7 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/timetable [put]
 func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.Timetable{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -113,7 +113,7 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [delete]
 func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {

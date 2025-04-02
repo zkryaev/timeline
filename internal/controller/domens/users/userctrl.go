@@ -45,7 +45,7 @@ func New(usecase User, logger *zap.Logger, validator *validator.Validate) *UserC
 // @Failure 500
 // @Router /users/update [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := u.Logger.With(zap.String("uuid", uuid))
 	req := &userdto.UserUpdateReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -77,7 +77,7 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := u.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"limit":        true,
@@ -137,7 +137,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/map/orgs [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := u.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"min_lat":  true,
@@ -193,7 +193,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /users/info/{id} [get]
 func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := u.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "id")
 	if err != nil {

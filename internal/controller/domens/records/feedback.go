@@ -32,7 +32,7 @@ type Feedback interface {
 // @Failure 500
 // @Router /records/feedbacks/info [get]
 func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"limit":     true,
@@ -94,7 +94,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks [post]
 func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Feedback{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -120,7 +120,7 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks [put]
 func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Feedback{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -145,7 +145,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/feedbacks/info [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"record_id": true,

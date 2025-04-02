@@ -33,7 +33,7 @@ type Workers interface {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [get]
 func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
@@ -65,7 +65,7 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers [post]
 func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.AddWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -96,7 +96,7 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers [put]
 func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.UpdateWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -123,7 +123,7 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers/service [post]
 func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.AssignWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -152,7 +152,7 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID}/service/{serviceID} [delete]
 func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID", "serviceID")
 	if err != nil {
@@ -185,7 +185,7 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 // @Failure 500
 // @Router /orgs/{orgID}/workers [get]
 func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
@@ -227,7 +227,7 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [delete]
 func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {

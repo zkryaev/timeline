@@ -34,7 +34,7 @@ type Schedule interface {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules [get]
 func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
@@ -90,7 +90,7 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules/{workerID} [delete]
 func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
@@ -135,7 +135,7 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/schedules [put]
 func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.WorkerSchedule{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
@@ -162,7 +162,7 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/schedules [post]
 func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.WorkerSchedule{}
 	if err := common.DecodeAndValidate(r, req); err != nil {

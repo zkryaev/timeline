@@ -65,8 +65,8 @@ func (suite *AuthTestSuite) TestLoginSuccess() {
 		Credentials: authdto.Credentials{Email: "test@test.ru", Password: "testpasswd1241"},
 		IsOrg:       false,
 	}
-
-	suite.mockAuthUseCase.On("Login", r.Context(), suite.Auth.Logger, &input).Return(pair, nil)
+	logger := suite.Auth.Logger.With(zap.String("uuid", ""))
+	suite.mockAuthUseCase.On("Login", r.Context(), logger, &input).Return(pair, nil)
 	suite.Auth.Login(w, r)
 	suite.Equal(http.StatusOK, w.Result().StatusCode, w.Body.String())
 }
@@ -89,7 +89,8 @@ func (suite *AuthTestSuite) TestUpdateAccessTokenRefreshError() {
 	suite.Require().NoError(err)
 
 	suite.mockMiddleware.On("ExtractToken", r).Return(token, nil)
-	suite.mockAuthUseCase.On("UpdateAccessToken", r.Context(), suite.Auth.Logger, token).Return(nil, errors.New("mustn't be called"))
+	logger := suite.Auth.Logger.With(zap.String("uuid", ""))
+	suite.mockAuthUseCase.On("UpdateAccessToken", r.Context(), logger, token).Return(nil, errors.New("mustn't be called"))
 	suite.Auth.UpdateAccessToken(w, r)
 	suite.Require().Equal(http.StatusBadRequest, w.Result().StatusCode)
 }

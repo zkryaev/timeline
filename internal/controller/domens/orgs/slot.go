@@ -27,7 +27,7 @@ type Slots interface {
 // @Failure 500
 // @Router /orgs/{orgID}/slots/workers/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "workerID", "orgID")
 	if err != nil {
@@ -65,7 +65,7 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/slots [put]
 func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
-	uuid := r.Context().Value("uuid").(string)
+	uuid, _ := r.Context().Value("uuid").(string)
 	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.SlotUpdate{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
