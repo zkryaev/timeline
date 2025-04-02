@@ -50,11 +50,11 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 		if err != nil {
 			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
-		m.logger.Info(r.Method, zap.String("UUID", uuid.String()), zap.String("URI", uri))
+		m.logger.Info(r.Method, zap.String("uuid", uuid.String()), zap.String("uri", uri))
 		ctx := context.WithValue(r.Context(), "uuid", uuid.String())
 		start := time.Now()
 		next.ServeHTTP(rw, r.WithContext(ctx))
-		m.logger.Info("", zap.String("UUID", uuid.String()), zap.Int("StatusCode", rw.StatusCode()), zap.Duration("Elapsed", time.Since(start)))
+		m.logger.Info("", zap.String("uuid", uuid.String()), zap.Int("code", rw.StatusCode()), zap.Duration("elapsed", time.Since(start)))
 	})
 }
 

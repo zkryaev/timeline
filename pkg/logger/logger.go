@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"strings"
@@ -27,11 +29,13 @@ func New(env string) *zap.Logger {
 		filename := pathparts[len(strings.SplitAfter(givenPath, "/"))-1]
 		timestamp := time.Now().Format("15:04:05_2006-01-02_")
 		pathDir := strings.TrimSuffix(givenPath, filename)
-		if err := os.Mkdir(pathDir, os.ModePerm); err != nil {
-			log.Fatalln("couldn't create logs dir: ", err.Error())
+		if _, err := os.Stat(pathDir); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(pathDir, os.ModePerm); err != nil {
+				log.Fatalln("couldn't create logs dir: ", err.Error())
+			}
 		}
 		filepath := pathDir + timestamp + filename
-		if _, err = os.Create(filepath); err != nil {
+		if _, err = os.Create(filepath); err != nil && errors.Is(err, fs.ErrExist) {
 			log.Fatalln("couldn't create log.txt: ", err.Error())
 		}
 		log.Println("logs will be stored in: ", filepath)
