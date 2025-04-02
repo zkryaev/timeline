@@ -39,6 +39,9 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (
 		worker.Degree,
 		worker.SessionDuration,
 	).Scan(&workerID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrNoRowsAffected
+		}
 		return 0, fmt.Errorf("failed to add worker to org: %w", err)
 	}
 	if tx.Commit() != nil {
@@ -66,6 +69,9 @@ func (p *PostgresRepo) Worker(ctx context.Context, workerID, orgID int) (*orgmod
 	`
 	var worker orgmodel.Worker
 	if err = tx.GetContext(ctx, &worker, query, &workerID, &orgID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrWorkerNotFound
+		}
 		return nil, fmt.Errorf("failed to get worker: %w", err)
 	}
 	if tx.Commit() != nil {
@@ -106,6 +112,9 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 		worker.WorkerID,
 		worker.OrgID,
 	).Err(); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNoRowsAffected
+		}
 		return fmt.Errorf("failed to update worker: %w", err)
 	}
 	if tx.Commit() != nil {
@@ -236,6 +245,9 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, orgID, limit, offset int)
 	`
 	workers := make([]*orgmodel.Worker, 0, 3)
 	if err = tx.SelectContext(ctx, &workers, query, orgID, limit, offset); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrWorkerNotFound
+		}
 		return nil, 0, fmt.Errorf("failed to get worker list: %w", err)
 	}
 	if tx.Commit() != nil {
@@ -289,7 +301,14 @@ func (p *PostgresRepo) WorkerSoftDelete(ctx context.Context, workerID, orgID int
 	}
 	for _, query := range queries {
 		if _, err = tx.ExecContext(ctx, query, workerID); err != nil {
-			return fmt.Errorf("failed to delete worker's deps: %w", err)
+			switch {
+			case err != nil:
+				return fmt.Errorf("failed to delete worker's deps: %w", err)
+			default:
+				if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+					return ErrNoRowsAffected
+				}
+			}
 		}
 	}
 	if tx.Commit() != nil {

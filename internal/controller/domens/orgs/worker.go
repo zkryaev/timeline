@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -43,9 +44,16 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Worker(r.Context(), logger, path["workerID"], path["orgID"])
 	if err != nil {
-		logger.Error("Worker", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("Worker", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Worker", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -75,9 +83,16 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.WorkerAdd(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("WorkerAdd", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("WorkerAdd", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("WorkerAdd", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -105,9 +120,16 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.WorkerUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("WorkerUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("WorkerUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("WorkerUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -132,9 +154,16 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.WorkerAssignService(r.Context(), logger, req); err != nil {
-		logger.Error("WorkerAssignService", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("WorkerAssignService", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("WorkerAssignService", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -166,9 +195,16 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 		WorkerID:  params["workerID"],
 	}
 	if err = o.usecase.WorkerUnAssignService(r.Context(), logger, req); err != nil {
-		logger.Error("WorkerUnAssignService", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("WorkerUnAssignService", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("WorkerUnAssignService", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -206,9 +242,16 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	data, err := o.usecase.WorkerList(r.Context(), logger, path["orgID"], limit, page)
 	if err != nil {
-		logger.Error("WorkerList", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("WorkerList", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("WorkerList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -236,9 +279,16 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.WorkerDelete(r.Context(), logger, path["workerID"], path["orgID"]); err != nil {
-		logger.Error("WorkerDelete", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("WorkerDelete", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("WorkerDelete", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
