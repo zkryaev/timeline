@@ -69,7 +69,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 			storage,
 			storage,
 			s3Service,
-			a.log,
 		),
 		a.log,
 	)
@@ -92,7 +91,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 			storage,
 			storage,
 			storage,
-			a.log,
 		),
 		a.log,
 		validator,
@@ -102,7 +100,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 		orgcase.New(
 			storage,
 			storage,
-			a.log,
 		),
 		a.log,
 	)
@@ -113,7 +110,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 			storage,
 			storage,
 			mailService,
-			a.log,
 		),
 		a.log,
 	)

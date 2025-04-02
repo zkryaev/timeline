@@ -15,9 +15,9 @@ import (
 )
 
 type S3UseCase interface {
-	Upload(ctx context.Context, dto *s3dto.CreateFileDTO) error
-	Download(ctx context.Context, URL string) (*s3dto.File, error)
-	Delete(ctx context.Context, entity string, URL string) error
+	Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.CreateFileDTO) error
+	Download(ctx context.Context, logger *zap.Logger, URL string) (*s3dto.File, error)
+	Delete(ctx context.Context, logger *zap.Logger, entity string, URL string) error
 }
 
 type S3Ctrl struct {
@@ -87,13 +87,13 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		Entity:   entity,
 		EntityID: entityID,
 	}
-	dto := s3dto.CreateFileDTO{
+	dto := &s3dto.CreateFileDTO{
 		DomenInfo: domen,
 		Name:      meta.Filename,
 		Size:      meta.Size,
 		Reader:    file,
 	}
-	if err = s3.usecase.Upload(r.Context(), &dto); err != nil {
+	if err = s3.usecase.Upload(r.Context(), logger, dto); err != nil {
 		logger.Error("Upload", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
@@ -132,7 +132,7 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	f, err := s3.usecase.Download(r.Context(), query["url"].(string))
+	f, err := s3.usecase.Download(r.Context(), logger, query["url"].(string))
 	if err != nil {
 		logger.Error("Download", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
@@ -178,7 +178,7 @@ func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = s3.usecase.Delete(r.Context(), query["entity"].(string), query["url"].(string)); err != nil {
+	if err = s3.usecase.Delete(r.Context(), logger, query["entity"].(string), query["url"].(string)); err != nil {
 		logger.Error("Delete", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
