@@ -13,10 +13,10 @@ import (
 )
 
 type Timetable interface {
-	Timetable(ctx context.Context, OrgID int) (*orgdto.Timetable, error)
-	TimetableAdd(ctx context.Context, newTimetable *orgdto.Timetable) error
-	TimetableUpdate(ctx context.Context, newTimetable *orgdto.Timetable) error
-	TimetableDelete(ctx context.Context, orgID, weekday int) error
+	Timetable(ctx context.Context, logger *zap.Logger, OrgID int) (*orgdto.Timetable, error)
+	TimetableAdd(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error
+	TimetableUpdate(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error
+	TimetableDelete(ctx context.Context, logger *zap.Logger, orgID, weekday int) error
 }
 
 // @Summary Get timetable
@@ -37,7 +37,7 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Timetable(r.Context(), path["orgID"])
+	data, err := o.usecase.Timetable(r.Context(), logger, path["orgID"])
 	if err != nil {
 		logger.Error("Timetable", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -68,7 +68,7 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.TimetableAdd(r.Context(), req); err != nil {
+	if err := o.usecase.TimetableAdd(r.Context(), logger, req); err != nil {
 		logger.Error("TimetableAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -94,7 +94,7 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.TimetableUpdate(r.Context(), req); err != nil {
+	if err := o.usecase.TimetableUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("TimetableUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -130,7 +130,7 @@ func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if o.usecase.TimetableDelete(r.Context(), params["orgID"], weekday) != nil {
+	if o.usecase.TimetableDelete(r.Context(), logger, params["orgID"], weekday) != nil {
 		logger.Error("TimetableDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

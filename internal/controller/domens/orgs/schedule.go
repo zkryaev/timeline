@@ -14,10 +14,10 @@ import (
 )
 
 type Schedule interface {
-	WorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error)
-	AddWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
-	UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
-	DeleteWorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) error
+	WorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error)
+	AddWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error
+	UpdateWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error
+	DeleteWorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) error
 }
 
 // @Summary Get worker schedule
@@ -66,7 +66,7 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.WorkerSchedule(r.Context(), req)
+	data, err := o.usecase.WorkerSchedule(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("WorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -117,7 +117,7 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.DeleteWorkerSchedule(r.Context(), req); err != nil {
+	if err := o.usecase.DeleteWorkerSchedule(r.Context(), logger, req); err != nil {
 		logger.Error("DeleteWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -143,7 +143,7 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.UpdateWorkerSchedule(r.Context(), req); err != nil {
+	if err := o.usecase.UpdateWorkerSchedule(r.Context(), logger, req); err != nil {
 		logger.Error("UpdateWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -170,7 +170,7 @@ func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.AddWorkerSchedule(r.Context(), req); err != nil {
+	if err := o.usecase.AddWorkerSchedule(r.Context(), logger, req); err != nil {
 		logger.Error("AddWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

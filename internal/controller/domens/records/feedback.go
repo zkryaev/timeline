@@ -13,10 +13,10 @@ import (
 )
 
 type Feedback interface {
-	FeedbackList(ctx context.Context, params *recordto.FeedbackParams) (*recordto.FeedbackList, error)
-	FeedbackSet(ctx context.Context, feedback *recordto.Feedback) error
-	FeedbackUpdate(ctx context.Context, feedback *recordto.Feedback) error
-	FeedbackDelete(ctx context.Context, params *recordto.FeedbackParams) error
+	FeedbackList(ctx context.Context, logger *zap.Logger, params *recordto.FeedbackParams) (*recordto.FeedbackList, error)
+	FeedbackSet(ctx context.Context, logger *zap.Logger, feedback *recordto.Feedback) error
+	FeedbackUpdate(ctx context.Context, logger *zap.Logger, feedback *recordto.Feedback) error
+	FeedbackDelete(ctx context.Context, logger *zap.Logger, params *recordto.FeedbackParams) error
 }
 
 // @Summary Feedback info
@@ -71,7 +71,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := rec.usecase.FeedbackList(r.Context(), req)
+	data, err := rec.usecase.FeedbackList(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("FeedbackList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -102,7 +102,7 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.FeedbackSet(r.Context(), req); err != nil {
+	if err := rec.usecase.FeedbackSet(r.Context(), logger, req); err != nil {
 		logger.Error("FeedbackSet", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -128,7 +128,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.FeedbackUpdate(r.Context(), req); err != nil {
+	if err := rec.usecase.FeedbackUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("FeedbackUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -167,7 +167,7 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = rec.usecase.FeedbackDelete(r.Context(), req); err != nil {
+	if err = rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
 		logger.Error("FeedbackDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

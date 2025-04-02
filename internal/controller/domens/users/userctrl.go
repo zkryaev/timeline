@@ -16,10 +16,10 @@ import (
 )
 
 type User interface {
-	SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error)
-	OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
-	UserUpdate(ctx context.Context, user *userdto.UserUpdateReq) error
-	User(ctx context.Context, id int) (*entity.User, error)
+	SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *general.SearchReq) (*general.SearchResp, error)
+	OrgsInArea(ctx context.Context, logger *zap.Logger, area *general.OrgAreaReq) (*general.OrgAreaResp, error)
+	UserUpdate(ctx context.Context, logger *zap.Logger, user *userdto.UserUpdateReq) error
+	User(ctx context.Context, logger *zap.Logger, id int) (*entity.User, error)
 }
 
 type UserCtrl struct {
@@ -53,7 +53,7 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := u.usecase.UserUpdate(r.Context(), req); err != nil {
+	if err := u.usecase.UserUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("UserUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -110,7 +110,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := u.usecase.SearchOrgs(r.Context(), req)
+	data, err := u.usecase.SearchOrgs(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("SearchOrgs", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -169,7 +169,7 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := u.usecase.OrgsInArea(r.Context(), req)
+	data, err := u.usecase.OrgsInArea(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("OrgsInArea", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -201,7 +201,7 @@ func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := u.usecase.User(r.Context(), params["id"])
+	data, err := u.usecase.User(r.Context(), logger, params["id"])
 	if err != nil {
 		logger.Error("User", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)

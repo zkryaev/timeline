@@ -13,12 +13,12 @@ import (
 )
 
 type Services interface {
-	Service(ctx context.Context, ServiceID, OrgID int) (*orgdto.ServiceResp, error)
-	ServiceWorkerList(ctx context.Context, ServiceID, OrgID int) ([]*orgdto.WorkerResp, error)
-	ServiceAdd(ctx context.Context, Service *orgdto.AddServiceReq) error
-	ServiceUpdate(ctx context.Context, Service *orgdto.UpdateServiceReq) error
-	ServiceList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.ServiceList, error)
-	ServiceDelete(ctx context.Context, ServiceID, OrgID int) error
+	Service(ctx context.Context, logger *zap.Logger, ServiceID, OrgID int) (*orgdto.ServiceResp, error)
+	ServiceWorkerList(ctx context.Context, logger *zap.Logger, ServiceID, OrgID int) ([]*orgdto.WorkerResp, error)
+	ServiceAdd(ctx context.Context, logger *zap.Logger, Service *orgdto.AddServiceReq) error
+	ServiceUpdate(ctx context.Context, logger *zap.Logger, Service *orgdto.UpdateServiceReq) error
+	ServiceList(ctx context.Context, logger *zap.Logger, OrgID, Limit, Page int) (*orgdto.ServiceList, error)
+	ServiceDelete(ctx context.Context, logger *zap.Logger, ServiceID, OrgID int) error
 }
 
 // @Summary Get service
@@ -40,7 +40,7 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Service(r.Context(), path["serviceID"], path["orgID"])
+	data, err := o.usecase.Service(r.Context(), logger, path["serviceID"], path["orgID"])
 	if err != nil {
 		logger.Error("Service", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -72,7 +72,7 @@ func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.ServiceWorkerList(r.Context(), path["serviceID"], path["orgID"])
+	data, err := o.usecase.ServiceWorkerList(r.Context(), logger, path["serviceID"], path["orgID"])
 	if err != nil {
 		logger.Error("ServiceWorkerList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -104,7 +104,7 @@ func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.ServiceAdd(r.Context(), req); err != nil {
+	if err := o.usecase.ServiceAdd(r.Context(), logger, req); err != nil {
 		logger.Error("ServiceAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -130,7 +130,7 @@ func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.ServiceUpdate(r.Context(), req); err != nil {
+	if err := o.usecase.ServiceUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("ServiceUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -169,7 +169,7 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	data, err := o.usecase.ServiceList(r.Context(), path["orgID"], limit, page)
+	data, err := o.usecase.ServiceList(r.Context(), logger, path["orgID"], limit, page)
 	if err != nil {
 		logger.Error("ServiceList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -200,7 +200,7 @@ func (o *OrgCtrl) ServiceDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = o.usecase.ServiceDelete(r.Context(), path["serviceID"], path["orgID"]); err != nil {
+	if err = o.usecase.ServiceDelete(r.Context(), logger, path["serviceID"], path["orgID"]); err != nil {
 		logger.Error("ServiceDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

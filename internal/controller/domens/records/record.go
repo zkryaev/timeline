@@ -13,10 +13,10 @@ import (
 )
 
 type Record interface {
-	Record(ctx context.Context, recordID int) (*recordto.RecordScrap, error)
-	RecordList(ctx context.Context, params *recordto.RecordListParams) (*recordto.RecordList, error)
-	RecordAdd(ctx context.Context, rec *recordto.Record) error
-	RecordCancel(ctx context.Context, rec *recordto.RecordCancelation) error
+	Record(ctx context.Context, logger *zap.Logger, recordID int) (*recordto.RecordScrap, error)
+	RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error)
+	RecordAdd(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error
+	RecordCancel(ctx context.Context, logger *zap.Logger, rec *recordto.RecordCancelation) error
 	Feedback
 }
 
@@ -54,7 +54,7 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := rec.usecase.Record(r.Context(), params["recordID"])
+	data, err := rec.usecase.Record(r.Context(), logger, params["recordID"])
 	if err != nil {
 		logger.Error("Record", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -119,7 +119,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := rec.usecase.RecordList(r.Context(), req)
+	data, err := rec.usecase.RecordList(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("RecordList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -150,7 +150,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.RecordAdd(r.Context(), req); err != nil {
+	if err := rec.usecase.RecordAdd(r.Context(), logger, req); err != nil {
 		logger.Error("RecordAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -176,7 +176,7 @@ func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.RecordCancel(r.Context(), req); err != nil {
+	if err := rec.usecase.RecordCancel(r.Context(), logger, req); err != nil {
 		logger.Error("RecordCancel", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

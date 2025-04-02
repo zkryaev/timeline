@@ -12,8 +12,8 @@ import (
 )
 
 type Slots interface {
-	Slots(ctx context.Context, req *orgdto.SlotReq) ([]*orgdto.SlotResp, error)
-	UpdateSlot(ctx context.Context, req *orgdto.SlotUpdate) error
+	Slots(ctx context.Context, logger *zap.Logger, req *orgdto.SlotReq) ([]*orgdto.SlotResp, error)
+	UpdateSlot(ctx context.Context, logger *zap.Logger, req *orgdto.SlotUpdate) error
 }
 
 // @Summary Get slots
@@ -41,7 +41,7 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Slots(r.Context(), req)
+	data, err := o.usecase.Slots(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("Slots", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -73,7 +73,7 @@ func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.UpdateSlot(r.Context(), req); err != nil {
+	if err := o.usecase.UpdateSlot(r.Context(), logger, req); err != nil {
 		logger.Error("UpdateSlot", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

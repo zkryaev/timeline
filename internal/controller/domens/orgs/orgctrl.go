@@ -12,8 +12,8 @@ import (
 )
 
 type Org interface {
-	Organization(ctx context.Context, id int) (*orgdto.Organization, error)
-	OrgUpdate(ctx context.Context, org *orgdto.OrgUpdateReq) error
+	Organization(ctx context.Context, logger *zap.Logger, id int) (*orgdto.Organization, error)
+	OrgUpdate(ctx context.Context, logger *zap.Logger, org *orgdto.OrgUpdateReq) error
 	Timetable
 	Workers
 	Services
@@ -50,7 +50,7 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Organization(r.Context(), params["id"])
+	data, err := o.usecase.Organization(r.Context(), logger, params["id"])
 	if err != nil {
 		logger.Error("Organization", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -80,7 +80,7 @@ func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.OrgUpdate(r.Context(), req); err != nil {
+	if err := o.usecase.OrgUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("OrgUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return

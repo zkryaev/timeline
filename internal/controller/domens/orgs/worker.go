@@ -13,13 +13,13 @@ import (
 )
 
 type Workers interface {
-	Worker(ctx context.Context, workerID, OrgID int) (*orgdto.WorkerResp, error)
-	WorkerAdd(ctx context.Context, worker *orgdto.AddWorkerReq) (*orgdto.WorkerResp, error)
-	WorkerUpdate(ctx context.Context, worker *orgdto.UpdateWorkerReq) error
-	WorkerAssignService(ctx context.Context, assignInfo *orgdto.AssignWorkerReq) error
-	WorkerUnAssignService(ctx context.Context, assignInfo *orgdto.AssignWorkerReq) error
-	WorkerList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.WorkerList, error)
-	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
+	Worker(ctx context.Context, logger *zap.Logger, workerID, OrgID int) (*orgdto.WorkerResp, error)
+	WorkerAdd(ctx context.Context, logger *zap.Logger, worker *orgdto.AddWorkerReq) (*orgdto.WorkerResp, error)
+	WorkerUpdate(ctx context.Context, logger *zap.Logger, worker *orgdto.UpdateWorkerReq) error
+	WorkerAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkerUnAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkerList(ctx context.Context, logger *zap.Logger, OrgID, Limit, Page int) (*orgdto.WorkerList, error)
+	WorkerDelete(ctx context.Context, logger *zap.Logger, WorkerID, OrgID int) error
 }
 
 // @Summary Get worker
@@ -41,7 +41,7 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Worker(r.Context(), path["workerID"], path["orgID"])
+	data, err := o.usecase.Worker(r.Context(), logger, path["workerID"], path["orgID"])
 	if err != nil {
 		logger.Error("Worker", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -73,7 +73,7 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.WorkerAdd(r.Context(), req)
+	data, err := o.usecase.WorkerAdd(r.Context(), logger, req)
 	if err != nil {
 		logger.Error("WorkerAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -104,7 +104,7 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerUpdate(r.Context(), req); err != nil {
+	if err := o.usecase.WorkerUpdate(r.Context(), logger, req); err != nil {
 		logger.Error("WorkerUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -131,7 +131,7 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerAssignService(r.Context(), req); err != nil {
+	if err := o.usecase.WorkerAssignService(r.Context(), logger, req); err != nil {
 		logger.Error("WorkerAssignService", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -165,7 +165,7 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 		OrgID:     params["orgID"],
 		WorkerID:  params["workerID"],
 	}
-	if err = o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
+	if err = o.usecase.WorkerUnAssignService(r.Context(), logger, req); err != nil {
 		logger.Error("WorkerUnAssignService", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -204,7 +204,7 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	data, err := o.usecase.WorkerList(r.Context(), path["orgID"], limit, page)
+	data, err := o.usecase.WorkerList(r.Context(), logger, path["orgID"], limit, page)
 	if err != nil {
 		logger.Error("WorkerList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -235,7 +235,7 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]); err != nil {
+	if err := o.usecase.WorkerDelete(r.Context(), logger, path["workerID"], path["orgID"]); err != nil {
 		logger.Error("WorkerDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
