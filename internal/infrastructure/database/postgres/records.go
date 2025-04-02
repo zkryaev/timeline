@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrRecordNotFound  = errors.New("record not found")
 	ErrRecordsNotFound = errors.New("records not found")
 )
 
@@ -80,6 +81,9 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		&rec.Reviewed,
 		&rec.CreatedAt,
 	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -166,6 +170,9 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, ErrRecordsNotFound
+		}
 		return nil, 0, err
 	}
 	defer rows.Close()
@@ -411,7 +418,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 	case err != nil:
 		return fmt.Errorf("failed to cancel selected record: %w", err)
 	case slotID <= 0:
-		return fmt.Errorf("returned slot_id mustn't equal 0")
+		return fmt.Errorf("returned slot_id equal 0")
 	}
 
 	query = `
@@ -467,6 +474,9 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrRecordsNotFound
+		}
 		return nil, err
 	}
 	defer rows.Close()

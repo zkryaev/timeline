@@ -21,7 +21,6 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *usermodel.UserRegiste
 	if err != nil {
 		return 0, fmt.Errorf("failed to start tx: %w", err)
 	}
-	// При возникновении ошибки транзакция откатывается по выходу из функции
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -49,7 +48,6 @@ func (p *PostgresRepo) UserSave(ctx context.Context, user *usermodel.UserRegiste
 	if err = tx.Commit(); err != nil {
 		return 0, fmt.Errorf("failed to commit tx: %w", err)
 	}
-
 	return userID, nil
 }
 
@@ -181,10 +179,15 @@ func (p *PostgresRepo) UserSoftDelete(ctx context.Context, userID int) error {
 		DELETE FROM users_verify 
 		WHERE user_id = $1;
 	`
-	if _, err = tx.ExecContext(ctx, query, userID); err != nil {
+	_, err = tx.ExecContext(ctx, query, userID)
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to delete user: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
 	}
-
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
@@ -238,7 +241,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, userID).Scan(&uuid); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrOrgNotFound
+			return "", ErrUserNotFound
 		}
 		return "", fmt.Errorf("failed to get user uuid by id: %w", err)
 	}

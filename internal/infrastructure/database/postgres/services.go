@@ -37,6 +37,9 @@ func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *orgmodel.Service
 		service.Cost,
 		service.Description,
 	).Scan(&serviceID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrNoRowsAffected
+		}
 		return 0, err
 	}
 	if tx.Commit() != nil {
@@ -73,6 +76,9 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Serv
 		service.ServiceID,
 		service.OrgID,
 	).Err(); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNoRowsAffected
+		}
 		return err
 	}
 	if tx.Commit() != nil {
@@ -100,6 +106,9 @@ func (p *PostgresRepo) Service(ctx context.Context, serviceID, orgID int) (*orgm
 	`
 	var service orgmodel.Service
 	if err = tx.GetContext(ctx, &service, query, &serviceID, &orgID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrServiceNotFound
+		}
 		return nil, err
 	}
 	if tx.Commit() != nil {

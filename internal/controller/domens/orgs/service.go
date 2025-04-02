@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -42,9 +43,16 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Service(r.Context(), logger, path["serviceID"], path["orgID"])
 	if err != nil {
-		logger.Error("Service", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("Service", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Service", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -74,9 +82,16 @@ func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.ServiceWorkerList(r.Context(), logger, path["serviceID"], path["orgID"])
 	if err != nil {
-		logger.Error("ServiceWorkerList", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("ServiceWorkerList", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("ServiceWorkerList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -105,9 +120,16 @@ func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.ServiceAdd(r.Context(), logger, req); err != nil {
-		logger.Error("ServiceAdd", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("ServiceAdd", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("ServiceAdd", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -131,9 +153,16 @@ func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.ServiceUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("ServiceUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("ServiceUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("ServiceUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -171,9 +200,16 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	data, err := o.usecase.ServiceList(r.Context(), logger, path["orgID"], limit, page)
 	if err != nil {
-		logger.Error("ServiceList", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("ServiceList", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("ServiceList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -201,9 +237,16 @@ func (o *OrgCtrl) ServiceDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = o.usecase.ServiceDelete(r.Context(), logger, path["serviceID"], path["orgID"]); err != nil {
-		logger.Error("ServiceDelete", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("ServiceDelete", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("ServiceDelete", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
@@ -43,9 +44,16 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Slots(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("Slots", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("Slots", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Slots", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -74,9 +82,16 @@ func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.UpdateSlot(r.Context(), logger, req); err != nil {
-		logger.Error("UpdateSlot", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("UpdateSlot", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("UpdateSlot", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

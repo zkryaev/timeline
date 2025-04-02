@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -39,9 +40,16 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Timetable(r.Context(), logger, path["orgID"])
 	if err != nil {
-		logger.Error("Timetable", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Error("Timetable", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Timetable", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -69,9 +77,20 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.TimetableAdd(r.Context(), logger, req); err != nil {
-		logger.Error("TimetableAdd", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrTimeIncorrect):
+			logger.Info("TimetableAdd", zap.Error(err))
+			http.Error(w, common.ErrTimeIncorrect.Error(), http.StatusBadRequest)
+			return
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("TimetableAdd", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("TimetableAdd", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -95,9 +114,20 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.TimetableUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("TimetableUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrTimeIncorrect):
+			logger.Info("TimetableUpdate", zap.Error(err))
+			http.Error(w, common.ErrTimeIncorrect.Error(), http.StatusBadRequest)
+			return
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("TimetableUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("TimetableUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -131,9 +161,16 @@ func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if o.usecase.TimetableDelete(r.Context(), logger, params["orgID"], weekday) != nil {
-		logger.Error("TimetableDelete", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("TimetableDelete", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("TimetableDelete", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

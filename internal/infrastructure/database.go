@@ -87,7 +87,6 @@ type WorkerRepository interface {
 	Worker(ctx context.Context, WorkerID, OrgID int) (*orgmodel.Worker, error)
 	WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (int, error)
 	WorkerUpdate(ctx context.Context, worker *orgmodel.Worker) error
-	WorkerPatch(ctx context.Context, worker *orgmodel.Worker) error
 	WorkerAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error
 	WorkerUnAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error
 	WorkerList(ctx context.Context, OrgID, Limit, Offset int) ([]*orgmodel.Worker, int, error)

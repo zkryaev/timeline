@@ -87,24 +87,6 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 	for i := range serviceWorkers {
 		suite.NotEqual(workerID, serviceWorkers[i].WorkerID)
 	}
-
-	expWorker.FirstName = "Petr"
-	expWorker.LastName = "Grach"
-	expWorker.Position = "Glist and posos"
-	expWorker.Degree = "Fullshit bachelor of mifi"
-	updreq = &orgdto.UpdateWorkerReq{
-		WorkerID:   workerID,
-		OrgID:      org.OrgID,
-		WorkerInfo: expWorker,
-	}
-	suite.Require().NoError(suite.db.WorkerPatch(ctx, orgmap.UpdateWorkerToModel(updreq)))
-
-	dbWorker, err = suite.db.Worker(ctx, workerID, org.OrgID)
-	suite.NoError(err)
-	suite.NotNil(dbWorker)
-	actWorker = orgmap.WorkerToDTO(dbWorker)
-	suite.Equal(&expWorker, actWorker.WorkerInfo)
-
 	suite.Require().NoError(suite.db.WorkerSoftDelete(ctx, workerID, org.OrgID))
 	suite.NoError(suite.db.WorkerDelete(ctx, workerID, org.OrgID))
 }

@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
@@ -52,8 +53,16 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.Organization(r.Context(), logger, params["id"])
 	if err != nil {
-		logger.Error("Organization", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("Organization", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Organization", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if common.WriteJSON(w, data) != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -81,9 +90,16 @@ func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.OrgUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("OrgUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("OrgUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("OrgUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

@@ -9,11 +9,13 @@ import (
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/recordmap"
 	"timeline/internal/infrastructure/mapper/usermap"
 	"timeline/internal/infrastructure/models"
+	"timeline/internal/usecase/common"
 
 	"go.uber.org/zap"
 )
@@ -43,6 +45,10 @@ func (u *UserUseCase) User(ctx context.Context, logger *zap.Logger, id int) (*en
 	}
 	data, err := u.user.UserByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, postgres.ErrUserNotFound) {
+			logger.Info("UserByID", zap.Error(err))
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched user")
@@ -52,6 +58,9 @@ func (u *UserUseCase) User(ctx context.Context, logger *zap.Logger, id int) (*en
 
 func (u *UserUseCase) UserUpdate(ctx context.Context, logger *zap.Logger, newUser *userdto.UserUpdateReq) error {
 	if err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(newUser)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("User has been updated")
@@ -62,6 +71,9 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *
 	sreq.Name = strings.TrimSpace(sreq.Name)
 	data, found, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
 	if err != nil {
+		if errors.Is(err, postgres.ErrOrgsNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched organizations by search", zap.Int("Found", found))
@@ -78,6 +90,9 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *
 func (u *UserUseCase) OrgsInArea(ctx context.Context, logger *zap.Logger, area *general.OrgAreaReq) (*general.OrgAreaResp, error) {
 	data, err := u.org.OrgsInArea(ctx, orgmap.AreaToModel(area))
 	if err != nil {
+		if errors.Is(err, postgres.ErrOrgsNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched organizations in specified area", zap.Int("Found", len(data)))
@@ -94,6 +109,9 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, logger *zap.Logger, area *
 func (u *UserUseCase) UserRecordReminder(ctx context.Context, logger *zap.Logger) error {
 	data, err := u.records.UpcomingRecords(ctx)
 	if err != nil {
+		if errors.Is(err, postgres.ErrRecordsNotFound) {
+			return common.ErrNotFound
+		}
 		return err
 	}
 	logger.Info("Fetched user's upcoming records")

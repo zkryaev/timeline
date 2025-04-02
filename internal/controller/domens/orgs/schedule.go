@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -68,9 +69,16 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := o.usecase.WorkerSchedule(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("WorkerSchedule", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("WorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("WorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -118,9 +126,16 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.DeleteWorkerSchedule(r.Context(), logger, req); err != nil {
-		logger.Error("DeleteWorkerSchedule", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("DeleteWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("DeleteWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -144,9 +159,16 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.UpdateWorkerSchedule(r.Context(), logger, req); err != nil {
-		logger.Error("UpdateWorkerSchedule", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("UpdateWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("UpdateWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -171,9 +193,20 @@ func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := o.usecase.AddWorkerSchedule(r.Context(), logger, req); err != nil {
-		logger.Error("AddWorkerSchedule", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrTimeIncorrect):
+			logger.Info("AddWorkerSchedule", zap.Error(err))
+			http.Error(w, common.ErrTimeIncorrect.Error(), http.StatusBadRequest)
+			return
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("AddWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("AddWorkerSchedule", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

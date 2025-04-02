@@ -2,8 +2,11 @@ package orgcase
 
 import (
 	"context"
+	"errors"
 	"timeline/internal/entity/dto/orgdto"
+	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
+	"timeline/internal/usecase/common"
 
 	"go.uber.org/zap"
 )
@@ -11,6 +14,9 @@ import (
 func (o *OrgUseCase) Service(ctx context.Context, logger *zap.Logger, serviceID, orgID int) (*orgdto.ServiceResp, error) {
 	service, err := o.org.Service(ctx, serviceID, orgID)
 	if err != nil {
+		if errors.Is(err, postgres.ErrServiceNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched service")
@@ -20,6 +26,9 @@ func (o *OrgUseCase) Service(ctx context.Context, logger *zap.Logger, serviceID,
 func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, logger *zap.Logger, serviceID, orgID int) ([]*orgdto.WorkerResp, error) {
 	data, err := o.org.ServiceWorkerList(ctx, serviceID, orgID)
 	if err != nil {
+		if errors.Is(err, postgres.ErrServiceNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched worker-service list")
@@ -32,6 +41,9 @@ func (o *OrgUseCase) ServiceWorkerList(ctx context.Context, logger *zap.Logger, 
 func (o *OrgUseCase) ServiceAdd(ctx context.Context, logger *zap.Logger, service *orgdto.AddServiceReq) error {
 	_, err := o.org.ServiceAdd(ctx, orgmap.AddServiceToModel(service))
 	if err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Service has been saved")
@@ -40,6 +52,9 @@ func (o *OrgUseCase) ServiceAdd(ctx context.Context, logger *zap.Logger, service
 
 func (o *OrgUseCase) ServiceUpdate(ctx context.Context, logger *zap.Logger, service *orgdto.UpdateServiceReq) error {
 	if err := o.org.ServiceUpdate(ctx, orgmap.UpdateService(service)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Service has been updated")
@@ -50,6 +65,9 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, logger *zap.Logger, orgID 
 	offset := (page - 1) * limit
 	data, found, err := o.org.ServiceList(ctx, orgID, limit, offset)
 	if err != nil {
+		if errors.Is(err, postgres.ErrServiceNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched service list")
@@ -66,6 +84,9 @@ func (o *OrgUseCase) ServiceList(ctx context.Context, logger *zap.Logger, orgID 
 
 func (o *OrgUseCase) ServiceDelete(ctx context.Context, logger *zap.Logger, serviceID, orgID int) error {
 	if err := o.org.ServiceSoftDelete(ctx, serviceID, orgID); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Service has been deleted")
