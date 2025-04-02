@@ -2,11 +2,18 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/libs/custom"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrSlotsNotFound = errors.New("slots not found")
 )
 
 // [CRON]:
@@ -179,6 +186,9 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
 	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrSlotsNotFound
+		}
 		return nil, err
 	}
 	if tx.Commit() != nil {
