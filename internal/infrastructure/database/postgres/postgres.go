@@ -38,9 +38,6 @@ func (p *PostgresRepo) Open() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	if err = db.Ping(); err != nil {
-		return err
-	}
 	p.db = db
 	return nil
 }
