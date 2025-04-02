@@ -2,10 +2,13 @@ package orgcase
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
+	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
+	"timeline/internal/usecase/common"
+	"timeline/internal/usecase/common/validation"
 
 	"go.uber.org/zap"
 )
@@ -13,12 +16,15 @@ import (
 func (o *OrgUseCase) TimetableAdd(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error {
 	logger.Info("Checking timetable...")
 	for i := range newTimetable.Timetable {
-		if !workPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
-			return fmt.Errorf("some of the provided time is incorrect")
+		if !validation.IsPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
+			return common.ErrTimeIncorrect
 		}
 	}
 	logger.Info("Timetable is valid")
 	if err := o.org.TimetableAdd(ctx, newTimetable.OrgID, orgmap.TimetableToModel(newTimetable.Timetable)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Timetable has been saved")
@@ -28,12 +34,15 @@ func (o *OrgUseCase) TimetableAdd(ctx context.Context, logger *zap.Logger, newTi
 func (o *OrgUseCase) TimetableUpdate(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error {
 	logger.Info("Checking timetable...")
 	for i := range newTimetable.Timetable {
-		if !workPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
-			return fmt.Errorf("some of the provided time is incorrect")
+		if !validation.IsPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
+			return common.ErrTimeIncorrect
 		}
 	}
 	logger.Info("Timetable is valid")
 	if err := o.org.TimetableUpdate(ctx, newTimetable.OrgID, orgmap.TimetableToModel(newTimetable.Timetable)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Timetable has been updated")
@@ -42,6 +51,9 @@ func (o *OrgUseCase) TimetableUpdate(ctx context.Context, logger *zap.Logger, ne
 
 func (o *OrgUseCase) TimetableDelete(ctx context.Context, logger *zap.Logger, orgID, weekday int) error {
 	if err := o.org.TimetableDelete(ctx, orgID, weekday); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Timetable has been deleted")
@@ -51,6 +63,9 @@ func (o *OrgUseCase) TimetableDelete(ctx context.Context, logger *zap.Logger, or
 func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, orgID int) (*orgdto.Timetable, error) {
 	timetable, err := o.org.Timetable(ctx, orgID)
 	if err != nil {
+		if errors.Is(err, postgres.ErrTimetableNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched timetable")

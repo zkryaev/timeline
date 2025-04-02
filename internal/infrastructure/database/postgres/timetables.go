@@ -2,8 +2,15 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var (
+	ErrTimetableNotFound = errors.New("timetable not found")
 )
 
 func (p *PostgresRepo) Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error) {
@@ -23,6 +30,9 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID int) ([]*orgmodel.Op
 	`
 	timetable := make([]*orgmodel.OpenHours, 0, 1)
 	if err = tx.SelectContext(ctx, &timetable, query, orgID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrTimetableNotFound
+		}
 		return nil, err
 	}
 	if err = tx.Commit(); err != nil {

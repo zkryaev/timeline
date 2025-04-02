@@ -196,7 +196,7 @@ func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, common.ErrTimeIncorrect):
 			logger.Info("AddWorkerSchedule", zap.Error(err))
-			http.Error(w, "", http.StatusBadRequest)
+			http.Error(w, common.ErrTimeIncorrect.Error(), http.StatusBadRequest)
 			return
 		case errors.Is(err, common.ErrNothingChanged):
 			logger.Info("AddWorkerSchedule", zap.Error(err))
