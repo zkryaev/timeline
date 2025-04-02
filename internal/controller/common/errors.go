@@ -19,3 +19,7 @@ var (
 	ErrAccountExpired  = auth.ErrAccountExpired
 	ErrCodeExpired     = auth.ErrCodeExpired
 )
+
+var (
+	ErrTimeIncorrect = common.ErrTimeIncorrect
+)
