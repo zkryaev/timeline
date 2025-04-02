@@ -2,6 +2,7 @@ package records
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -73,9 +74,16 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := rec.usecase.FeedbackList(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("FeedbackList", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Error("FeedbackList", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("FeedbackList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -103,9 +111,16 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rec.usecase.FeedbackSet(r.Context(), logger, req); err != nil {
-		logger.Error("FeedbackSet", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Error("FeedbackSet", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("FeedbackSet", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -129,9 +144,16 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rec.usecase.FeedbackUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("FeedbackUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Error("FeedbackUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("FeedbackUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -168,9 +190,16 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
-		logger.Error("FeedbackDelete", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Error("FeedbackDelete", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("FeedbackDelete", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
