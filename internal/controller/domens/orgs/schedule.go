@@ -10,13 +10,14 @@ import (
 	"timeline/internal/libs/custom"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Schedule interface {
-	WorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error)
-	AddWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
-	UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error
-	DeleteWorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) error
+	WorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error)
+	AddWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error
+	UpdateWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error
+	DeleteWorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) error
 }
 
 // @Summary Get worker schedule
@@ -33,9 +34,12 @@ type Schedule interface {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules [get]
 func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	query := map[string]string{
@@ -46,7 +50,8 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 	queryParams, err := custom.QueryParamsConv(query, r.URL.Query())
 	if err != nil {
-		http.Error(w, "Invalid query parameters"+err.Error(), http.StatusBadRequest)
+		logger.Error("QueryParamsConv", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &orgdto.ScheduleParams{
@@ -56,16 +61,19 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		Limit:    queryParams["limit"].(int),
 		Page:     queryParams["page"].(int),
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.WorkerSchedule(r.Context(), req)
+	data, err := o.usecase.WorkerSchedule(r.Context(), logger, req)
 	if err != nil {
+		logger.Error("WorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -82,15 +90,19 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/schedules/{workerID} [delete]
 func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	var weekday int
 	if r.URL.Query().Get("weekday") != "" {
 		weekday, err = strconv.Atoi(r.URL.Query().Get("weekday"))
 		if err != nil {
+			logger.Error("Atoi", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -100,11 +112,13 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		OrgID:    params["orgID"],
 		Weekday:  weekday,
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.DeleteWorkerSchedule(r.Context(), req) != nil {
+	if err := o.usecase.DeleteWorkerSchedule(r.Context(), logger, req); err != nil {
+		logger.Error("DeleteWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -121,12 +135,16 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/schedules [put]
 func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.WorkerSchedule{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.UpdateWorkerSchedule(r.Context(), req) != nil {
+	if err := o.usecase.UpdateWorkerSchedule(r.Context(), logger, req); err != nil {
+		logger.Error("UpdateWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -144,12 +162,16 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/schedules [post]
 func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.WorkerSchedule{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.AddWorkerSchedule(r.Context(), req) != nil {
+	if err := o.usecase.AddWorkerSchedule(r.Context(), logger, req); err != nil {
+		logger.Error("AddWorkerSchedule", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}

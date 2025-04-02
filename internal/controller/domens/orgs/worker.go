@@ -9,16 +9,17 @@ import (
 	"timeline/internal/entity/dto/orgdto"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Workers interface {
-	Worker(ctx context.Context, workerID, OrgID int) (*orgdto.WorkerResp, error)
-	WorkerAdd(ctx context.Context, worker *orgdto.AddWorkerReq) (*orgdto.WorkerResp, error)
-	WorkerUpdate(ctx context.Context, worker *orgdto.UpdateWorkerReq) error
-	WorkerAssignService(ctx context.Context, assignInfo *orgdto.AssignWorkerReq) error
-	WorkerUnAssignService(ctx context.Context, assignInfo *orgdto.AssignWorkerReq) error
-	WorkerList(ctx context.Context, OrgID, Limit, Page int) (*orgdto.WorkerList, error)
-	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
+	Worker(ctx context.Context, logger *zap.Logger, workerID, OrgID int) (*orgdto.WorkerResp, error)
+	WorkerAdd(ctx context.Context, logger *zap.Logger, worker *orgdto.AddWorkerReq) (*orgdto.WorkerResp, error)
+	WorkerUpdate(ctx context.Context, logger *zap.Logger, worker *orgdto.UpdateWorkerReq) error
+	WorkerAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkerUnAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkerList(ctx context.Context, logger *zap.Logger, OrgID, Limit, Page int) (*orgdto.WorkerList, error)
+	WorkerDelete(ctx context.Context, logger *zap.Logger, WorkerID, OrgID int) error
 }
 
 // @Summary Get worker
@@ -32,17 +33,22 @@ type Workers interface {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [get]
 func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	data, err := o.usecase.Worker(r.Context(), path["workerID"], path["orgID"])
-	if err != nil {
+		logger.Error("FetchPathID", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	data, err := o.usecase.Worker(r.Context(), logger, path["workerID"], path["orgID"])
+	if err != nil {
+		logger.Error("Worker", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -59,17 +65,22 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers [post]
 func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.AddWorkerReq{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.WorkerAdd(r.Context(), req)
+	data, err := o.usecase.WorkerAdd(r.Context(), logger, req)
 	if err != nil {
+		logger.Error("WorkerAdd", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -85,12 +96,16 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers [put]
 func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.UpdateWorkerReq{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerUpdate(r.Context(), req); err != nil {
+	if err := o.usecase.WorkerUpdate(r.Context(), logger, req); err != nil {
+		logger.Error("WorkerUpdate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -108,13 +123,17 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/workers/service [post]
 func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	req := &orgdto.AssignWorkerReq{}
-	if common.DecodeAndValidate(r, req) != nil {
+	if err := common.DecodeAndValidate(r, req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := o.usecase.WorkerAssignService(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := o.usecase.WorkerAssignService(r.Context(), logger, req); err != nil {
+		logger.Error("WorkerAssignService", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -133,9 +152,12 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID}/service/{serviceID} [delete]
 func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID", "serviceID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &orgdto.AssignWorkerReq{
@@ -143,7 +165,8 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 		OrgID:     params["orgID"],
 		WorkerID:  params["workerID"],
 	}
-	if err = o.usecase.WorkerUnAssignService(r.Context(), req); err != nil {
+	if err = o.usecase.WorkerUnAssignService(r.Context(), logger, req); err != nil {
+		logger.Error("WorkerUnAssignService", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -162,27 +185,33 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 // @Failure 500
 // @Router /orgs/{orgID}/workers [get]
 func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	query := map[string]bool{
 		"limit": true,
 		"page":  true,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	data, err := o.usecase.WorkerList(r.Context(), path["orgID"], limit, page)
+	data, err := o.usecase.WorkerList(r.Context(), logger, path["orgID"], limit, page)
 	if err != nil {
+		logger.Error("WorkerList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -198,12 +227,16 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [delete]
 func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := o.Logger.With(zap.String("uuid", uuid))
 	path, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if o.usecase.WorkerDelete(r.Context(), path["workerID"], path["orgID"]) != nil {
+	if err := o.usecase.WorkerDelete(r.Context(), logger, path["workerID"], path["orgID"]); err != nil {
+		logger.Error("WorkerDelete", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}

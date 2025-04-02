@@ -13,10 +13,10 @@ import (
 )
 
 type Record interface {
-	Record(ctx context.Context, recordID int) (*recordto.RecordScrap, error)
-	RecordList(ctx context.Context, params *recordto.RecordListParams) (*recordto.RecordList, error)
-	RecordAdd(ctx context.Context, rec *recordto.Record) error
-	RecordCancel(ctx context.Context, rec *recordto.RecordCancelation) error
+	Record(ctx context.Context, logger *zap.Logger, recordID int) (*recordto.RecordScrap, error)
+	RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error)
+	RecordAdd(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error
+	RecordCancel(ctx context.Context, logger *zap.Logger, rec *recordto.RecordCancelation) error
 	Feedback
 }
 
@@ -41,21 +41,27 @@ func New(usecase Record, logger *zap.Logger) *RecordCtrl {
 // @Failure 500
 // @Router /records/info/{recordID} [get]
 func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	params, err := validation.FetchPathID(mux.Vars(r), "recordID")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if params["recordID"] <= 0 {
-		http.Error(w, "record_id must be > 0", http.StatusBadRequest)
-		return
-	}
-	data, err := rec.usecase.Record(r.Context(), params["recordID"])
-	if err != nil {
+		logger.Error("FetchPathID", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if params["recordID"] <= 0 {
+		logger.Error("record_id must be > 0", zap.Int("record_id", params["recordID"]))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	data, err := rec.usecase.Record(r.Context(), logger, params["recordID"])
+	if err != nil {
+		logger.Error("Record", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -74,6 +80,8 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/list [get]
 func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	query := map[string]bool{
 		"user_id": false,
 		"org_id":  false,
@@ -81,8 +89,9 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		"limit":   false,
 		"page":    false,
 	}
-	if !validation.IsQueryValid(r, query) {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+	if err := validation.IsQueryValid(r, query); err != nil {
+		logger.Error("IsQueryValid", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	params := map[string]string{
@@ -94,7 +103,8 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	}
 	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
 	if err != nil {
-		http.Error(w, "Invalid query parameters: "+err.Error(), http.StatusBadRequest)
+		logger.Error("QueryParamsConv", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &recordto.RecordListParams{
@@ -104,16 +114,19 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		Limit:  queryParams["limit"].(int),
 		Page:   queryParams["page"].(int),
 	}
-	if common.Validate(req) != nil {
+	if err := common.Validate(req); err != nil {
+		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := rec.usecase.RecordList(r.Context(), req)
+	data, err := rec.usecase.RecordList(r.Context(), logger, req)
 	if err != nil {
+		logger.Error("RecordList", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -129,13 +142,17 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /records/creation [post]
 func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.Record{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("DecodeAndValidate", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.RecordAdd(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := rec.usecase.RecordAdd(r.Context(), logger, req); err != nil {
+		logger.Error("RecordAdd", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -151,13 +168,17 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Router /records/info/{recordID} [put]
 // Удаление только ожидаемой записи, а не уже совершённой.
 func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := rec.Logger.With(zap.String("uuid", uuid))
 	req := &recordto.RecordCancelation{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("DecodeAndValidate", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err := rec.usecase.RecordCancel(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := rec.usecase.RecordCancel(r.Context(), logger, req); err != nil {
+		logger.Error("RecordCancel", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

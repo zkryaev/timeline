@@ -11,12 +11,12 @@ import (
 )
 
 type AuthUseCase interface {
-	Login(ctx context.Context, req *authdto.LoginReq) (*authdto.TokenPair, error)
-	UserRegister(ctx context.Context, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error)
-	OrgRegister(ctx context.Context, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error)
-	SendCodeRetry(ctx context.Context, req *authdto.SendCodeReq)
-	VerifyCode(ctx context.Context, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error)
-	UpdateAccessToken(ctx context.Context, req *jwt.Token) (*authdto.AccessToken, error)
+	Login(ctx context.Context, logger *zap.Logger, req *authdto.LoginReq) (*authdto.TokenPair, error)
+	UserRegister(ctx context.Context, logger *zap.Logger, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error)
+	OrgRegister(ctx context.Context, logger *zap.Logger, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error)
+	SendCodeRetry(ctx context.Context, logger *zap.Logger, req *authdto.SendCodeReq)
+	VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error)
+	UpdateAccessToken(ctx context.Context, logger *zap.Logger, req *jwt.Token) (*authdto.AccessToken, error)
 }
 
 type Middleware interface {
@@ -50,18 +50,22 @@ func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCt
 // @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.LoginReq
 	if err := common.DecodeAndValidate(r, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("DecodeAndValidate", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := a.usecase.Login(ctx, &req)
+	data, err := a.usecase.Login(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("Login", zap.Error(err))
 		http.Error(w, common.ErrFailedLogin, http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -78,18 +82,22 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/users [post]
 func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.UserRegisterReq
-	if common.DecodeAndValidate(r, &req) != nil {
+	if err := common.DecodeAndValidate(r, &req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := a.usecase.UserRegister(ctx, &req)
+	data, err := a.usecase.UserRegister(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("UserRegister", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -106,19 +114,22 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/orgs [post]
 func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
-	// декодируем json
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.OrgRegisterReq
-	if common.DecodeAndValidate(r, &req) != nil {
+	if err := common.DecodeAndValidate(r, &req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := a.usecase.OrgRegister(ctx, &req)
+	data, err := a.usecase.OrgRegister(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("OrgRegister", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -135,13 +146,15 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/send [post]
 func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.SendCodeReq
-	if common.DecodeAndValidate(r, &req) != nil {
+	if err := common.DecodeAndValidate(r, &req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	a.usecase.SendCodeRetry(ctx, &req)
+	a.usecase.SendCodeRetry(r.Context(), logger, &req)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -156,18 +169,22 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/codes/verify [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	var req authdto.VerifyCodeReq
-	if common.DecodeAndValidate(r, &req) != nil {
+	if err := common.DecodeAndValidate(r, &req); err != nil {
+		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	data, err := a.usecase.VerifyCode(ctx, &req)
+	data, err := a.usecase.VerifyCode(r.Context(), logger, &req)
 	if err != nil {
+		logger.Error("VerifyCode", zap.Error(err))
 		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
 		return
 	}
-	if common.WriteJSON(w, data) != nil {
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -185,30 +202,27 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /auth/tokens/refresh [put]
 func (a *AuthCtrl) UpdateAccessToken(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := a.Logger.With(zap.String("uuid", uuid))
 	token, err := a.Middleware.ExtractToken(r)
 	if err != nil {
-		a.Logger.Error(
-			"failed update access token",
-			zap.String("ExtractToken", err.Error()),
-		)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		logger.Error("ExtractToken", zap.String("ExtractToken", err.Error()))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if token.Claims.(jwt.MapClaims)["type"].(string) != "refresh" {
-		http.Error(w, "Invalid token", http.StatusBadRequest)
+	if tokenType := token.Claims.(jwt.MapClaims)["type"].(string); tokenType != "refresh" {
+		logger.Info("invalid token", zap.String("token_type", tokenType))
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	refreshedAccessToken, err := a.usecase.UpdateAccessToken(ctx, token)
+	refreshedAccessToken, err := a.usecase.UpdateAccessToken(r.Context(), logger, token)
 	if err != nil {
-		a.Logger.Error(
-			"failed update access token",
-			zap.String("usecase.UpdateAccessToken", err.Error()),
-		)
+		logger.Error("UpdateAccessToken", zap.Error(err))
 		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 	if common.WriteJSON(w, refreshedAccessToken) != nil {
+		logger.Error("WriteJSON", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}

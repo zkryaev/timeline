@@ -9,12 +9,6 @@ type ResponseWriter struct {
 	statusCode int
 }
 
-func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
-	return &ResponseWriter{
-		ResponseWriter: w,
-	}
-}
-
 func (rw *ResponseWriter) StatusCode() int {
 	return rw.statusCode
 }

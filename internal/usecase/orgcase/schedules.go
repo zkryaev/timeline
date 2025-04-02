@@ -2,12 +2,10 @@ package orgcase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
 
 	"go.uber.org/zap"
@@ -23,38 +21,31 @@ func workPeriodValid(start, over string) bool {
 	return true
 }
 
-func (o *OrgUseCase) WorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error) {
+func (o *OrgUseCase) WorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) (*orgdto.ScheduleList, error) {
 	data, err := o.org.WorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params))
 	if err != nil {
-		o.Logger.Error(
-			"failed to get worker schedule",
-			zap.Error(err),
-		)
 		return nil, err
 	}
+	logger.Info("Fetched worker schedule")
 	return orgmap.ScheduleListToDTO(data), nil
 }
 
-func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error {
+func (o *OrgUseCase) AddWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error {
+	logger.Info("Checking worker schedule...")
 	for i := range schedule.Schedule {
 		if !workPeriodValid(schedule.Schedule[i].Start, schedule.Schedule[i].Over) {
-			o.Logger.Error(
-				"failed cause given time is somehow incorrect",
-			)
 			return fmt.Errorf("some of the provided time is incorrect")
 		}
 	}
+	logger.Info("Worker schedule is valid")
 	if err := o.org.AddWorkerSchedule(ctx, orgmap.WorkerScheduleToModel(schedule)); err != nil {
-		o.Logger.Error(
-			"failed to get worker schedule",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Worker schedule has been saved")
 	return nil
 }
 
-func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.WorkerSchedule) error {
+func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, logger *zap.Logger, schedule *orgdto.WorkerSchedule) error {
 	worker := &orgdto.UpdateWorkerReq{
 		WorkerID: schedule.WorkerID,
 		OrgID:    schedule.OrgID,
@@ -62,29 +53,21 @@ func (o *OrgUseCase) UpdateWorkerSchedule(ctx context.Context, schedule *orgdto.
 			SessionDuration: schedule.SessionDuration,
 		},
 	}
-	if err := o.WorkerPatch(ctx, worker); err != nil {
+	if err := o.WorkerPatch(ctx, logger, worker); err != nil {
 		return err
 	}
+	logger.Info("Worker session duration has been updated")
 	if err := o.org.UpdateWorkerSchedule(ctx, orgmap.WorkerScheduleToModel(schedule)); err != nil {
-		o.Logger.Error(
-			"failed to get worker schedule",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Worker schedule has been updated")
 	return nil
 }
 
-func (o *OrgUseCase) DeleteWorkerSchedule(ctx context.Context, params *orgdto.ScheduleParams) error {
+func (o *OrgUseCase) DeleteWorkerSchedule(ctx context.Context, logger *zap.Logger, params *orgdto.ScheduleParams) error {
 	if err := o.org.SoftDeleteWorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params)); err != nil {
-		if errors.Is(err, postgres.ErrScheduleNotFound) {
-			return err
-		}
-		o.Logger.Error(
-			"failed to get worker schedule",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Worker schedule has been deleted")
 	return nil
 }
