@@ -26,7 +26,6 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 			tx.Rollback()
 		}
 	}()
-	// Пагинация - found
 	query := `SELECT
 			COUNT(worker_id)
 		FROM workers
@@ -42,7 +41,6 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		}
 		return nil, fmt.Errorf("failed to get org's service list: %w", err)
 	}
-	// Список id воркеров
 	query = `
 		SELECT 
 			worker_id, session_duration
@@ -87,7 +85,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 	}
 	var schedule []*orgmodel.Schedule
 	for _, worker := range workerList {
-		schedule = make([]*orgmodel.Schedule, 0, 7) // 7 = число дней в неделе
+		schedule = make([]*orgmodel.Schedule, 0, 7) // 7 - дней в неделе
 		if err = tx.SelectContext(
 			ctx,
 			&schedule,
@@ -124,7 +122,6 @@ func (p *PostgresRepo) AddWorkerSchedule(ctx context.Context, schedule *orgmodel
 			tx.Rollback()
 		}
 	}()
-
 	query := `
 		WITH orgschedule AS (
 			SELECT 
@@ -206,8 +203,24 @@ func (p *PostgresRepo) UpdateWorkerSchedule(ctx context.Context, schedule *orgmo
 			tx.Rollback()
 		}
 	}()
-
 	query := `
+		UPDATE workers
+		SET
+			session_duration = $1
+		WHERE is_delete = false
+		AND worker_id = $2
+		AND org_id = $3;
+	`
+	res, err := tx.ExecContext(ctx, query, schedule.SessionDuration, schedule.WorkerID, schedule.OrgID) //nolint:govet // ...
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to update worker schedule: %w", err)
+	default:
+		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
+			return ErrNoRowsAffected
+		}
+	}
+	query = `
 		WITH orgschedule AS (
 			SELECT open::time AS open_time, close::time AS close_time
 			FROM timetables
