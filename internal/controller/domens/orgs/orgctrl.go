@@ -40,6 +40,7 @@ func New(usecase Org, logger *zap.Logger) *OrgCtrl {
 // @Param   id path int true "org_id"
 // @Success 200 {object} orgdto.Organization
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/info/{id} [get]
 func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +79,7 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 // @Param   request body orgdto.OrgUpdateReq true "New org info"
 // @Success 200
 // @Failure 400
+// @Failure 304
 // @Failure 500
 // @Router /orgs/update [put]
 func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {

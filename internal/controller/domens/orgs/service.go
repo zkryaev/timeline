@@ -30,6 +30,7 @@ type Services interface {
 // @Param   serviceID path int true "service_id"
 // @Success 200 {object} orgdto.ServiceResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID} [get]
 func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,7 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 // @Param   serviceID path int true "service_id"
 // @Success 200 {array} orgdto.WorkerResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID}/workers [get]
 func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +109,7 @@ func (o *OrgCtrl) ServiceWorkerList(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param   request body orgdto.AddServiceReq true "service info"
 // @Success 200 {object} orgdto.ServiceResp
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/services [post]
@@ -140,6 +143,7 @@ func (o *OrgCtrl) ServiceAdd(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Param   request body orgdto.UpdateServiceReq true "service info"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/services [put]
@@ -176,6 +180,7 @@ func (o *OrgCtrl) ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 // @Param page query int true "Page number for pagination"
 // @Success 200 {array} orgdto.ServiceList
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/services [get]
 func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +229,7 @@ func (o *OrgCtrl) ServiceList(w http.ResponseWriter, r *http.Request) {
 // @Param   orgID path int true "org_id"
 // @Param   serviceID path int true "service_id"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/services/{serviceID} [delete]

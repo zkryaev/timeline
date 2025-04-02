@@ -43,6 +43,8 @@ func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 // @Param file formData file true "File to upload"
 // @Success 200
 // @Failure 400
+// @Failure 413
+// @Failure 415
 // @Failure 500
 // @Router /media [post]
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {

@@ -32,6 +32,7 @@ type Schedule interface {
 // @Param page query int true "Page number for pagination"
 // @Success 200 {object} orgdto.ScheduleList
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/schedules [get]
 func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +95,7 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Param   orgID path int true "org_id"
 // @Param   weekday query int false "weekday"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/schedules/{workerID} [delete]
@@ -146,6 +148,7 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/schedules [put]
@@ -180,6 +183,7 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/schedules [post]

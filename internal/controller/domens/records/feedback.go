@@ -29,6 +29,7 @@ type Feedback interface {
 // @Param   orgID query int true "org_id"
 // @Param   userID query int true "user_id"
 // @Success 200 {object} recordto.FeedbackList
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks/info [get]
@@ -76,7 +77,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, common.ErrNotFound):
-			logger.Error("FeedbackList", zap.Error(err))
+			logger.Info("FeedbackList", zap.Error(err))
 			http.Error(w, "", http.StatusNotFound)
 			return
 		default:
@@ -98,6 +99,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Param feedback body recordto.Feedback true "Feedback data"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks [post]
@@ -113,7 +115,7 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 	if err := rec.usecase.FeedbackSet(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
-			logger.Error("FeedbackSet", zap.Error(err))
+			logger.Info("FeedbackSet", zap.Error(err))
 			http.Error(w, "", http.StatusNotModified)
 			return
 		default:
@@ -131,6 +133,7 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Param feedback body recordto.Feedback true "Feedback data"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks [put]
@@ -146,7 +149,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 	if err := rec.usecase.FeedbackUpdate(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
-			logger.Error("FeedbackUpdate", zap.Error(err))
+			logger.Info("FeedbackUpdate", zap.Error(err))
 			http.Error(w, "", http.StatusNotModified)
 			return
 		default:
@@ -163,6 +166,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags record / feedback
 // @Param   recordID query int true "record_id"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks/info [delete]
@@ -192,7 +196,7 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 	if err = rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
-			logger.Error("FeedbackDelete", zap.Error(err))
+			logger.Info("FeedbackDelete", zap.Error(err))
 			http.Error(w, "", http.StatusNotModified)
 			return
 		default:

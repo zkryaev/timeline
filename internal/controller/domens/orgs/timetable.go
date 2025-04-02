@@ -27,6 +27,7 @@ type Timetable interface {
 // @Param   orgID path int true "org_id"
 // @Success 200 {object} orgdto.Timetable
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [get]
 func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +65,7 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Param   request body orgdto.Timetable true "New org info"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/timetable [post]
@@ -101,6 +103,7 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Param   request body orgdto.Timetable true "New org info"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/timetable [put]
@@ -139,6 +142,7 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 // @Param orgID path int true "org_id"
 // @Param weekday query int false "weekday"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/timetable [delete]

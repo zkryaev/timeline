@@ -81,6 +81,7 @@ func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param   request body userdto.UserUpdateReq true "New user info"
 // @Success 200 {object} userdto.UserUpdateReq
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /users/update [put]
@@ -121,6 +122,7 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Param is_name_sort query bool false "on/off name sort"
 // @Success 200 {object} general.SearchResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +190,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Param max_long query float32 true "Maximum longitude for the search area"
 // @Success 200 {object} general.OrgAreaResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /users/map/orgs [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {

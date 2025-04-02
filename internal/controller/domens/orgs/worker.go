@@ -31,6 +31,7 @@ type Workers interface {
 // @Param   workerID path int true "worker_id"
 // @Success 200 {object} orgdto.WorkerResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [get]
 func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,7 @@ func (o *OrgCtrl) Worker(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param   request body orgdto.AddWorkerReq true "worker info"
 // @Success 200 {object} orgdto.WorkerResp
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/workers [post]
@@ -107,6 +109,7 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Param   request body orgdto.UpdateWorkerReq true "worker info"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/workers [put]
@@ -141,6 +144,7 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param   request body orgdto.AssignWorkerReq true "assignment info"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/workers/service [post]
@@ -177,6 +181,7 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 // @Param   workerID path int true "worker_id"
 // @Param   serviceID path int true "service_id"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID}/service/{serviceID} [delete]
@@ -217,6 +222,7 @@ func (o *OrgCtrl) WorkerUnAssignService(w http.ResponseWriter, r *http.Request) 
 // @Param limit query int true "Limit the number of results"
 // @Param page query int true "Page number for pagination"
 // @Success 200 {array} orgdto.WorkerList
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/workers [get]
@@ -266,6 +272,7 @@ func (o *OrgCtrl) WorkerList(w http.ResponseWriter, r *http.Request) {
 // @Param   orgID path int true "org_id"
 // @Param   workerID path int true "worker_id"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/workers/{workerID} [delete]

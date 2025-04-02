@@ -25,6 +25,7 @@ type Slots interface {
 // @Param   orgID path int true "org_id"
 // @Success 200 {array} orgdto.SlotResp
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /orgs/{orgID}/slots/workers/{workerID} [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,7 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 // @Param   request body orgdto.SlotUpdate true "slots info"
 // @Param   orgID path int true "org_id"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/{orgID}/slots [put]

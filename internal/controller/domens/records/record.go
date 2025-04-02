@@ -39,6 +39,7 @@ func New(usecase Record, logger *zap.Logger) *RecordCtrl {
 // @Param   recordID path int true "record_id"
 // @Success 200 {object} recordto.RecordScrap
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /records/info/{recordID} [get]
 func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +86,7 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 // @Param   fresh query bool false "Decide which records must be returned. True - only current & future records. False/NotGiven - olds"
 // @Success 200 {object} recordto.RecordList
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /records/list [get]
 func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +156,7 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 // @Param record body recordto.Record true "Record data"
 // @Success 200
 // @Failure 400
+// @Failure 404
 // @Failure 500
 // @Router /records/creation [post]
 func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +188,7 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 // @Tags Records
 // @Param   cancelReq body recordto.RecordCancelation true "cancel description"
 // @Success 200
+// @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/info/{recordID} [put]

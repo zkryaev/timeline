@@ -48,6 +48,8 @@ func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCt
 // @Param   request body authdto.LoginReq true "Login Request"
 // @Success 200 {object} authdto.TokenPair
 // @Failure 400
+// @Failure 404
+// @Failure 423 {string} string "account expired
 // @Failure 500
 // @Router /auth/login [post]
 func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +180,8 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 // @Param   request body authdto.VerifyCodeReq true "Verify Code Request"
 // @Success 200 {object} authdto.TokenPair
 // @Failure 400
+// @Failure 404
+// @Failure 410 {string} string "code expired"
 // @Failure 500
 // @Router /auth/codes/verify [post]
 func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
