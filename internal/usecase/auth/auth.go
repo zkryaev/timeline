@@ -9,6 +9,7 @@ import (
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/mapper/codemap"
 	"timeline/internal/infrastructure/mapper/orgmap"
@@ -18,6 +19,7 @@ import (
 	"timeline/internal/libs/passwd"
 	"timeline/internal/libs/verification"
 	"timeline/internal/usecase/auth/validation"
+	"timeline/internal/usecase/common"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -28,6 +30,7 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrAccountExpired     = errors.New("account expired")
 	ErrCodeExpired        = errors.New("code expired")
+	ErrAccountNotFound    = postgres.ErrAccountNotFound
 )
 
 type AuthUseCase struct {
@@ -53,17 +56,21 @@ func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo in
 func (a *AuthUseCase) Login(ctx context.Context, logger *zap.Logger, req *authdto.LoginReq) (*authdto.TokenPair, error) {
 	exp, err := a.code.AccountExpiration(ctx, req.Email, req.IsOrg)
 	if err != nil {
+		if errors.Is(err, postgres.ErrAccountNotFound) {
+			return nil, ErrAccountNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched account metadata from DB")
-	if !exp.Verified { // если не активирован
-		if validation.IsAccountExpired(exp.CreatedAt) { // проверяем не стух ли он еще
+	if !exp.Verified { // is activated
+		if validation.IsAccountExpired(exp.CreatedAt) {
 			return nil, ErrAccountExpired
 		}
 	}
 	if err = passwd.CompareWithHash(req.Password, exp.Hash); err != nil {
 		return nil, err
 	}
+	logger.Info("Password is correct")
 	tokens, err := jwtlib.NewTokenPair(
 		a.secret,
 		a.TokenCfg,
@@ -123,7 +130,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Code has been generated")
+	logger.Info("Verification code has been generated")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
@@ -138,7 +145,7 @@ func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *
 	if err != nil {
 		return
 	}
-	logger.Info("Code has been generated")
+	logger.Info("Verification code has been generated")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
@@ -150,6 +157,9 @@ func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *
 func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
 	exp, err := a.code.VerifyCode(ctx, codemap.ToModel(req))
 	if err != nil {
+		if errors.Is(err, postgres.ErrCodeNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Code was found")

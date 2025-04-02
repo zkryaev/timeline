@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"timeline/internal/controller/common"
 	"timeline/internal/entity/dto/authdto"
@@ -60,9 +61,20 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.Login(r.Context(), logger, &req)
 	if err != nil {
-		logger.Error("Login", zap.Error(err))
-		http.Error(w, common.ErrFailedLogin, http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrAccountNotFound):
+			logger.Info("Login", zap.Error(err))
+			http.Error(w, common.ErrAccountNotFound.Error(), http.StatusNotFound)
+			return
+		case errors.Is(err, common.ErrAccountExpired):
+			logger.Info("Login", zap.Error(err))
+			http.Error(w, common.ErrAccountExpired.Error(), http.StatusLocked)
+			return
+		default:
+			logger.Error("Login", zap.Error(err))
+			http.Error(w, common.ErrFailedLogin, http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -93,7 +105,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 	data, err := a.usecase.UserRegister(r.Context(), logger, &req)
 	if err != nil {
 		logger.Error("UserRegister", zap.Error(err))
-		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
+		http.Error(w, common.ErrFailedRegister, http.StatusInternalServerError)
 		return
 	}
 	if err := common.WriteJSON(w, data); err != nil {
@@ -125,7 +137,7 @@ func (a *AuthCtrl) OrgRegister(w http.ResponseWriter, r *http.Request) {
 	data, err := a.usecase.OrgRegister(r.Context(), logger, &req)
 	if err != nil {
 		logger.Error("OrgRegister", zap.Error(err))
-		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
+		http.Error(w, common.ErrFailedRegister, http.StatusInternalServerError)
 		return
 	}
 	if err := common.WriteJSON(w, data); err != nil {
@@ -179,9 +191,20 @@ func (a *AuthCtrl) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := a.usecase.VerifyCode(r.Context(), logger, &req)
 	if err != nil {
-		logger.Error("VerifyCode", zap.Error(err))
-		http.Error(w, common.ErrFailedRegister, http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("VerifyCode", zap.Error(err))
+			http.Error(w, common.ErrNotFound.Error(), http.StatusNotFound)
+			return
+		case errors.Is(err, common.ErrCodeExpired):
+			logger.Info("VerifyCode", zap.Error(err))
+			http.Error(w, common.ErrCodeExpired.Error(), http.StatusGone)
+			return
+		default:
+			logger.Error("VerifyCode", zap.Error(err))
+			http.Error(w, common.ErrFailedRegister, http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))

@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrCodeNotFound = errors.New("given code not found")
+	ErrCodeNotFound    = errors.New("code wasn't not found")
+	ErrAccountNotFound = errors.New("account wasn't found")
 )
 
 // Сохранить код отправленный на почту
@@ -26,7 +27,6 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, info *models.CodeInfo
 			tx.Rollback()
 		}
 	}()
-
 	var query string
 	switch info.IsOrg {
 	case false:
@@ -40,7 +40,6 @@ func (p *PostgresRepo) SaveVerifyCode(ctx context.Context, info *models.CodeInfo
         VALUES ($1, $2);
 	`
 	}
-
 	if err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Err(); err != nil {
 		return fmt.Errorf("failed to save code: %w", err)
 	}
@@ -75,7 +74,6 @@ func (p *PostgresRepo) VerifyCode(ctx context.Context, info *models.CodeInfo) (t
         WHERE code = $1 AND org_id = $2;
 	`
 	}
-
 	var expiresAt time.Time
 	err = tx.QueryRowContext(ctx, query, info.Code, info.ID).Scan(&expiresAt)
 	if err != nil {
@@ -96,13 +94,11 @@ func (p *PostgresRepo) ActivateAccount(ctx context.Context, id int, isOrg bool) 
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
 	}
-
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-
 	var query string
 	switch isOrg {
 	case false:
@@ -162,11 +158,10 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, isOr
 		AND email = $1;
     	`
 	}
-
 	var data models.ExpInfo
 	if err = tx.QueryRowContext(ctx, query, email).Scan(&data.ID, &data.Hash, &data.CreatedAt, &data.Verified); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrOrgNotFound
+			return nil, ErrAccountNotFound
 		}
 		return nil, fmt.Errorf("failed to get meta info: %w", err)
 	}
@@ -184,13 +179,11 @@ func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
 	}
-
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
-
 	query := `
 		DELETE
 		FROM users_verify
@@ -209,7 +202,6 @@ func (p *PostgresRepo) DeleteExpiredCodes(ctx context.Context) error {
 			return ErrNoRowsAffected
 		}
 	}
-
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
