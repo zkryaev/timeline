@@ -2,87 +2,58 @@ package orgcase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
 
 	"go.uber.org/zap"
 )
 
-func (o *OrgUseCase) TimetableAdd(ctx context.Context, newTimetable *orgdto.Timetable) error {
-	// Валидация начала и конца работы организации
+func (o *OrgUseCase) TimetableAdd(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error {
+	logger.Info("Checking timetable...")
 	for i := range newTimetable.Timetable {
 		if !workPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
-			o.Logger.Error(
-				"failed cause given time is somehow incorrect",
-			)
 			return fmt.Errorf("some of the provided time is incorrect")
 		}
 	}
+	logger.Info("Timetable is valid")
 	if err := o.org.TimetableAdd(ctx, newTimetable.OrgID, orgmap.TimetableToModel(newTimetable.Timetable)); err != nil {
-		if errors.Is(err, postgres.ErrOrgNotFound) {
-			return err
-		}
-		o.Logger.Error(
-			"failed to add org timetable",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Timetable has been saved")
 	return nil
 }
 
-func (o *OrgUseCase) TimetableUpdate(ctx context.Context, newTimetable *orgdto.Timetable) error {
+func (o *OrgUseCase) TimetableUpdate(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error {
+	logger.Info("Checking timetable...")
 	for i := range newTimetable.Timetable {
 		if !workPeriodValid(newTimetable.Timetable[i].Open, newTimetable.Timetable[i].Close) {
-			o.Logger.Error(
-				"failed cause given time is somehow incorrect",
-			)
 			return fmt.Errorf("some of the provided time is incorrect")
 		}
 	}
+	logger.Info("Timetable is valid")
 	if err := o.org.TimetableUpdate(ctx, newTimetable.OrgID, orgmap.TimetableToModel(newTimetable.Timetable)); err != nil {
-		if errors.Is(err, postgres.ErrOrgNotFound) {
-			return err
-		}
-		o.Logger.Error(
-			"failed to update org timetable",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Timetable has been updated")
 	return nil
 }
 
-func (o *OrgUseCase) TimetableDelete(ctx context.Context, orgID, weekday int) error {
+func (o *OrgUseCase) TimetableDelete(ctx context.Context, logger *zap.Logger, orgID, weekday int) error {
 	if err := o.org.TimetableDelete(ctx, orgID, weekday); err != nil {
-		if errors.Is(err, postgres.ErrOrgNotFound) {
-			return err
-		}
-		o.Logger.Error(
-			"failed to delete org timetable",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Timetable has been deleted")
 	return nil
 }
 
-func (o *OrgUseCase) Timetable(ctx context.Context, orgID int) (*orgdto.Timetable, error) {
+func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, orgID int) (*orgdto.Timetable, error) {
 	timetable, err := o.org.Timetable(ctx, orgID)
 	if err != nil {
-		if errors.Is(err, postgres.ErrOrgNotFound) {
-			return nil, err
-		}
-		o.Logger.Error(
-			"failed to get org timetable",
-			zap.Error(err),
-		)
 		return nil, err
 	}
+	logger.Info("Fetched timetable")
 	resp := &orgdto.Timetable{
 		OrgID:     orgID,
 		Timetable: make([]*entity.OpenHours, 0, len(timetable)),

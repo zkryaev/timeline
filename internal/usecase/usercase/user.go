@@ -9,7 +9,6 @@ import (
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
 	"timeline/internal/infrastructure"
-	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/recordmap"
@@ -28,19 +27,17 @@ type UserUseCase struct {
 	org     infrastructure.OrgRepository
 	records infrastructure.RecordRepository
 	mail    infrastructure.Mail
-	Logger  *zap.Logger
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository, logger *zap.Logger) *UserUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository) *UserUseCase {
 	return &UserUseCase{
 		user:    userRepo,
 		org:     orgRepo,
 		records: recRepo,
-		Logger:  logger,
 	}
 }
 
-func (u *UserUseCase) User(ctx context.Context, id int) (*entity.User, error) {
+func (u *UserUseCase) User(ctx context.Context, logger *zap.Logger, id int) (*entity.User, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("id < 0")
 	}
@@ -48,34 +45,26 @@ func (u *UserUseCase) User(ctx context.Context, id int) (*entity.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("Fetched user")
 	resp := usermap.UserInfoToDTO(data)
 	return resp, nil
 }
 
-func (u *UserUseCase) UserUpdate(ctx context.Context, newUser *userdto.UserUpdateReq) error {
+func (u *UserUseCase) UserUpdate(ctx context.Context, logger *zap.Logger, newUser *userdto.UserUpdateReq) error {
 	if err := u.user.UserUpdate(ctx, usermap.UserUpdateToModel(newUser)); err != nil {
-		if errors.Is(err, postgres.ErrUserNotFound) {
-			return err
-		}
-		u.Logger.Error(
-			"failed user update",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("User has been updated")
 	return nil
 }
 
-func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (*general.SearchResp, error) {
+func (u *UserUseCase) SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *general.SearchReq) (*general.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
 	data, found, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
 	if err != nil {
-		if errors.Is(err, postgres.ErrOrgsNotFound) {
-			return nil, ErrNoOrgs
-		}
-		u.Logger.Error("SearchOrgs", zap.Error(err))
 		return nil, err
 	}
+	logger.Info("Fetched organizations by search", zap.Int("Found", found))
 	resp := &general.SearchResp{
 		Found: found,
 		Orgs:  make([]*entity.OrgsBySearch, 0, len(data)),
@@ -86,15 +75,12 @@ func (u *UserUseCase) SearchOrgs(ctx context.Context, sreq *general.SearchReq) (
 	return resp, nil
 }
 
-func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) (*general.OrgAreaResp, error) {
+func (u *UserUseCase) OrgsInArea(ctx context.Context, logger *zap.Logger, area *general.OrgAreaReq) (*general.OrgAreaResp, error) {
 	data, err := u.org.OrgsInArea(ctx, orgmap.AreaToModel(area))
 	if err != nil {
-		if errors.Is(err, postgres.ErrOrgsNotFound) {
-			return nil, ErrNoOrgs
-		}
-		u.Logger.Error("OrgsInArea", zap.Error(err))
 		return nil, err
 	}
+	logger.Info("Fetched organizations in specified area", zap.Int("Found", len(data)))
 	resp := &general.OrgAreaResp{
 		Found: len(data),
 		Orgs:  make([]*entity.MapOrgInfo, 0, len(data)),
@@ -105,15 +91,12 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, area *general.OrgAreaReq) 
 	return resp, nil
 }
 
-func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
+func (u *UserUseCase) UserRecordReminder(ctx context.Context, logger *zap.Logger) error {
 	data, err := u.records.UpcomingRecords(ctx)
 	if err != nil {
-		u.Logger.Error(
-			"failed user update",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Fetched user's upcoming records")
 	for i := range data {
 		msg := &models.Message{
 			Email:    data[i].UserEmail,
@@ -122,12 +105,9 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context) error {
 			IsAttach: false,
 		}
 		if err = u.mail.SendMsg(msg); err != nil {
-			u.Logger.Error(
-				"failed to notify users",
-				zap.Error(err),
-			)
 			return err
 		}
+		logger.Info("Notification has been sent to user's email")
 	}
 	return nil
 }

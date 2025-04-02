@@ -16,40 +16,32 @@ type RecordUseCase struct {
 	orgs    infrastructure.OrgRepository
 	records infrastructure.RecordRepository
 	mail    infrastructure.Mail
-	Logger  *zap.Logger
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.RecordRepository, mailRepo infrastructure.Mail, logger *zap.Logger) *RecordUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.RecordRepository, mailRepo infrastructure.Mail) *RecordUseCase {
 	return &RecordUseCase{
 		users:   userRepo,
 		orgs:    orgRepo,
 		records: recordRepo,
 		mail:    mailRepo,
-		Logger:  logger,
 	}
 }
 
-func (r *RecordUseCase) Record(ctx context.Context, recordID int) (*recordto.RecordScrap, error) {
+func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, recordID int) (*recordto.RecordScrap, error) {
 	data, err := r.records.Record(ctx, recordID)
 	if err != nil {
-		r.Logger.Error(
-			"failed to get record",
-			zap.Error(err),
-		)
 		return nil, err
 	}
+	logger.Info("Fetched record")
 	return recordmap.RecordScrapToDTO(data), nil
 }
 
-func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordListParams) (*recordto.RecordList, error) {
+func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error) {
 	data, found, err := r.records.RecordList(ctx, recordmap.RecordParamsToModel(params))
 	if err != nil {
-		r.Logger.Error(
-			"failed to get record list",
-			zap.Error(err),
-		)
 		return nil, err
 	}
+	logger.Info("Fetched record list")
 	resp := &recordto.RecordList{
 		List:  recordmap.RecordListToDTO(data),
 		Found: found,
@@ -57,43 +49,34 @@ func (r *RecordUseCase) RecordList(ctx context.Context, params *recordto.RecordL
 	return resp, nil
 }
 
-func (r *RecordUseCase) RecordAdd(ctx context.Context, rec *recordto.Record) error {
+func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error {
 	record, _, err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec))
 	if err != nil {
-		r.Logger.Error(
-			"failed to add record",
-			zap.Error(err),
-		)
 		return err
 	}
-
+	logger.Info("Record has been saved")
 	r.mail.SendMsg(&models.Message{
 		Email:    record.UserEmail,
 		Type:     mail.ReminderType,
 		Value:    recordmap.RecordToReminder(record),
 		IsAttach: true,
 	})
+	logger.Info("Notification has been sent to user's email")
 	return nil
 }
 
-func (r *RecordUseCase) RecordPatch(ctx context.Context, rec *recordto.Record) error {
+func (r *RecordUseCase) RecordPatch(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error {
 	if err := r.records.RecordPatch(ctx, recordmap.RecordToModel(rec)); err != nil {
-		r.Logger.Error(
-			"failed to add record",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Record has been patched")
 	return nil
 }
 
-func (r *RecordUseCase) RecordCancel(ctx context.Context, rec *recordto.RecordCancelation) error {
+func (r *RecordUseCase) RecordCancel(ctx context.Context, logger *zap.Logger, rec *recordto.RecordCancelation) error {
 	if err := r.records.RecordCancel(ctx, recordmap.CancelationToModel(rec)); err != nil {
-		r.Logger.Error(
-			"failed to add record",
-			zap.Error(err),
-		)
 		return err
 	}
+	logger.Info("Record has been canceled")
 	return nil
 }

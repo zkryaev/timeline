@@ -101,7 +101,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req 
 		Type:  mail.VerificationType,
 		Value: code,
 	})
-	logger.Info("Email has been sent to user")
+	logger.Info("Verification code has been sent to user's email")
 	return &authdto.RegisterResp{ID: userID}, nil
 }
 
@@ -129,7 +129,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 		Type:  mail.VerificationType,
 		Value: code,
 	})
-	logger.Info("Email has been sent to org")
+	logger.Info("Verification code has been sent to user's email")
 	return &authdto.RegisterResp{ID: orgID}, nil
 }
 
@@ -144,7 +144,7 @@ func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *
 		Type:  mail.VerificationType,
 		Value: code,
 	})
-	logger.Info("Email has been sent")
+	logger.Info("Verification code has been sent to user's email")
 }
 
 func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
