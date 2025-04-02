@@ -51,7 +51,7 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
 		m.logger.Info(r.Method, zap.String("uuid", uuid.String()), zap.String("uri", uri))
-		ctx := context.WithValue(r.Context(), "uuid", uuid.String())
+		ctx := context.WithValue(r.Context(), "uuid", uuid.String()) //nolint:go-staticcheck // keep it simple
 		start := time.Now()
 		next.ServeHTTP(rw, r.WithContext(ctx))
 		m.logger.Info("", zap.String("uuid", uuid.String()), zap.Int("code", rw.StatusCode()), zap.Duration("elapsed", time.Since(start)))
