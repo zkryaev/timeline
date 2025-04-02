@@ -2,6 +2,7 @@ package records
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
@@ -56,9 +57,16 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := rec.usecase.Record(r.Context(), logger, params["recordID"])
 	if err != nil {
-		logger.Error("Record", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("Record", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("Record", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -121,9 +129,16 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := rec.usecase.RecordList(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("RecordList", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("RecordList", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("RecordList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -151,9 +166,16 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rec.usecase.RecordAdd(r.Context(), logger, req); err != nil {
-		logger.Error("RecordAdd", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("RecordList", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("RecordList", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -177,9 +199,16 @@ func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rec.usecase.RecordCancel(r.Context(), logger, req); err != nil {
-		logger.Error("RecordCancel", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("RecordCancel", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("RecordCancel", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

@@ -2,11 +2,14 @@ package recordcase
 
 import (
 	"context"
+	"errors"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/mapper/recordmap"
 	"timeline/internal/infrastructure/models"
+	"timeline/internal/usecase/common"
 
 	"go.uber.org/zap"
 )
@@ -30,6 +33,9 @@ func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepos
 func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, recordID int) (*recordto.RecordScrap, error) {
 	data, err := r.records.Record(ctx, recordID)
 	if err != nil {
+		if errors.Is(err, postgres.ErrRecordNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched record")
@@ -39,6 +45,9 @@ func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, recordID
 func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error) {
 	data, found, err := r.records.RecordList(ctx, recordmap.RecordParamsToModel(params))
 	if err != nil {
+		if errors.Is(err, postgres.ErrRecordsNotFound) {
+			return nil, common.ErrNotFound
+		}
 		return nil, err
 	}
 	logger.Info("Fetched record list")
@@ -52,6 +61,9 @@ func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, para
 func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error {
 	record, _, err := r.records.RecordAdd(ctx, recordmap.RecordToModel(rec))
 	if err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Record has been saved")
@@ -67,6 +79,9 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *
 
 func (r *RecordUseCase) RecordPatch(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error {
 	if err := r.records.RecordPatch(ctx, recordmap.RecordToModel(rec)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Record has been patched")
@@ -75,6 +90,9 @@ func (r *RecordUseCase) RecordPatch(ctx context.Context, logger *zap.Logger, rec
 
 func (r *RecordUseCase) RecordCancel(ctx context.Context, logger *zap.Logger, rec *recordto.RecordCancelation) error {
 	if err := r.records.RecordCancel(ctx, recordmap.CancelationToModel(rec)); err != nil {
+		if errors.Is(err, postgres.ErrNoRowsAffected) {
+			return common.ErrNothingChanged
+		}
 		return err
 	}
 	logger.Info("Record has been canceled")
