@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"timeline/internal/controller/common"
@@ -34,6 +35,45 @@ func New(usecase User, logger *zap.Logger, validator *validator.Validate) *UserC
 	}
 }
 
+// @Summary Get user
+// @Description Get user by his id
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param id path int true "user_id"
+// @Success 200 {object} entity.User
+// @Failure 400
+// @Failure 500
+// @Router /users/info/{id} [get]
+func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	uuid, _ := r.Context().Value("uuid").(string)
+	logger := u.Logger.With(zap.String("uuid", uuid))
+	params, err := validation.FetchPathID(mux.Vars(r), "id")
+	if err != nil {
+		logger.Error("FetchPathID", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	data, err := u.usecase.User(r.Context(), logger, params["id"])
+	if err != nil {
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("User", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("User", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+}
+
 // @Summary Update
 // @Description Update user information
 // @Tags User
@@ -54,9 +94,16 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := u.usecase.UserUpdate(r.Context(), logger, req); err != nil {
-		logger.Error("UserUpdate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNothingChanged):
+			logger.Info("UserUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusNotModified)
+			return
+		default:
+			logger.Error("UserUpdate", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -112,9 +159,16 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := u.usecase.SearchOrgs(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("SearchOrgs", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("SearchOrgs", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("SearchOrgs", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
@@ -171,41 +225,16 @@ func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := u.usecase.OrgsInArea(r.Context(), logger, req)
 	if err != nil {
-		logger.Error("OrgsInArea", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	if err := common.WriteJSON(w, data); err != nil {
-		logger.Error("WriteJSON", zap.Error(err))
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
-}
-
-// @Summary Get user
-// @Description Get user by his id
-// @Tags User
-// @Accept  json
-// @Produce  json
-// @Param id path int true "user_id"
-// @Success 200 {object} entity.User
-// @Failure 400
-// @Failure 500
-// @Router /users/info/{id} [get]
-func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := u.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "id")
-	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	data, err := u.usecase.User(r.Context(), logger, params["id"])
-	if err != nil {
-		logger.Error("User", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("OrgsInArea", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("OrgsInArea", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := common.WriteJSON(w, data); err != nil {
 		logger.Error("WriteJSON", zap.Error(err))
