@@ -114,46 +114,6 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 	return nil
 }
 
-// Частичное обновление информации работника организации
-func (p *PostgresRepo) WorkerPatch(ctx context.Context, worker *orgmodel.Worker) error {
-	tx, err := p.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-	query := `
-		UPDATE workers
-		SET
-			first_name = COALESCE(NULLIF($1, ''), first_name),
-			last_name = COALESCE(NULLIF($2, ''), last_name),
-			position = COALESCE(NULLIF($3, ''), position),
-			degree = COALESCE(NULLIF($4, ''), degree),
-			session_duration = COALESCE(NULLIF($5, 0), session_duration)
-		WHERE is_delete = false
-		AND worker_id = $6
-		AND org_id = $7;
-	`
-	if err = tx.QueryRowContext(ctx, query,
-		worker.FirstName,
-		worker.LastName,
-		worker.Position,
-		worker.Degree,
-		worker.SessionDuration,
-		worker.WorkerID,
-		worker.OrgID,
-	).Err(); err != nil {
-		return fmt.Errorf("failed to update worker: %w", err)
-	}
-	if tx.Commit() != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-	return nil
-}
-
 // Добавляет работника в предоставляемую услугу
 func (p *PostgresRepo) WorkerAssignService(ctx context.Context, assignInfo *orgmodel.WorkerAssign) error {
 	tx, err := p.db.Beginx()

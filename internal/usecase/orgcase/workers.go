@@ -34,14 +34,6 @@ func (o *OrgUseCase) WorkerUpdate(ctx context.Context, logger *zap.Logger, worke
 	return nil
 }
 
-func (o *OrgUseCase) WorkerPatch(ctx context.Context, logger *zap.Logger, worker *orgdto.UpdateWorkerReq) error {
-	if err := o.org.WorkerPatch(ctx, orgmap.UpdateWorkerToModel(worker)); err != nil {
-		return err
-	}
-	logger.Info("Worker has been patched")
-	return nil
-}
-
 func (o *OrgUseCase) WorkerAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error {
 	if err := o.org.WorkerAssignService(ctx, orgmap.AssignWorkerToModel(assignInfo)); err != nil {
 		return err
