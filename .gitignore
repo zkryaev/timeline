@@ -4,8 +4,9 @@
 *.pem
 __*
 bin
-logs/*
-mocks/*
+docs/swagger
 coverage.html
 config/local.yml
-docs/swagger
+logs/*
+mocks/*
+data/*
