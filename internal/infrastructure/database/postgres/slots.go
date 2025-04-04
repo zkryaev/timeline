@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 	"timeline/internal/infrastructure/models/orgmodel"
-	"timeline/internal/libs/custom"
+	"timeline/internal/sugar/custom"
 
 	"github.com/jackc/pgx/v5"
 )

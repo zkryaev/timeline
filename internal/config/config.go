@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"time"
-	"timeline/internal/libs/envars"
+	"timeline/internal/utils/envars"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )

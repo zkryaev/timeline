@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
-	"timeline/internal/libs/envars"
+	"timeline/internal/utils/envars"
 )
 
 func LoadPrivateKey() (*rsa.PrivateKey, error) {

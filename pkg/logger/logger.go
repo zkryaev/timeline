@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"time"
-	"timeline/internal/libs/envars"
+	"timeline/internal/utils/envars"
 	"timeline/internal/utils/fsop"
 
 	"go.uber.org/zap"

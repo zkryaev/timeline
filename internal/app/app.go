@@ -14,7 +14,7 @@ import (
 	s3ctrl "timeline/internal/controller/s3"
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/infrastructure"
-	"timeline/internal/libs/secret"
+	"timeline/internal/sugar/secret"
 	auth "timeline/internal/usecase/auth"
 	"timeline/internal/usecase/orgcase"
 	"timeline/internal/usecase/recordcase"
