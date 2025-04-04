@@ -14,7 +14,7 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
-	"timeline/internal/libs/jwtlib"
+	"timeline/internal/sugar/jwtlib"
 	mocks "timeline/mocks/controller"
 
 	"github.com/golang-jwt/jwt/v5"

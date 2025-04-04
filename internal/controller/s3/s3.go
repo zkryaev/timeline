@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/s3dto"
-	"timeline/internal/libs/custom"
+	"timeline/internal/sugar/custom"
 
 	"go.uber.org/zap"
 )

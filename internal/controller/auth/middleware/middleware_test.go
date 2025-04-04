@@ -13,7 +13,7 @@ import (
 	"time"
 	"timeline/internal/config"
 	"timeline/internal/entity"
-	"timeline/internal/libs/jwtlib"
+	"timeline/internal/sugar/jwtlib"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"

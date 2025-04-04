@@ -8,7 +8,7 @@ import (
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/libs/custom"
+	"timeline/internal/sugar/custom"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
