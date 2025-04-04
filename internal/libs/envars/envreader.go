@@ -5,8 +5,11 @@ import (
 	"strings"
 )
 
-// get path from home dir
-// example: /home/$USER/timeline/$GIVEN_PATH
+// Retrieve path from env and add to path project work dir
+//
+//	Example:
+//	in:  $ENV_PATH
+//	out: /home/$USER/timeline/$ENV_PATH
 func GetPathByEnv(envName string) string {
 	pathToFile := os.Getenv(envName)
 	if pathToFile == "" {
