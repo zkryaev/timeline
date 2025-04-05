@@ -1,14 +1,19 @@
 package loader
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
-	"timeline/internal/libs/envars"
-	"timeline/internal/libs/fsop"
+	"timeline/internal/infrastructure"
+	"timeline/internal/infrastructure/models/datastore"
+	"timeline/internal/utils/envars"
+	"timeline/internal/utils/fsop"
+	"timeline/internal/utils/loader/objects"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -18,65 +23,104 @@ type source struct {
 	Ref      string
 }
 
-func DataSourceLoader(logger *zap.Logger) error {
-	sourceEnvList := loadSourceEnvList()
-	sources := parseSourceEnvList(sourceEnvList)
-
-	// есть ли файл - да, читаем из него
-	// нет - пытаемся скачать по ссылке
-	for _, src := range sources {
-		_, err := os.Stat(src.Filepath)
-		switch {
-		case err == nil:
-
-		case src.Ref != "":
-			if err := loadFromRef(src); 
-		default:
-			logger.Warn(fmt.Sprintf("data source invalid: name=%s filepath=%s ref=%s", src.Name, src.Filepath, src.Ref))
-		}
-	}
-
-	//jsoniter.ConfigFastest.NewDecoder().Decode()
+type data struct {
+	Cities []objects.City
 }
 
-func loadSourceEnvList() map[string]struct{} {
+func LoadData(logger *zap.Logger, db infrastructure.BackgroundDataStore) error {
+	envs := loadSourceEnvsList()
+	sources := parseSourceEnvsList(envs)
+	logger.Info("The following sources have been fetched", zap.Strings("sources", envs))
+	storage := &data{}
+	for i, src := range sources {
+		logger.Info(fmt.Sprintf("%d. %s: filepath=%q ref=%q", i+1, src.Name, src.Filepath, src.Ref))
+
+		if err := loadDataFromSource(storage, logger, src); err != nil {
+			return err
+		}
+		logger.Info(fmt.Sprintf("✓ %s has been loaded", src.Name))
+	}
+	logger.Info("Saving background data to DB...")
+	if err := saveToDB(db, logger, storage); err != nil {
+		return err
+	}
+	logger.Info("Successfully saved to DB")
+	return nil
+}
+
+func loadSourceEnvsList() []string {
 	srcList := os.Getenv("SRC_LIST")
 	envList := strings.Split(srcList, " ")
-	srcEnvList := make(map[string]struct{}, len(envList))
-	for _, env := range envList {
-		srcEnvList[env] = struct{}{}
-	}
-	return srcEnvList
+	return envList
 }
 
 // example: env=ref filepath
-func parseSourceEnvList(sourceEnvList map[string]struct{}) []source {
-	dataSrcList := make([]source, len(sourceEnvList))
-	for env := range sourceEnvList {
+func parseSourceEnvsList(envs []string) []*source {
+	dataSrcList := make([]*source, 0, len(envs))
+	for _, env := range envs {
 		line := os.Getenv(env)
 		parts := strings.Split(line, " ")
-		filepath := envars.GetPathByEnv(parts[0])
-		dataSrcList = append(dataSrcList, source{Name: env, Filepath: filepath, Ref: parts[1]})
+		filepath := envars.GetPathFromProjectDir(parts[0])
+		src := &source{Name: env, Filepath: filepath, Ref: parts[1]}
+		dataSrcList = append(dataSrcList, src)
 	}
 	return dataSrcList
 }
 
-func loadFromRef(src source) error {
+func loadDataFromSource(store *data, logger *zap.Logger, src *source) error {
+	visited := false
+	for {
+		if _, err := os.Stat(src.Filepath); err != nil {
+			if visited {
+				return fmt.Errorf("%s: %w", src.Filepath, err)
+			}
+			if err := loadFromRef(src); err != nil {
+				return fmt.Errorf("%s: %w", "loadFromRef", err)
+			}
+			logger.Info(fmt.Sprintf("* Downloaded from the link and saved in file: %s", src.Filepath))
+			visited = true
+			continue
+		}
+		switch src.Name {
+		case "CITIES_SRC":
+			store.loadCities(src.Filepath)
+			logger.Info("* Read from the file")
+		default:
+			return fmt.Errorf("%s", "undefined source name")
+		}
+		return nil
+	}
+}
+
+func saveToDB(db infrastructure.BackgroundDataStore, logger *zap.Logger, storage *data) error {
+	ctx := context.Background()
+	if storage.Cities != nil {
+		err := db.LoadCities(ctx, logger, datastore.Cities{Arr: storage.Cities})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func loadFromRef(src *source) error {
 	resp, err := http.Get(src.Ref)
-	defer resp.Body.Close()
 	switch {
 	case err != nil:
 		return fmt.Errorf("http get request failed: %w", err)
+	case resp == nil:
+		return fmt.Errorf("http get request failed: *http.Response=nil")
 	case resp.StatusCode != http.StatusOK:
 		return fmt.Errorf("wrong http get status: %s", resp.Status)
 	}
+	defer resp.Body.Close()
 	linkParts := strings.Split(src.Ref, "/")
 	filename := linkParts[len(linkParts)-1]
 	filepath, err := fsop.CreateDirAndFile("data/"+filename, false)
 	if err != nil {
 		return fmt.Errorf("failed to create dir and file: %w", err)
 	}
-	file, err := os.Open(filepath)
+	file, err := os.OpenFile(filepath, os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
@@ -85,7 +129,18 @@ func loadFromRef(src source) error {
 	if err != nil {
 		return fmt.Errorf("failed to save data: %w", err)
 	}
+	src.Filepath = filepath
 	return nil
 }
 
-func SaveToDB() error {}
+func (d *data) loadCities(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	d.Cities = make([]objects.City, 0, 1100)
+	if err := jsoniter.ConfigFastest.NewDecoder(file).Decode(&d.Cities); err != nil {
+		return err
+	}
+	return nil
+}
