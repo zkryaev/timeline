@@ -25,7 +25,7 @@ func New(env string) *zap.Logger {
 	} else {
 		filepath, err := fsop.CreateDirAndFile(givenPath, true)
 		if err != nil {
-			log.Println("failed to create dir/file: %s", err.Error())
+			log.Printf("failed to create dir/file: %s", err.Error())
 		}
 		log.Println("logs will be stored in: ", filepath)
 		outputPaths = append(outputPaths, filepath)
