@@ -15,17 +15,21 @@ func GetPathByEnv(envName string) string {
 	if pathToFile == "" {
 		return ""
 	}
+	return GetPathFromProjectDir(pathToFile)
+}
+
+func GetPathFromProjectDir(givenPath string) string {
 	currDir, _ := os.Getwd()
 	projectRootDir := strings.SplitAfter(currDir, "timeline/")[0]
 	path := strings.Builder{}
-	path.Grow(len(projectRootDir) + len(pathToFile))
+	path.Grow(len(projectRootDir) + len(givenPath))
 	path.WriteString(projectRootDir)
-	if strings.Contains(pathToFile, path.String()) {
-		return pathToFile
+	if strings.Contains(givenPath, path.String()) {
+		return givenPath
 	}
-	if !strings.HasPrefix(pathToFile, "/") {
+	if !strings.HasPrefix(givenPath, "/") {
 		path.WriteString("/")
 	}
-	path.WriteString(pathToFile)
+	path.WriteString(givenPath)
 	return path.String()
 }
