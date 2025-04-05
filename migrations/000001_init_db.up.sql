@@ -156,3 +156,18 @@ CREATE TABLE IF NOT EXISTS feedbacks (
     CONSTRAINT unique_record_id UNIQUE(record_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS cities (
+    city_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    tzid VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_city (
+    user_city_id SERIAL PRIMARY KEY,
+    user_id INT,
+    city_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (city_id) REFERENCES cities(city_id) ON DELETE CASCADE
+);
