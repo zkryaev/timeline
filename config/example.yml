@@ -1,6 +1,7 @@
 # example
 app:
-  env: STAGE
+  env: DEV
+  is_backdata_loaded: false
   http_server:
     host: localhost
     port: 8080

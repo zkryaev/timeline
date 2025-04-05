@@ -18,8 +18,9 @@ type Config struct {
 }
 
 type Application struct {
-	Env        string `yaml:"env" env-required:"true"`
-	HTTPServer `yaml:"http_server"`
+	Env              string `yaml:"env" env-required:"true"`
+	IsBackDataLoaded bool   `yaml:"is_backdata_loaded"`
+	HTTPServer       `yaml:"http_server"`
 }
 
 type HTTPServer struct {
