@@ -10,7 +10,7 @@ import (
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/infrastructure/mapper/codemap"
 	"timeline/internal/infrastructure/models"
-	"timeline/internal/libs/passwd"
+	"timeline/internal/sugar/passwd"
 	mocks "timeline/mocks/infrastructure"
 
 	"github.com/golang-jwt/jwt/v5"

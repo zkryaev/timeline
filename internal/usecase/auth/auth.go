@@ -15,9 +15,9 @@ import (
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/usermap"
 	"timeline/internal/infrastructure/models"
-	jwtlib "timeline/internal/libs/jwtlib"
-	"timeline/internal/libs/passwd"
-	"timeline/internal/libs/verification"
+	jwtlib "timeline/internal/sugar/jwtlib"
+	"timeline/internal/sugar/passwd"
+	"timeline/internal/sugar/verification"
 	"timeline/internal/usecase/auth/validation"
 	"timeline/internal/usecase/common"
 
