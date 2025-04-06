@@ -20,6 +20,7 @@ import (
 	"timeline/internal/usecase/recordcase"
 	s3usecase "timeline/internal/usecase/s3"
 	"timeline/internal/usecase/usercase"
+	"timeline/internal/utils/loader"
 
 	"go.uber.org/zap"
 )
@@ -53,7 +54,7 @@ func (a *App) Stop(ctx context.Context) {
 	a.httpServer.Shutdown(ctx)
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3 /*redis*/) error {
+func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
@@ -106,6 +107,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, storage infrastructure.Dat
 
 	recordAPI := records.New(
 		recordcase.New(
+			backdata,
 			storage,
 			storage,
 			storage,

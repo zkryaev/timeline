@@ -60,15 +60,22 @@ func main() {
 	)
 	defer db.Close()
 
+	backdata := &loader.BackData{}
 	if !cfg.App.IsBackDataLoaded {
-		logger.Info("Loading data from provided sources...")
-		if err := loader.LoadData(logger, db); err != nil {
+		logger.Info("Loading backdata from provided sources...")
+		if err := loader.LoadData(logger, db, backdata); err != nil {
 			logger.Fatal("failed", zap.Error(err))
 		}
-		logger.Info("Loading data is finished")
 	} else {
-		logger.Info("Skipped loading background data from sources")
+		logger.Info("Skipped loading backdata from sources")
+		logger.Info("Start loading from DB")
+		backdata.Cities, err = db.PreLoadCities(context.Background())
+		if err != nil {
+			logger.Fatal("PreLoadCities", zap.Error(err))
+			return
+		}
 	}
+	logger.Info("Loading data is finished")
 
 	// Поднимаем почтовый сервис параметрами по умолчанию
 	post := mail.New(cfg.Mail, logger, 0, 0, 0)
@@ -94,7 +101,7 @@ func main() {
 	)
 
 	app := app.New(cfg.App, logger)
-	err = app.SetupControllers(cfg.Token, db, post, s3storage)
+	err = app.SetupControllers(cfg.Token, backdata, db, post, s3storage)
 	if err != nil {
 		logger.Fatal(
 			"failed setup controllers",
