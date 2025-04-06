@@ -7,10 +7,10 @@ import (
 	"timeline/internal/config"
 	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/models"
-	"timeline/internal/infrastructure/models/datastore"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/recordmodel"
 	"timeline/internal/infrastructure/models/usermodel"
+	"timeline/internal/utils/loader/objects"
 
 	"go.uber.org/zap"
 )
@@ -134,7 +134,8 @@ type FeedbackRepository interface {
 }
 
 type BackgroundDataStore interface {
-	LoadCities(ctx context.Context, logger *zap.Logger, cities datastore.Cities) error
+	SaveCities(ctx context.Context, logger *zap.Logger, cities objects.Cities) error
+	PreLoadCities(ctx context.Context) (objects.Cities, error)
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД
