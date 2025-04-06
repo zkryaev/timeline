@@ -3,12 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"timeline/internal/infrastructure/models/datastore"
+	"timeline/internal/utils/loader/objects"
 
 	"go.uber.org/zap"
 )
 
-func (p *PostgresRepo) LoadCities(ctx context.Context, logger *zap.Logger, cities datastore.Cities) error {
+func (p *PostgresRepo) SaveCities(ctx context.Context, logger *zap.Logger, cities objects.Cities) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -27,7 +27,7 @@ func (p *PostgresRepo) LoadCities(ctx context.Context, logger *zap.Logger, citie
 	city, ok := cities.Next()
 	for cnt := 1; ok; cnt++ {
 		city, ok = cities.Next()
-		res, err := tx.ExecContext(ctx, query, city.Name, city.TZ)
+		res, err := tx.ExecContext(ctx, query, city.Name, city.Timezone.TZ)
 		switch {
 		case err != nil:
 			return fmt.Errorf("failed to save cities: %w", err)
@@ -45,4 +45,44 @@ func (p *PostgresRepo) LoadCities(ctx context.Context, logger *zap.Logger, citie
 		return fmt.Errorf("failed to commit tx: %w", err)
 	}
 	return nil
+}
+
+func (p *PostgresRepo) PreLoadCities(ctx context.Context) (objects.Cities, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return objects.Cities{}, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		SELECT name, tzid FROM cities;
+	`
+	cities := make([]objects.City, 0, 1100)
+	data := objects.New(cities)
+	rows, err := tx.QueryContext(ctx, query)
+	if err != nil {
+		return objects.Cities{}, err
+	}
+	defer rows.Close()
+	city := objects.City{}
+	for rows.Next() {
+		err = rows.Scan(
+			&city.Name,
+			&city.Timezone.TZ,
+		)
+		if err != nil {
+			return objects.Cities{}, err
+		}
+		data.AddCity(city)
+	}
+	if err = rows.Err(); err != nil {
+		return objects.Cities{}, err
+	}
+	if err = tx.Commit(); err != nil {
+		return objects.Cities{}, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return data, nil
 }
