@@ -74,7 +74,7 @@ func RecordToReminder(model *recordmodel.ReminderRecord) *models.ReminderMsg {
 		Address:      model.OrgAddress,
 		SessionStart: time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(),
 			model.Begin.Hour(), model.Begin.Minute(), model.Begin.Second(),
-			model.Begin.Nanosecond(), model.Begin.UTC().Location(),
+			model.Begin.Nanosecond(), model.Begin.Location(),
 		),
 		SessionEnd: time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(),
 			model.End.Hour(), model.End.Minute(), model.End.Second(),
