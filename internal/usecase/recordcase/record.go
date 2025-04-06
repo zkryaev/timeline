@@ -10,23 +10,26 @@ import (
 	"timeline/internal/infrastructure/mapper/recordmap"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/usecase/common"
+	"timeline/internal/utils/loader"
 
 	"go.uber.org/zap"
 )
 
 type RecordUseCase struct {
-	users   infrastructure.UserRepository
-	orgs    infrastructure.OrgRepository
-	records infrastructure.RecordRepository
-	mail    infrastructure.Mail
+	backdata *loader.BackData
+	users    infrastructure.UserRepository
+	orgs     infrastructure.OrgRepository
+	records  infrastructure.RecordRepository
+	mail     infrastructure.Mail
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.RecordRepository, mailRepo infrastructure.Mail) *RecordUseCase {
+func New(backdata *loader.BackData, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recordRepo infrastructure.RecordRepository, mailRepo infrastructure.Mail) *RecordUseCase {
 	return &RecordUseCase{
-		users:   userRepo,
-		orgs:    orgRepo,
-		records: recordRepo,
-		mail:    mailRepo,
+		backdata: backdata,
+		users:    userRepo,
+		orgs:     orgRepo,
+		records:  recordRepo,
+		mail:     mailRepo,
 	}
 }
 
