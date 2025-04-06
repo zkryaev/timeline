@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 	"timeline/internal/infrastructure"
-	"timeline/internal/infrastructure/models/datastore"
 	"timeline/internal/utils/envars"
 	"timeline/internal/utils/fsop"
 	"timeline/internal/utils/loader/objects"
@@ -23,15 +22,14 @@ type source struct {
 	Ref      string
 }
 
-type data struct {
-	Cities []objects.City
+type BackData struct {
+	Cities objects.Cities
 }
 
-func LoadData(logger *zap.Logger, db infrastructure.BackgroundDataStore) error {
+func LoadData(logger *zap.Logger, db infrastructure.BackgroundDataStore, storage *BackData) error {
 	envs := loadSourceEnvsList()
 	sources := parseSourceEnvsList(envs)
 	logger.Info("The following sources have been fetched", zap.Strings("sources", envs))
-	storage := &data{}
 	for i, src := range sources {
 		logger.Info(fmt.Sprintf("%d. %s: filepath=%q ref=%q", i+1, src.Name, src.Filepath, src.Ref))
 
@@ -67,7 +65,7 @@ func parseSourceEnvsList(envs []string) []*source {
 	return dataSrcList
 }
 
-func loadDataFromSource(store *data, logger *zap.Logger, src *source) error {
+func loadDataFromSource(store *BackData, logger *zap.Logger, src *source) error {
 	visited := false
 	for {
 		if _, err := os.Stat(src.Filepath); err != nil {
@@ -92,10 +90,10 @@ func loadDataFromSource(store *data, logger *zap.Logger, src *source) error {
 	}
 }
 
-func saveToDB(db infrastructure.BackgroundDataStore, logger *zap.Logger, storage *data) error {
+func saveToDB(db infrastructure.BackgroundDataStore, logger *zap.Logger, storage *BackData) error {
 	ctx := context.Background()
-	if storage.Cities != nil {
-		err := db.LoadCities(ctx, logger, datastore.Cities{Arr: storage.Cities})
+	if storage.Cities.Arr != nil {
+		err := db.SaveCities(ctx, logger, storage.Cities)
 		if err != nil {
 			return err
 		}
@@ -133,14 +131,15 @@ func loadFromRef(src *source) error {
 	return nil
 }
 
-func (d *data) loadCities(filepath string) error {
+func (d *BackData) loadCities(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
-	d.Cities = make([]objects.City, 0, 1100)
-	if err := jsoniter.ConfigFastest.NewDecoder(file).Decode(&d.Cities); err != nil {
+	cities := make([]objects.City, 0, 1100)
+	if err := jsoniter.ConfigFastest.NewDecoder(file).Decode(&cities); err != nil {
 		return err
 	}
+	d.Cities = objects.New(cities)
 	return nil
 }
