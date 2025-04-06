@@ -163,11 +163,3 @@ CREATE TABLE IF NOT EXISTS cities (
     tzid VARCHAR(150),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE TABLE IF NOT EXISTS user_city (
-    user_city_id SERIAL PRIMARY KEY,
-    user_id INT,
-    city_id INT,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (city_id) REFERENCES cities(city_id) ON DELETE CASCADE
-);
