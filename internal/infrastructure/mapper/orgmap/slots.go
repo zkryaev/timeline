@@ -17,7 +17,8 @@ func SlotReqToModel(dto *orgdto.SlotReq) *orgmodel.SlotsMeta {
 	return &orgmodel.SlotsMeta{
 		SlotID:   dto.SlotID,
 		WorkerID: dto.WorkerID,
-		//WorkerScheduleID: dto.WorkerScheduleID,
+		UserID:   dto.UserID,
+		OrgID:    dto.OrgID,
 	}
 }
 
@@ -25,7 +26,6 @@ func SlotUpdateToModel(dto *orgdto.SlotUpdate) *orgmodel.SlotsMeta {
 	return &orgmodel.SlotsMeta{
 		SlotID:   dto.SlotID,
 		WorkerID: dto.WorkerID,
-		//WorkerScheduleID: dto.WorkerScheduleID,
 	}
 }
 
