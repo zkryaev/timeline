@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
 	"timeline/internal/entity/dto/authdto"
 
@@ -20,19 +21,13 @@ type AuthUseCase interface {
 	UpdateAccessToken(ctx context.Context, logger *zap.Logger, req *jwt.Token) (*authdto.AccessToken, error)
 }
 
-type Middleware interface {
-	ExtractToken(r *http.Request) (*jwt.Token, error)
-	IsAccessTokenValid(next http.Handler) http.Handler
-	HandlerLogs(next http.Handler) http.Handler
-}
-
 type AuthCtrl struct {
 	usecase    AuthUseCase
 	Logger     *zap.Logger
-	Middleware Middleware
+	Middleware middleware.Middleware
 }
 
-func New(usecase AuthUseCase, middleware Middleware, logger *zap.Logger) *AuthCtrl {
+func New(usecase AuthUseCase, middleware middleware.Middleware, logger *zap.Logger) *AuthCtrl {
 	return &AuthCtrl{
 		usecase:    usecase,
 		Logger:     logger,

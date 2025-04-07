@@ -23,19 +23,25 @@ var (
 	ErrInvalidSign     = errors.New("invalid sign method")
 )
 
-type Middleware struct {
+type Middleware interface {
+	ExtractToken(r *http.Request) (*jwt.Token, error)
+	IsAccessTokenValid(next http.Handler) http.Handler
+	HandlerLogs(next http.Handler) http.Handler
+}
+
+type middleware struct {
 	secret *rsa.PrivateKey
 	logger *zap.Logger
 }
 
-func New(key *rsa.PrivateKey, logger *zap.Logger) *Middleware {
-	return &Middleware{
+func New(key *rsa.PrivateKey, logger *zap.Logger) Middleware {
+	return &middleware{
 		secret: key,
 		logger: logger,
 	}
 }
 
-func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
+func (m *middleware) HandlerLogs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw := &common.ResponseWriter{
 			ResponseWriter: w,
@@ -58,7 +64,7 @@ func (m *Middleware) HandlerLogs(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
+func (m *middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return nil, ErrAuthHeaderEmpty
@@ -79,7 +85,7 @@ func (m *Middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
 }
 
 // Валидацпия access токена
-func (m *Middleware) IsAccessTokenValid(next http.Handler) http.Handler {
+func (m *middleware) IsAccessTokenValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := m.ExtractToken(r)
 

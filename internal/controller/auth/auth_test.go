@@ -58,7 +58,7 @@ func (suite *AuthTestSuite) TestLoginSuccess() {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(correctJSON))
 
-	pair, err := jwtlib.NewTokenPair(suite.mockPrivateKey, suite.tokenCfg, &entity.TokenMetadata{ID: 0, IsOrg: false})
+	pair, err := jwtlib.NewTokenPair(suite.mockPrivateKey, suite.tokenCfg, &entity.TokenData{ID: 0, IsOrg: false})
 	suite.Require().NoError(err)
 
 	input := authdto.LoginReq{
@@ -72,7 +72,7 @@ func (suite *AuthTestSuite) TestLoginSuccess() {
 }
 
 func (suite *AuthTestSuite) TestUpdateAccessTokenRefreshError() {
-	access, err := jwtlib.NewToken(suite.mockPrivateKey, suite.tokenCfg, &entity.TokenMetadata{ID: 0, IsOrg: false}, "access")
+	access, err := jwtlib.NewToken(suite.mockPrivateKey, suite.tokenCfg, &entity.TokenData{ID: 0, IsOrg: false}, "access")
 	suite.Require().NoError(err)
 
 	w := httptest.NewRecorder()

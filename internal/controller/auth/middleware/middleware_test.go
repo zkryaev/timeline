@@ -22,7 +22,7 @@ import (
 
 type MiddlewareTestSuite struct {
 	suite.Suite
-	Middeware      *Middleware
+	Middeware      Middleware
 	tokenCfg       config.Token
 	mockPrivateKey *rsa.PrivateKey
 }
@@ -47,7 +47,7 @@ func TestMiddlewareTestSuite(t *testing.T) {
 }
 
 func (suite *MiddlewareTestSuite) TestValidToken() {
-	metadata := &entity.TokenMetadata{ID: 0, IsOrg: false}
+	metadata := &entity.TokenData{ID: 0, IsOrg: false}
 	validToken, err := jwtlib.NewToken(suite.mockPrivateKey, suite.tokenCfg, metadata, "access")
 	suite.Require().NoError(err)
 
@@ -76,7 +76,7 @@ func (suite *MiddlewareTestSuite) TestTokenNotFound() {
 }
 
 func (suite *MiddlewareTestSuite) TestSuspectToken() {
-	metadata := &entity.TokenMetadata{ID: 0, IsOrg: false}
+	metadata := &entity.TokenData{ID: 0, IsOrg: false}
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	suite.Require().NoError(err)
 	suspectToken, err := jwtlib.NewToken(privateKey, suite.tokenCfg, metadata, "access")
@@ -90,7 +90,7 @@ func (suite *MiddlewareTestSuite) TestSuspectToken() {
 }
 
 func (suite *MiddlewareTestSuite) TestAnotherTokenSign() {
-	metadata := &entity.TokenMetadata{ID: 0, IsOrg: false}
+	metadata := &entity.TokenData{ID: 0, IsOrg: false}
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	suite.Require().NoError(err)
 	suspectToken, err := jwtlib.NewToken(privateKey, suite.tokenCfg, metadata, "access")
