@@ -3,6 +3,7 @@ package recordcase
 import (
 	"context"
 	"errors"
+	"time"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/database/postgres"
@@ -41,6 +42,15 @@ func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, recordID
 		}
 		return nil, err
 	}
+	tzid := r.backdata.Cities.GetCityTZ(data.User.City)
+	loc, err := time.LoadLocation(tzid)
+	if err != nil {
+		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data.User.City+"="+tzid), zap.Error(err))
+		loc = time.Local // UTC+03 = MSK
+	}
+	data.Slot.Begin = data.Slot.Begin.In(loc)
+	data.Slot.End = data.Slot.End.In(loc)
+	data.Slot.Date = data.Slot.Date.In(loc)
 	logger.Info("Fetched record")
 	return recordmap.RecordScrapToDTO(data), nil
 }
@@ -53,7 +63,20 @@ func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, para
 		}
 		return nil, err
 	}
-	logger.Info("Fetched record list")
+	if len(data) > 0 {
+		logger.Info("Fetched record list")
+		tzid := r.backdata.Cities.GetCityTZ(data[0].User.City)
+		loc, err := time.LoadLocation(tzid)
+		if err != nil {
+			logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data[0].User.City+"="+tzid), zap.Error(err))
+			loc = time.Local // UTC+03 = MSK
+		}
+		for i := range data {
+			data[i].Slot.Begin = data[i].Slot.Begin.In(loc)
+			data[i].Slot.End = data[i].Slot.End.In(loc)
+			data[i].Slot.Date = data[i].Slot.Date.In(loc)
+		}
+	}
 	resp := &recordto.RecordList{
 		List:  recordmap.RecordListToDTO(data),
 		Found: found,
@@ -69,6 +92,16 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *
 		}
 		return err
 	}
+	tzid := r.backdata.Cities.GetCityTZ(record.UserCity)
+	loc, err := time.LoadLocation(tzid)
+	if err != nil {
+		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", record.UserCity+"="+tzid), zap.Error(err))
+		loc = time.Local // UTC+03 = MSK
+	}
+	record.Begin = record.Begin.In(loc)
+	record.End = record.End.In(loc)
+	record.Date = record.Date.In(loc)
+
 	logger.Info("Record has been saved")
 	r.mail.SendMsg(&models.Message{
 		Email:    record.UserEmail,
