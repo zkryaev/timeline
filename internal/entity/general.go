@@ -7,9 +7,9 @@ type HashCreds struct {
 	PasswdHash string
 }
 
-type TokenMetadata struct {
-	ID    uint64 `json:"id"`     // ID пользователя или организации
-	IsOrg bool   `json:"is_org"` // Является ли это организациями (true - организация, false - пользователь)
+type TokenData struct {
+	ID    int  `json:"id"`     // ID пользователя или организации
+	IsOrg bool `json:"is_org"` // Является ли это организациями (true - организация, false - пользователь)
 }
 
 type Coordinates struct {
