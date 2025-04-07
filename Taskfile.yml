@@ -10,9 +10,11 @@ vars:
   APP_LOGS: logs/logs.txt
   SWAGGER_SRC: cmd/timeline/main.go
   SWAGGER_OUT: docs/swagger
-  MIGRATION_PATH: migrations
+  MIGRATION_MASTER_PATH: migrations/master
+  MIGRATION_ANALYTICS_PATH: migrations/analytics
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
-  DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+  MASTER_DSN: "{{.DB}}://{{.DB_USER}}:{{.DB_PASSWD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+  ANALYTICS_DSN: "{{.ANALYTICS_DB}}://{{.ANALYTICS_DB_USER}}:{{.ANALYTICS_DB_PASSWD}}@{{.ANALYTICS_DB_HOST}}:{{.ANALYTICS_DB_PORT}}/{{.ANALYTICS_DB_NAME}}?sslmode={{.ANALYTICS_DB_SSLMODE}}"
   TEST_DSN: "postgres://user:passwd@localhost:5555/testdb?sslmode=disable"
   ENVS:
     - CONFIG_PATH
@@ -34,19 +36,20 @@ tasks:
     desc: "show db connection-url"
     silent: true
     cmds:
-      - echo {{.DSN}}
+      - echo {{.MASTER_DSN}}
       
   migrate-up:
     desc: "migrations [applying...]"
     silent: true
     cmds:
-      - go run ./cmd/migrator/main.go --dsn={{.DSN}} --migrations-path={{.MIGRATION_PATH}}
+      - go run ./cmd/migrator/main.go --dsn={{.MASTER_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance-name=master_db
+      - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance-name=analytics_db
   
   migrate-down:
     desc: "migrations [reverse...]"
     silent: true
     cmds:
-      - migrate -database {{.DSN}} -path {{.MIGRATION_PATH}} down
+      - migrate -database {{.MASTER_DSN}} -path {{.MIGRATION_MASTER_PATH}} down
       
   check-envs:
     desc: "checks that all required environment variables are set and non-empty"
@@ -112,7 +115,7 @@ tasks:
     desc: "run tests and show coverage"
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}}
       - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
       - go test -short -count=1 -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o ./coverage.html
@@ -123,7 +126,7 @@ tasks:
     silent: true
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_PATH}}
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}}
       #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
       - go test -v -count=1 ./internal/infrastructure/database/postgres
   build:
@@ -149,8 +152,8 @@ tasks:
     desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
     deps: [check-envs, docker-all, migrate-up, build]
     cmds:
-      - nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
       - ./{{.OUTPUT_BINARY}}
+      #- nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
 
   clean:
     desc: "remove generated swagger docs, binary, and \".out\" files"
