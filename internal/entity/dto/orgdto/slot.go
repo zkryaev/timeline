@@ -13,6 +13,7 @@ type SlotReq struct {
 	SlotID           int `json:"slot_id"`
 	WorkerID         int `json:"worker_id" validate:"required"`
 	OrgID            int `json:"org_id" validate:"required"`
+	UserID           int `json:"user_id" validate:"required"`
 	WorkerScheduleID int `json:"worker_schedule_id"`
 }
 
