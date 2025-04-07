@@ -115,7 +115,7 @@ type SlotRepository interface {
 	GenerateSlots(ctx context.Context) error
 	DeleteExpiredSlots(ctx context.Context) error
 	UpdateSlot(ctx context.Context, busy bool, params *orgmodel.SlotsMeta) error
-	Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, error)
+	Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, string, error)
 }
 
 type ScheduleRepository interface {
