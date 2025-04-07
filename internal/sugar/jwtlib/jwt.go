@@ -17,7 +17,7 @@ var (
 	ErrInvalidSignMethod = errors.New("invalid sign method")
 )
 
-func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenMetadata) (*authdto.TokenPair, error) {
+func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.TokenData) (*authdto.TokenPair, error) {
 	accessToken, err := NewToken(secret, cfg, metadata, "access")
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func NewTokenPair(secret *rsa.PrivateKey, cfg config.Token, metadata *entity.Tok
 	}, nil
 }
 
-func NewToken(secret any, cfg config.Token, metadata *entity.TokenMetadata, tokenType string) (string, error) {
+func NewToken(secret any, cfg config.Token, metadata *entity.TokenData, tokenType string) (string, error) {
 	var exp int64
 	switch tokenType {
 	case "access":

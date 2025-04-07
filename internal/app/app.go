@@ -73,7 +73,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		),
 		a.log,
 	)
-
+	middleware := middleware.New(privateKey, a.log)
 	authAPI := authctrl.New(
 		auth.New(
 			privateKey,
@@ -83,7 +83,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			mailService,
 			tokenCfg,
 		),
-		middleware.New(privateKey, a.log),
+		middleware,
 		a.log,
 	)
 
@@ -101,7 +101,9 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		orgcase.New(
 			storage,
 			storage,
+			backdata,
 		),
+		middleware,
 		a.log,
 	)
 
@@ -113,6 +115,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			mailService,
 		),
+		middleware,
 		a.log,
 	)
 

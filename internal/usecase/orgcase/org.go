@@ -9,19 +9,22 @@ import (
 	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/usecase/common"
+	"timeline/internal/utils/loader"
 
 	"go.uber.org/zap"
 )
 
 type OrgUseCase struct {
-	user infrastructure.UserRepository
-	org  infrastructure.OrgRepository
+	user     infrastructure.UserRepository
+	org      infrastructure.OrgRepository
+	backdata *loader.BackData
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository) *OrgUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, backdata *loader.BackData) *OrgUseCase {
 	return &OrgUseCase{
-		user: userRepo,
-		org:  orgRepo,
+		user:     userRepo,
+		org:      orgRepo,
+		backdata: backdata,
 	}
 }
 

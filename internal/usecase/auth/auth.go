@@ -74,8 +74,8 @@ func (a *AuthUseCase) Login(ctx context.Context, logger *zap.Logger, req *authdt
 	tokens, err := jwtlib.NewTokenPair(
 		a.secret,
 		a.TokenCfg,
-		&entity.TokenMetadata{
-			ID:    uint64(exp.ID),
+		&entity.TokenData{
+			ID:    exp.ID,
 			IsOrg: req.IsOrg,
 		},
 	)
@@ -174,8 +174,8 @@ func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *a
 	tokens, err := jwtlib.NewTokenPair(
 		a.secret,
 		a.TokenCfg,
-		&entity.TokenMetadata{
-			ID:    uint64(req.ID),
+		&entity.TokenData{
+			ID:    req.ID,
 			IsOrg: req.IsOrg,
 		},
 	)
@@ -193,8 +193,8 @@ func (a *AuthUseCase) UpdateAccessToken(_ context.Context, logger *zap.Logger, r
 	}
 	logger.Info("Token claims are correct")
 	tmp := req.Claims.(jwt.MapClaims)["id"].(float64)
-	id := uint64(tmp)
-	metadata := &entity.TokenMetadata{
+	id := int(tmp)
+	metadata := &entity.TokenData{
 		ID:    id,
 		IsOrg: req.Claims.(jwt.MapClaims)["is_org"].(bool),
 	}
