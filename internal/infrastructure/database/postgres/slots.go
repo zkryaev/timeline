@@ -70,13 +70,13 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 	busy := false
 	for _, v := range workerSchedules {
 		if v.SessionDuration == 0 {
-			log.Printf("WARN 	worker_id: %d worker_schedule_id: %d session_duration: %d", v.WorkerID, v.WorkerScheduleID, v.SessionDuration)
+			log.Printf("WTF 	worker_id: %d worker_schedule_id: %d session_duration: %d", v.WorkerID, v.WorkerScheduleID, v.SessionDuration)
 			continue
 		}
 		periods := int(v.Over.Sub(v.Start) / (time.Duration(v.SessionDuration) * time.Minute))
 		for i := range periods {
-			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute) // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
-			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute) // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
+			begin := v.Start.Add(time.Duration(i) * time.Duration(v.SessionDuration) * time.Minute).UTC() // begin := start + i*session_duration. e.g: 12:00 + 0*60 = 12:00
+			end := v.Start.Add(time.Duration(i+1) * time.Duration(v.SessionDuration) * time.Minute).UTC() // end := start + (i+1)*session_duration. e.g: 12:00 + 1*60 = 13:00
 			// Слот не создается, если время начала или конца сеанса попадает в перерыв работника
 			if custom.CompareTime(begin, v.BreakStart) >= 0 && custom.CompareTime(begin, v.BreakEnd) < 0 {
 				continue
@@ -168,10 +168,10 @@ func (p *PostgresRepo) UpdateSlot(ctx context.Context, busy bool, params *orgmod
 }
 
 // Получение слотов для указанного работника или его расписания начиная от текущего дня.
-func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, error) {
+func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, "", fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -187,12 +187,31 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 	slots := make([]*orgmodel.Slot, 0, 1)
 	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrSlotsNotFound
+			return nil, "", ErrSlotsNotFound
 		}
-		return nil, err
+		return nil, "", err
+	}
+	switch {
+	case params.UserID != 0:
+		query = `
+			SELECT city
+			FROM users
+			WHERE user_id = $1;
+		`
+	default:
+		query = `
+			SELECT city
+			FROM orgs
+			WHERE org_id = $1;
+		`
+	}
+	city := ""
+	row := tx.QueryRowContext(ctx, query, slots)
+	if err := row.Scan(&city); err != nil {
+		return nil, "", err
 	}
 	if tx.Commit() != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return slots, nil
+	return slots, city, nil
 }

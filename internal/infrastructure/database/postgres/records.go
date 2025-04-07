@@ -275,6 +275,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 	query = `
 		SELECT 
 			u.email AS user_email,
+			u.city AS user_city,
 			srvc.name AS service_name,
 			srvc.description AS service_description,
 			o.name AS org_name,
@@ -292,6 +293,7 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 	record := &recordmodel.ReminderRecord{}
 	if err = tx.QueryRowContext(ctx, query, recordID).Scan(
 		&record.UserEmail,
+		&record.UserCity,
 		&record.ServiceName,
 		&record.ServiceDescription,
 		&record.OrgName,

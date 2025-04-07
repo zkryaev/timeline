@@ -39,6 +39,7 @@ type RecordScrap struct {
 
 type ReminderRecord struct {
 	UserEmail          string
+	UserCity           string
 	ServiceName        string
 	ServiceDescription string
 	OrgName            string

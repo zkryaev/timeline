@@ -15,5 +15,7 @@ type Slot struct {
 type SlotsMeta struct {
 	SlotID   int `db:"slot_id"`
 	WorkerID int `db:"worker_id"`
+	UserID   int
+	OrgID    int
 	// WorkerScheduleID int `db:"worker_schedule_id"`
 }

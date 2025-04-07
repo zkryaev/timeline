@@ -30,7 +30,7 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 		WorkerID: dbWorkers[0].WorkerID,
 		OrgID:    org.OrgID,
 	}
-	dbSlots, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	dbSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
 	suite.Require().Greater(len(dbSlots), 0)
 	suite.Require().NotNil(dbSlots)

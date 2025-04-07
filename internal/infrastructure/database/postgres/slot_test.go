@@ -13,7 +13,7 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 		WorkerID: 1,
 		OrgID:    1,
 	}
-	slots, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	slots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err, fmt.Sprintf("worker_id=%d org_id=%d", params.WorkerID, params.OrgID))
 	suite.NotNil(slots)
 
@@ -34,19 +34,19 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 
 	params.OrgID = 0
 	params.WorkerID = 0
-	rawNumSlots, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	rawNumSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
 	suite.Greater(len(rawNumSlots), 0)
 	numSlotsBefore := len(rawNumSlots)
 	suite.NoError(suite.db.GenerateSlots(ctx), "generate slots failed")
-	rawNumSlots, err = suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	rawNumSlots, _, err = suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
 	suite.Greater(len(rawNumSlots), 0)
 	numSlotsAfterGenerations := len(rawNumSlots)
 	suite.Greater(numSlotsAfterGenerations, numSlotsBefore)
 
 	suite.NoError(suite.db.DeleteExpiredSlots(ctx))
-	rawNumSlots, err = suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	rawNumSlots, _, err = suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
 	suite.Greater(len(rawNumSlots), 0)
 	numSlotsAfterDeletions := len(rawNumSlots)
