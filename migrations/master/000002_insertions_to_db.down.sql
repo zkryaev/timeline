@@ -1,0 +1,1 @@
+TRUNCATE TABLE IF EXISTS users, orgs, timetables, workers, services RESTART IDENTITY CASCADE;
