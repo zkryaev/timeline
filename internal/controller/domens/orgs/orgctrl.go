@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/orgdto"
@@ -23,14 +24,16 @@ type Org interface {
 }
 
 type OrgCtrl struct {
-	usecase Org
-	Logger  *zap.Logger
+	usecase    Org
+	Logger     *zap.Logger
+	middleware middleware.Middleware
 }
 
-func New(usecase Org, logger *zap.Logger) *OrgCtrl {
+func New(usecase Org, middleware middleware.Middleware, logger *zap.Logger) *OrgCtrl {
 	return &OrgCtrl{
-		usecase: usecase,
-		Logger:  logger,
+		usecase:    usecase,
+		Logger:     logger,
+		middleware: middleware,
 	}
 }
 

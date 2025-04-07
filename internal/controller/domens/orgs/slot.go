@@ -37,7 +37,12 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	token, _ := o.middleware.ExtractToken(r)
+	tdata := common.GetTokenData(token.Claims)
 	req := &orgdto.SlotReq{WorkerID: params["workerID"], OrgID: params["orgID"]}
+	if !tdata.IsOrg {
+		req.UserID = tdata.ID
+	}
 	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)

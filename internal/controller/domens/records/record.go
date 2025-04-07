@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/recordto"
@@ -22,14 +23,16 @@ type Record interface {
 }
 
 type RecordCtrl struct {
-	usecase Record
-	Logger  *zap.Logger
+	usecase    Record
+	Logger     *zap.Logger
+	middleware middleware.Middleware
 }
 
-func New(usecase Record, logger *zap.Logger) *RecordCtrl {
+func New(usecase Record, middleware middleware.Middleware, logger *zap.Logger) *RecordCtrl {
 	return &RecordCtrl{
-		usecase: usecase,
-		Logger:  logger,
+		usecase:    usecase,
+		Logger:     logger,
+		middleware: middleware,
 	}
 }
 
@@ -123,6 +126,11 @@ func (rec *RecordCtrl) RecordList(w http.ResponseWriter, r *http.Request) {
 		Fresh:  queryParams["fresh"].(bool),
 		Limit:  queryParams["limit"].(int),
 		Page:   queryParams["page"].(int),
+	}
+	token, _ := rec.middleware.ExtractToken(r)
+	tdata := common.GetTokenData(token.Claims)
+	if !tdata.IsOrg {
+		req.UserID = tdata.ID
 	}
 	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))
