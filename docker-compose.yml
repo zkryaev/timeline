@@ -1,11 +1,11 @@
 services:
-    postgres:
-      container_name: postgres
+    postgres_master:
+      container_name: postgres_master
       image: postgres:17.4
       environment:
+        POSTGRES_DB: ${DB_NAME}
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASSWD}
-        POSTGRES_DB: ${DB_NAME}
       ports:
         - "${DB_PORT}:5432"         
       #volumes:
@@ -15,9 +15,32 @@ services:
         - default
       healthcheck:
         test: ["CMD-SHELL", "pg_isready -h localhost -p ${DB_PORT} -U ${DB_USER}"]
-        interval: 10s        
+        start_period: 20s
+        interval: 30s        
         timeout: 5s          
         retries: 5
+
+    analytics_db:
+      image: postgres:17.4
+      container_name: analytics_db
+      environment:
+        POSTGRES_DB: ${ANALYTICS_DB_NAME}
+        POSTGRES_USER: ${ANALYTICS_DB_USER}
+        POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWD}
+      ports:
+        - "${ANALYTICS_DB_PORT}:5432"
+      #volumes:
+      #  - pgdata_analytics:/var/lib/postgresql/data
+      #  - ./:/migrations-initdb.d
+      networks:
+        - default
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${ANALYTICS_DB_USER}"]
+        start_period: 20s
+        interval: 30s        
+        timeout: 5s          
+        retries: 5
+
     minio:
       image: minio/minio:latest
       container_name: minio
@@ -32,14 +55,40 @@ services:
         MINIO_USE_SSL: ${S3_SSLMODE}
         MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
         MINIO_CACHE: /mnt/minio_cache
+      networks:
+        - default
       #volumes:
         #- minio_data:/data
         #- minio_config:/root/.minio
       healthcheck:
         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-        interval: 30s
-        timeout: 20s
-        retries: 3
+        start_period: 20s
+        interval: 30s        
+        timeout: 5s          
+        retries: 5
+
+    analytic_app:
+      image: petrgrachev/timeline-analytics:1.0.1
+      container_name: analytic_app
+      restart: always
+      depends_on:
+        - postgres_master
+        - analytics_db
+      environment:
+        # Параметры для master БД
+        MAIN_DB_NAME: ${DB_NAME}
+        MAIN_DB_USER: ${DB_USER}
+        MAIN_DB_PASSWORD: ${DB_PASSWD}
+        MAIN_DB_HOST: ${DB_HOST}
+        MAIN_DB_PORT: ${DB_PORT}
+        # Параметры для аналитической БД
+        ANALYTICS_DB_NAME: ${ANALYTICS_DB_NAME}
+        ANALYTICS_DB_USER: ${ANALYTICS_DB_USER}
+        ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWD}
+        ANALYTICS_DB_HOST: ${ANALYTICS_DB_PORT}
+        ANALYTICS_DB_PORT: 5432
+      ports:
+        - "5000:5000"
 #volumes:
 #  pgdata:
 #  minio_data:
