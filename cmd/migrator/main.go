@@ -14,16 +14,17 @@ import (
 )
 
 func main() {
-	var dsn, migrationsPath string
+	var dsn, migrationsPath, instanceName string
 	flag.StringVar(&migrationsPath, "migrations-path", "", "path to the migrations folder")
 	flag.StringVar(&dsn, "dsn", "", "database dsn (e.g., postgres://user:password@host:port/dbname?sslmode=disable)")
+	flag.StringVar(&instanceName, "instance-name", "", "instance name (e.g., analytics_db")
 	flag.Parse()
 
 	if dsn == "" {
-		log.Fatal("dsn is required")
+		log.Fatalf("instance: %s: dsn is required", instanceName)
 	}
 	if migrationsPath == "" {
-		log.Fatal("migrations-path is required")
+		log.Fatalf("instance: %s: migrations-path is required", instanceName)
 	}
 
 	var m *migrate.Migrate
@@ -36,20 +37,20 @@ func main() {
 			dsn,
 		)
 		if err != nil {
-			log.Printf("migrator: failed open database. Left %d attemps\n", try)
+			log.Printf("migrator: instance: %s: failed open database. Left %d attemps\n", instanceName, try)
 			time.Sleep(2 * time.Second)
 		} else {
 			break
 		}
 	}
 	if err != nil {
-		log.Fatal("migrator: ", err.Error())
+		log.Fatalf("migrator: instance: %s: %s", instanceName, err.Error())
 	}
 	if err = m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
-			log.Println("migrator: no migrations to apply")
+			log.Println("migrator: instance: %s: no migrations to apply", instanceName)
 			return
 		}
-		log.Fatal("migrator: ", err)
+		log.Fatalf("migrator: instance: %s: %s", instanceName, err.Error())
 	}
 }
