@@ -14,7 +14,7 @@ services:
       networks:
         - default
       healthcheck:
-        test: ["CMD-SHELL", "pg_isready -h localhost -p ${DB_PORT} -U ${DB_USER}"]
+        test: ["CMD-SHELL", "pg_isready -h localhost -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}"]
         start_period: 20s
         interval: 30s        
         timeout: 5s          
@@ -35,7 +35,7 @@ services:
       networks:
         - default
       healthcheck:
-        test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${ANALYTICS_DB_USER}"]
+        test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${ANALYTICS_DB_USER} -d ${ANALYTICS_DB_NAME}"]
         start_period: 20s
         interval: 30s        
         timeout: 5s          
@@ -44,7 +44,7 @@ services:
     minio:
       image: minio/minio:latest
       container_name: minio
-      command: server /data --console-address ":9001"
+      command: server /data --console-address ":${S3_CONSOLE_PORT}"
       ports:
         - "${S3_DATA_PORT}:${S3_DATA_PORT}" # Порт для доступа к API MinIO
         - "${S3_CONSOLE_PORT}:${S3_CONSOLE_PORT}" # Порт для веб-интерфейса MinIO Console
@@ -61,34 +61,44 @@ services:
         #- minio_data:/data
         #- minio_config:/root/.minio
       healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+        test: ["CMD", "curl", "-f", "http://localhost:${S3_DATA_PORT}/minio/health/live"]
         start_period: 20s
         interval: 30s        
         timeout: 5s          
         retries: 5
 
-    analytic_app:
-      image: petrgrachev/timeline-analytics:1.0.1
+    analytics_app:
+      image: petrgrachev/timeline-analytics:1.0.2
       container_name: analytic_app
       restart: always
       depends_on:
         - postgres_master
         - analytics_db
       environment:
-        # Параметры для master БД
+        # Переменные приложения
+        FLASK_PORT: ${ANALYTICS_PORT}
+        # Переменные для master БД
         MAIN_DB_NAME: ${DB_NAME}
         MAIN_DB_USER: ${DB_USER}
         MAIN_DB_PASSWORD: ${DB_PASSWD}
-        MAIN_DB_HOST: ${DB_HOST}
+        MAIN_DB_CONTAINER: postgres_master
         MAIN_DB_PORT: ${DB_PORT}
-        # Параметры для аналитической БД
+        # Переменные для аналитической БД
+        ANALYTICS_DB_CONTAINER: analytics_db
         ANALYTICS_DB_NAME: ${ANALYTICS_DB_NAME}
         ANALYTICS_DB_USER: ${ANALYTICS_DB_USER}
         ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWD}
-        ANALYTICS_DB_HOST: ${ANALYTICS_DB_PORT}
         ANALYTICS_DB_PORT: 5432
       ports:
-        - "5000:5000"
+        - "${ANALYTICS_PORT}:${ANALYTICS_PORT}"
+      networks:
+        - default
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:${ANALYTICS_PORT}/analytics/health"]
+        start_period: 20s
+        interval: 30s        
+        timeout: 5s          
+        retries: 5
 #volumes:
 #  pgdata:
 #  minio_data:
