@@ -99,7 +99,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req 
 		return nil, err
 	}
 	logger.Info("User has been saved to DB")
-	code, err := verification.GenerateCode()
+	code, err := verification.GenerateCode(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 		return nil, err
 	}
 	logger.Info("Org has been saved to DB")
-	code, err := verification.GenerateCode()
+	code, err := verification.GenerateCode(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 }
 
 func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *authdto.SendCodeReq) {
-	code, err := verification.GenerateCode()
+	code, err := verification.GenerateCode(logger)
 	if err != nil {
 		return
 	}

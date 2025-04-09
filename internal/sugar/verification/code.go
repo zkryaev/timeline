@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"math/big"
 	"strconv"
+
+	"go.uber.org/zap"
 )
 
 var (
@@ -12,7 +14,12 @@ var (
 	codeRange int64 = 1 + (maxCode - minCode)
 )
 
-func GenerateCode() (string, error) {
+func GenerateCode(logger *zap.Logger) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("GenerateCode", zap.Any("recover", r), zap.Int64("codeRange", codeRange))
+		}
+	}()
 	n, err := rand.Int(rand.Reader, big.NewInt(codeRange))
 	if err != nil {
 		return "", err
