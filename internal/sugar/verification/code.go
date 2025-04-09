@@ -18,8 +18,8 @@ var (
 func GenerateCode(logger *zap.Logger) (string, error) {
 	max := big.NewInt(codeRange)
 	if max.Sign() <= 0 {
-		logger.Warn("big.NewInt returned number with sign <= 0", zap.Int64(max.Int64()), zap.Int64("codeRange", codeRange))
-		max.SetInt64(minCode + time.Time.Unix())
+		logger.Warn("big.NewInt returned number with sign <= 0", zap.Int64("max", max.Int64()), zap.Int64("codeRange", codeRange))
+		max.SetInt64(minCode + time.Time{}.Unix())
 	}
 	n, err := rand.Int(rand.Reader, max)
 	if err != nil {
