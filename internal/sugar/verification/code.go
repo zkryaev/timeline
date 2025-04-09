@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -15,12 +16,12 @@ var (
 )
 
 func GenerateCode(logger *zap.Logger) (string, error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error("GenerateCode", zap.Any("recover", r), zap.Int64("codeRange", codeRange))
-		}
-	}()
-	n, err := rand.Int(rand.Reader, big.NewInt(codeRange))
+	max := big.NewInt(codeRange)
+	if max.Sign() <= 0 {
+		logger.Warn("big.NewInt returned number with sign <= 0", zap.Int64(max.Int64()), zap.Int64("codeRange", codeRange))
+		max.SetInt64(minCode + time.Time.Unix())
+	}
+	n, err := rand.Int(rand.Reader, max)
 	if err != nil {
 		return "", err
 	}
