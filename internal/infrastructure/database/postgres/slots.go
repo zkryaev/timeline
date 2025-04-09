@@ -185,7 +185,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		AND ($1 <= 0 OR worker_id = $1);
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
-	if err = tx.SelectContext(ctx, slots, query, params.WorkerID); err != nil {
+	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, "", ErrSlotsNotFound
 		}
