@@ -16,7 +16,7 @@ type AuthUseCase interface {
 	Login(ctx context.Context, logger *zap.Logger, req *authdto.LoginReq) (*authdto.TokenPair, error)
 	UserRegister(ctx context.Context, logger *zap.Logger, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error)
 	OrgRegister(ctx context.Context, logger *zap.Logger, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error)
-	SendCodeRetry(ctx context.Context, logger *zap.Logger, req *authdto.SendCodeReq)
+	SendCodeRetry(ctx context.Context, logger *zap.Logger, req *authdto.SendCodeReq) error
 	VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error)
 	UpdateAccessToken(ctx context.Context, logger *zap.Logger, req *jwt.Token) (*authdto.AccessToken, error)
 }
@@ -163,7 +163,11 @@ func (a *AuthCtrl) SendCodeRetry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	a.usecase.SendCodeRetry(r.Context(), logger, &req)
+	if err := a.usecase.SendCodeRetry(r.Context(), logger, &req); err != nil {
+		logger.Error("SendCodeRetry", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 }
 

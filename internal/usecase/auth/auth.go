@@ -103,6 +103,15 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req 
 	if err != nil {
 		return nil, err
 	}
+	info := &models.CodeInfo{
+		ID:    userID,
+		Code:  code,
+		IsOrg: false,
+	}
+	if err := a.code.SaveVerifyCode(ctx, info); err != nil {
+		return nil, err
+	}
+	logger.Info("Code has been saved to DB")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
@@ -131,6 +140,15 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 		return nil, err
 	}
 	logger.Info("Verification code has been generated")
+	info := &models.CodeInfo{
+		ID:    orgID,
+		Code:  code,
+		IsOrg: true,
+	}
+	if err := a.code.SaveVerifyCode(ctx, info); err != nil {
+		return nil, err
+	}
+	logger.Info("Code has been saved to DB")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
@@ -140,18 +158,28 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 	return &authdto.RegisterResp{ID: orgID}, nil
 }
 
-func (a *AuthUseCase) SendCodeRetry(_ context.Context, logger *zap.Logger, req *authdto.SendCodeReq) {
+func (a *AuthUseCase) SendCodeRetry(ctx context.Context, logger *zap.Logger, req *authdto.SendCodeReq) error {
 	code, err := verification.GenerateCode(logger)
 	if err != nil {
-		return
+		return err
 	}
 	logger.Info("Verification code has been generated")
+	info := &models.CodeInfo{
+		ID:    req.ID,
+		Code:  code,
+		IsOrg: req.IsOrg,
+	}
+	if err := a.code.SaveVerifyCode(ctx, info); err != nil {
+		return err
+	}
+	logger.Info("Code has been saved to DB")
 	a.mail.SendMsg(&models.Message{
 		Email: req.Email,
 		Type:  mail.VerificationType,
 		Value: code,
 	})
 	logger.Info("Verification code has been sent to user's email")
+	return nil
 }
 
 func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
