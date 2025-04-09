@@ -189,16 +189,19 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, "", ErrSlotsNotFound
 		}
-		return nil, "", err
+		return nil, "", fmt.Errorf("selectctx: %w", err)
 	}
+	id := 0
 	switch {
 	case params.UserID != 0:
+		id = params.UserID
 		query = `
 			SELECT city
 			FROM users
 			WHERE user_id = $1;
 		`
 	default:
+		id = params.OrgID
 		query = `
 			SELECT city
 			FROM orgs
@@ -206,9 +209,9 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 		`
 	}
 	city := ""
-	row := tx.QueryRowContext(ctx, query, slots)
+	row := tx.QueryRowContext(ctx, query, id)
 	if err := row.Scan(&city); err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("queryrowctx: %w", err)
 	}
 	if tx.Commit() != nil {
 		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
