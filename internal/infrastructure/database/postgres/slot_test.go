@@ -32,6 +32,7 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 	}
 	suite.NoError(suite.db.UpdateSlot(ctx, true, orgmap.SlotUpdateToModel(updparams)), fmt.Sprintf("slot_id=%d worker_id=%d", freeSlot.SlotID, freeSlot.WorkerID))
 
+	params.UserID = 1
 	params.OrgID = 0
 	params.WorkerID = 0
 	rawNumSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
