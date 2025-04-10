@@ -45,23 +45,23 @@ func RecordParamsToModel(dto *recordto.RecordListParams) *recordmodel.RecordList
 	}
 }
 
-func RecordScrapToDTO(model *recordmodel.RecordScrap) *recordto.RecordScrap {
+func RecordScrapToDTO(model *recordmodel.RecordScrap, loc *time.Location) *recordto.RecordScrap {
 	return &recordto.RecordScrap{
 		RecordID: model.RecordID,
 		Reviewed: model.Reviewed,
-		Org:      orgmap.OrganizationToDTO(&orgmodel.Organization{OrgInfo: *model.Org}),
+		Org:      orgmap.OrganizationToDTO(&orgmodel.Organization{OrgInfo: *model.Org}, loc),
 		User:     usermap.UserInfoToDTO(model.User),
-		Slot:     orgmap.SlotInfoToDTO(model.Slot),
+		Slot:     orgmap.SlotInfoToDTO(model.Slot, loc),
 		Service:  orgmap.ServiceToEntity(model.Service),
 		Worker:   orgmap.WorkerToEntity(model.Worker),
 		Feedback: FeedbackToDTO(model.Feedback),
 	}
 }
 
-func RecordListToDTO(model []*recordmodel.RecordScrap) []*recordto.RecordScrap {
+func RecordListToDTO(model []*recordmodel.RecordScrap, loc *time.Location) []*recordto.RecordScrap {
 	list := make([]*recordto.RecordScrap, 0, len(model))
 	for _, v := range model {
-		list = append(list, RecordScrapToDTO(v))
+		list = append(list, RecordScrapToDTO(v, loc))
 	}
 	return list
 }

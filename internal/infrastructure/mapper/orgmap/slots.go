@@ -2,14 +2,15 @@ package orgmap
 
 import (
 	"strings"
+	"time"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/models/orgmodel"
 )
 
-func SlotToDTO(model *orgmodel.Slot) *orgdto.SlotResp {
+func SlotToDTO(model *orgmodel.Slot, loc *time.Location) *orgdto.SlotResp {
 	return &orgdto.SlotResp{
 		SlotID: model.SlotID,
-		Slot:   *SlotInfoToDTO(model),
+		Slot:   *SlotInfoToDTO(model, loc),
 	}
 }
 
@@ -29,13 +30,13 @@ func SlotUpdateToModel(dto *orgdto.SlotUpdate) *orgmodel.SlotsMeta {
 	}
 }
 
-func SlotInfoToDTO(model *orgmodel.Slot) *orgdto.Slot {
+func SlotInfoToDTO(model *orgmodel.Slot, loc *time.Location) *orgdto.Slot {
 	return &orgdto.Slot{
 		WorkerScheduleID: model.WorkerScheduleID,
 		WorkerID:         model.WorkerID,
 		Date:             strings.Fields(model.Date.String())[0],
-		Begin:            model.Begin.Format(timeFormat),
-		End:              model.End.Format(timeFormat),
+		Begin:            model.Begin.In(loc).Format(timeFormat),
+		End:              model.End.In(loc).Format(timeFormat),
 		Busy:             model.Busy,
 	}
 }

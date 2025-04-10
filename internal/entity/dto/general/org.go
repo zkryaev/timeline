@@ -11,6 +11,7 @@ type SearchReq struct {
 	Type       string `json:"type,omitempty"`
 	IsRateSort bool   `json:"is_rate_sort,omitempty"`
 	IsNameSort bool   `json:"is_name_sort,omitempty"`
+	UserID   int
 }
 
 type SearchResp struct {

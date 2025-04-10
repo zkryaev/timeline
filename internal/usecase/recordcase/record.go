@@ -48,11 +48,8 @@ func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, recordID
 		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data.User.City+"="+tzid), zap.Error(err))
 		loc = time.Local // UTC+03 = MSK
 	}
-	data.Slot.Begin = data.Slot.Begin.In(loc)
-	data.Slot.End = data.Slot.End.In(loc)
-	data.Slot.Date = data.Slot.Date.In(loc)
 	logger.Info("Fetched record")
-	return recordmap.RecordScrapToDTO(data), nil
+	return recordmap.RecordScrapToDTO(data, loc), nil
 }
 
 func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error) {
@@ -63,22 +60,18 @@ func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, para
 		}
 		return nil, err
 	}
+	loc := time.Local
 	if len(data) > 0 {
 		logger.Info("Fetched record list")
 		tzid := r.backdata.Cities.GetCityTZ(data[0].User.City)
-		loc, err := time.LoadLocation(tzid)
+		loc, err = time.LoadLocation(tzid)
 		if err != nil {
 			logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data[0].User.City+"="+tzid), zap.Error(err))
-			loc = time.Local // UTC+03 = MSK
-		}
-		for i := range data {
-			data[i].Slot.Begin = data[i].Slot.Begin.In(loc)
-			data[i].Slot.End = data[i].Slot.End.In(loc)
-			data[i].Slot.Date = data[i].Slot.Date.In(loc)
+			loc = time.Local
 		}
 	}
 	resp := &recordto.RecordList{
-		List:  recordmap.RecordListToDTO(data),
+		List:  recordmap.RecordListToDTO(data, loc),
 		Found: found,
 	}
 	return resp, nil
@@ -96,7 +89,7 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *
 	loc, err := time.LoadLocation(tzid)
 	if err != nil {
 		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", record.UserCity+"="+tzid), zap.Error(err))
-		loc = time.Local // UTC+03 = MSK
+		loc = time.Local
 	}
 	record.Begin = record.Begin.In(loc)
 	record.End = record.End.In(loc)

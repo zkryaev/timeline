@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/mapper/orgmap"
 )
@@ -21,7 +22,7 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 
 	for _, slot := range slots {
 		if !slot.Busy {
-			freeSlot.Slot = *orgmap.SlotInfoToDTO(slot)
+			freeSlot.Slot = *orgmap.SlotInfoToDTO(slot, time.Now().Location())
 			freeSlot.SlotID = slot.SlotID
 			break
 		}
