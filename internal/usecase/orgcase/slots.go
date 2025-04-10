@@ -37,15 +37,10 @@ func (o *OrgUseCase) Slots(ctx context.Context, logger *zap.Logger, req *orgdto.
 		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", city+"="+tzid), zap.Error(err))
 		loc = time.Local // UTC+03 = MSK
 	}
-	for i := range data {
-		data[i].Begin = data[i].Begin.In(loc)
-		data[i].End = data[i].End.In(loc)
-		data[i].Date = data[i].Date.In(loc)
-	}
 	logger.Info("Fetched slots")
 	resp := make([]*orgdto.SlotResp, 0, len(data))
 	for _, v := range data {
-		resp = append(resp, orgmap.SlotToDTO(v))
+		resp = append(resp, orgmap.SlotToDTO(v, loc))
 	}
 	return resp, nil
 }

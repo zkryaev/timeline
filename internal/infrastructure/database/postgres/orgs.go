@@ -293,10 +293,10 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *orgmodel.AreaParams
 }
 
 // Принимает пагинацию, имя и тип организации. Возвращает соответствующие организации, число найденных
-func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error) {
+func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) (*orgmodel.RespData, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to start tx: %w", err)
+		return nil, fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -313,9 +313,9 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, params.Name, params.Type).Scan(&found); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, 0, ErrOrgsNotFound
+			return nil, ErrOrgsNotFound
 		}
-		return nil, 0, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed orgs searching: %w", err)
 	}
 	query = `SELECT 
 			o.org_id,
@@ -356,14 +356,29 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	orgList := make([]*orgmodel.OrgsBySearch, 0, 3)
 	if err = tx.SelectContext(ctx, &orgList, stmt.String(), params.Name, params.Type, params.Limit, params.Offset); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, 0, ErrOrgsNotFound
+			return nil, ErrOrgsNotFound
 		}
-		return nil, 0, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed orgs searching: %w", err)
+	}
+	query = `
+		SELECT city
+		FROM users
+		WHERE user_id = $1;
+	`
+	resp := &orgmodel.RespData{
+		Found: found,
+		Data:  orgList,
+	}
+	if err := tx.QueryRowxContext(ctx, query, params.UserID).Scan(&resp.UserCity); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrOrgsNotFound
+		}
+		return nil, err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, 0, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return orgList, found, nil
+	return resp, nil
 }
 
 func (p *PostgresRepo) OrgUpdate(ctx context.Context, org *orgmodel.Organization) error {

@@ -13,10 +13,10 @@ var (
 	ErrTimetableNotFound = errors.New("timetable not found")
 )
 
-func (p *PostgresRepo) Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error) {
+func (p *PostgresRepo) Timetable(ctx context.Context, orgID, userID int) ([]*orgmodel.OpenHours, string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start tx: %w", err)
+		return nil, "", fmt.Errorf("failed to start tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -31,14 +31,36 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID int) ([]*orgmodel.Op
 	timetable := make([]*orgmodel.OpenHours, 0, 1)
 	if err = tx.SelectContext(ctx, &timetable, query, orgID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrTimetableNotFound
+			return nil, "", ErrTimetableNotFound
 		}
-		return nil, err
+		return nil, "", err
+	}
+	var entityID int
+	var city string
+	switch {
+	case userID != 0:
+		query = `
+			SELECT city
+			FROM users
+			WHERE user_id = $1;
+		`
+	default:
+		query = `
+			SELECT city
+			FROM orgs
+			WHERE org_id = $1;
+		`
+	}
+	if err := tx.QueryRowxContext(ctx, query, entityID).Scan(&city); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, "", ErrTimetableNotFound
+		}
+		return nil, "", err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit tx: %w", err)
+		return nil, "", fmt.Errorf("failed to commit tx: %w", err)
 	}
-	return timetable, nil
+	return timetable, city, nil
 }
 
 func (p *PostgresRepo) TimetableAdd(ctx context.Context, orgID int, newTime []*orgmodel.OpenHours) error {

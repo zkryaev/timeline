@@ -1,6 +1,7 @@
 package orgmap
 
 import (
+	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/entity/dto/general"
@@ -44,16 +45,16 @@ func CoordsToModel(dto *entity.Coordinates) *orgmodel.Coordinates {
 	}
 }
 
-func OrganizationToDTO(model *orgmodel.Organization) *orgdto.Organization {
+func OrganizationToDTO(model *orgmodel.Organization, loc *time.Location) *orgdto.Organization {
 	return &orgdto.Organization{
 		ShowcasesURL: mediamap.URLToDTO(model.ShowcasesURL),
 		OrgID:        model.OrgID,
 		Info:         OrgInfoToEntity(&model.OrgInfo),
-		Timetable:    TimetableToEntity(model.Timetable),
+		Timetable:    TimetableToEntity(model.Timetable, loc),
 	}
 }
 
-func OrgsBySearchToDTO(model *orgmodel.OrgsBySearch) *entity.OrgsBySearch {
+func OrgsBySearchToDTO(model *orgmodel.OrgsBySearch, loc *time.Location) *entity.OrgsBySearch {
 	return &entity.OrgsBySearch{
 		OrgID:         model.OrgID,
 		Name:          model.Name,
@@ -61,7 +62,7 @@ func OrgsBySearchToDTO(model *orgmodel.OrgsBySearch) *entity.OrgsBySearch {
 		Type:          model.Type,
 		Address:       model.Address,
 		Coords:        CoordsToEntity(&model.Coordinates),
-		TodaySchedule: OpenHoursToDTO(&model.OpenHours),
+		TodaySchedule: OpenHoursToDTO(&model.OpenHours, loc),
 	}
 }
 
@@ -120,13 +121,13 @@ func OrgUpdateToModel(dto *orgdto.OrgUpdateReq) *orgmodel.Organization {
 	return resp
 }
 
-func TimetableToEntity(timetable []*orgmodel.OpenHours) []*entity.OpenHours {
+func TimetableToEntity(timetable []*orgmodel.OpenHours, loc *time.Location) []*entity.OpenHours {
 	if len(timetable) == 0 {
 		return nil
 	}
 	resp := make([]*entity.OpenHours, 0, len(timetable))
 	for _, v := range timetable {
-		resp = append(resp, OpenHoursToDTO(v))
+		resp = append(resp, OpenHoursToDTO(v, loc))
 	}
 	return resp
 }
@@ -167,6 +168,7 @@ func OrgSummaryToDTO(model *orgmodel.OrgByArea) *entity.MapOrgInfo {
 				BreakStart: model.BreakStart,
 				BreakEnd:   model.BreakEnd,
 			},
+			time.Now().Location(),
 		),
 		Coords: *CoordsToEntity(&model.Coordinates),
 	}

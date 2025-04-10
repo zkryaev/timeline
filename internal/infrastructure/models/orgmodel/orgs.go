@@ -71,9 +71,16 @@ type SearchParams struct {
 	Type       string
 	IsRateSort bool
 	IsNameSort bool
+	UserID     int
 }
 
 type AreaParams struct {
 	Left  Coordinates
 	Right Coordinates
+}
+
+type RespData struct {
+	Found int
+	UserCity string
+	Data []*OrgsBySearch
 }

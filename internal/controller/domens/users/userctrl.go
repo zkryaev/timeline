@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity"
@@ -24,14 +25,16 @@ type User interface {
 }
 
 type UserCtrl struct {
-	usecase User
-	Logger  *zap.Logger
+	usecase    User
+	Logger     *zap.Logger
+	middleware middleware.Middleware
 }
 
-func New(usecase User, logger *zap.Logger, validator *validator.Validate) *UserCtrl {
+func New(usecase User, logger *zap.Logger, validator *validator.Validate, middleware middleware.Middleware) *UserCtrl {
 	return &UserCtrl{
-		usecase: usecase,
-		Logger:  logger,
+		usecase:    usecase,
+		Logger:     logger,
+		middleware: middleware,
 	}
 }
 
@@ -146,6 +149,9 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	rateSort, _ := strconv.ParseBool(r.URL.Query().Get("is_rate_sort"))
 	nameSort, _ := strconv.ParseBool(r.URL.Query().Get("is_name_sort"))
 
+	token, _ := u.middleware.ExtractToken(r)
+	tdata := common.GetTokenData(token.Claims)
+
 	req := &general.SearchReq{
 		Page:       int(page),
 		Limit:      int(limit),
@@ -153,6 +159,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		Type:       r.URL.Query().Get("type"),
 		IsRateSort: rateSort,
 		IsNameSort: nameSort,
+		UserID:     tdata.ID,
 	}
 	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))

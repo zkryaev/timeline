@@ -6,3 +6,8 @@ type Timetable struct {
 	OrgID     int                 `json:"org_id" validate:"required"`
 	Timetable []*entity.OpenHours `json:"timetable" validate:"required"`
 }
+
+type TimetableReq struct {
+	OrgID  int
+	UserID int
+}

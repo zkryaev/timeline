@@ -92,9 +92,11 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			storage,
 			storage,
+			backdata,
 		),
 		a.log,
 		validator,
+		middleware,
 	)
 
 	orgAPI := orgs.New(

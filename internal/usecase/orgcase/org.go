@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/database/postgres"
@@ -40,7 +41,13 @@ func (o *OrgUseCase) Organization(ctx context.Context, logger *zap.Logger, id in
 		return nil, err
 	}
 	logger.Info("Fetched organization")
-	return orgmap.OrganizationToDTO(data), nil
+	tzid := o.backdata.Cities.GetCityTZ(data.City)
+	loc, err := time.LoadLocation(tzid)
+	if err != nil {
+		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data.City+"="+tzid), zap.Error(err))
+		loc = time.Local // UTC+03 = MSK
+	}
+	return orgmap.OrganizationToDTO(data, loc), nil
 }
 
 func (o *OrgUseCase) OrgUpdate(ctx context.Context, logger *zap.Logger, newOrg *orgdto.OrgUpdateReq) error {

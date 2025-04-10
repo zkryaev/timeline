@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 	"timeline/internal/entity"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/models/orgmodel"
@@ -21,11 +22,11 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 		BreakEnd:   "13:00",
 	}
 	suite.NoError(suite.db.TimetableAdd(ctx, orgID, []*orgmodel.OpenHours{orgmap.OpenHoursToModel(exp)}))
-	timetable, err := suite.db.Timetable(ctx, orgID)
+	timetable, _, err := suite.db.Timetable(ctx, orgID, 0)
 	suite.NoError(err)
 	suite.NotNil(timetable)
 
-	openhours := orgmap.TimetableToEntity(timetable)
+	openhours := orgmap.TimetableToEntity(timetable, time.Now().Location())
 	var found bool
 	for _, t := range openhours {
 		if t.Weekday == exp.Weekday {
@@ -39,12 +40,12 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 	exp.Close = "19:00"
 	suite.NoError(suite.db.TimetableUpdate(ctx, orgID, []*orgmodel.OpenHours{orgmap.OpenHoursToModel(exp)}))
 
-	timetable, err = suite.db.Timetable(ctx, orgID)
+	timetable, _, err = suite.db.Timetable(ctx, orgID, 0)
 	suite.NoError(err)
 	suite.NotNil(timetable)
 
 	found = false
-	openhours = orgmap.TimetableToEntity(timetable)
+	openhours = orgmap.TimetableToEntity(timetable, time.Now().Location())
 	for _, t := range openhours {
 		if t.Weekday == exp.Weekday {
 			suite.Equal(exp, t)
@@ -55,12 +56,12 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 
 	suite.NoError(suite.db.TimetableDelete(ctx, orgID, exp.Weekday))
 
-	timetable, err = suite.db.Timetable(ctx, orgID)
+	timetable, _, err = suite.db.Timetable(ctx, orgID, 0)
 	suite.NoError(err)
 	suite.NotNil(timetable)
 
 	found = false
-	openhours = orgmap.TimetableToEntity(timetable)
+	openhours = orgmap.TimetableToEntity(timetable, time.Now().Location())
 	for _, t := range openhours {
 		if t.Weekday == exp.Weekday {
 			found = true

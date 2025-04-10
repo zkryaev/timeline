@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/entity/dto/general"
@@ -33,8 +34,8 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	actOrg, err := suite.db.OrgByID(ctx, orgID)
 	suite.NoError(err)
 	suite.NotNil(actOrg)
-	suite.Equal(orgID, orgmap.OrganizationToDTO(actOrg).OrgID)
-	suite.Equal(&expOrg, orgmap.OrganizationToDTO(actOrg).Info)
+	suite.Equal(orgID, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).OrgID)
+	suite.Equal(&expOrg, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).Info)
 
 	expOrg.Address = "another test street"
 	expOrg.Type = "testtype"
@@ -52,36 +53,40 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 		Name:       expOrg.Name,
 		IsRateSort: true,
 	}
-	foundOrgs, found, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	foundOrgs, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "without sort")
-	suite.Greater(found, 0)
+	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
-	for i := range foundOrgs {
-		org := orgmap.OrgsBySearchToDTO(foundOrgs[i])
+	suite.NotNil(foundOrgs.Data)
+	for i := range foundOrgs.Data {
+		org := orgmap.OrgsBySearchToDTO(foundOrgs.Data[i], time.Now().Location())
 		if org.OrgID == orgID {
 			suite.Equal(expOrg.Address, org.Address)
 			suite.Equal(expOrg.Type, org.Type)
 		}
 	}
 	params.IsRateSort = true
-	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "rate sort")
-	suite.Greater(found, 0)
+	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
+	suite.NotNil(foundOrgs.Data)
 
 	params.IsRateSort = false
 	params.IsNameSort = true
-	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "name sort")
-	suite.Greater(found, 0)
+	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
+	suite.NotNil(foundOrgs.Data)
 
 	params.IsRateSort = true
 	params.IsNameSort = true
-	foundOrgs, found, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
+	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "rate & name sort")
-	suite.Greater(found, 0)
+	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
+	suite.NotNil(foundOrgs.Data)
 
 	expOrg.Name = "WELL KNOWN COMPANY"
 	expOrg.Type = "Mega Corporation"

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
@@ -16,6 +17,7 @@ import (
 	"timeline/internal/infrastructure/mapper/usermap"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/usecase/common"
+	"timeline/internal/utils/loader"
 
 	"go.uber.org/zap"
 )
@@ -25,17 +27,19 @@ var (
 )
 
 type UserUseCase struct {
-	user    infrastructure.UserRepository
-	org     infrastructure.OrgRepository
-	records infrastructure.RecordRepository
-	mail    infrastructure.Mail
+	user     infrastructure.UserRepository
+	org      infrastructure.OrgRepository
+	records  infrastructure.RecordRepository
+	mail     infrastructure.Mail
+	backdata *loader.BackData
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository) *UserUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository, backdata *loader.BackData) *UserUseCase {
 	return &UserUseCase{
-		user:    userRepo,
-		org:     orgRepo,
-		records: recRepo,
+		user:     userRepo,
+		org:      orgRepo,
+		records:  recRepo,
+		backdata: backdata,
 	}
 }
 
@@ -69,20 +73,26 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, logger *zap.Logger, newUse
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *general.SearchReq) (*general.SearchResp, error) {
 	sreq.Name = strings.TrimSpace(sreq.Name)
-	data, found, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
+	data, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
 			return nil, common.ErrNotFound
 		}
 		return nil, err
 	}
-	logger.Info("Fetched organizations by search", zap.Int("Found", found))
-	resp := &general.SearchResp{
-		Found: found,
-		Orgs:  make([]*entity.OrgsBySearch, 0, len(data)),
+	logger.Info("Fetched organizations by search", zap.Int("Found", data.Found))
+	tzid := u.backdata.Cities.GetCityTZ(data.UserCity)
+	loc, err := time.LoadLocation(tzid)
+	if err != nil {
+		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data.UserCity+"="+tzid), zap.Error(err))
+		loc = time.Local // UTC+03 = MSK
 	}
-	for _, v := range data {
-		resp.Orgs = append(resp.Orgs, orgmap.OrgsBySearchToDTO(v))
+	resp := &general.SearchResp{
+		Found: data.Found,
+		Orgs:  make([]*entity.OrgsBySearch, 0, len(data.Data)),
+	}
+	for _, v := range data.Data {
+		resp.Orgs = append(resp.Orgs, orgmap.OrgsBySearchToDTO(v, loc))
 	}
 	return resp, nil
 }

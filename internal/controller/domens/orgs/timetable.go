@@ -14,7 +14,7 @@ import (
 )
 
 type Timetable interface {
-	Timetable(ctx context.Context, logger *zap.Logger, OrgID int) (*orgdto.Timetable, error)
+	Timetable(ctx context.Context, logger *zap.Logger, req orgdto.TimetableReq) (*orgdto.Timetable, error)
 	TimetableAdd(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error
 	TimetableUpdate(ctx context.Context, logger *zap.Logger, newTimetable *orgdto.Timetable) error
 	TimetableDelete(ctx context.Context, logger *zap.Logger, orgID, weekday int) error
@@ -39,7 +39,13 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Timetable(r.Context(), logger, path["orgID"])
+	token, _ := o.middleware.ExtractToken(r)
+	tdata := common.GetTokenData(token.Claims)
+	req := orgdto.TimetableReq{OrgID: path["orgID"]}
+	if !tdata.IsOrg {
+		req.UserID = tdata.ID
+	}
+	data, err := o.usecase.Timetable(r.Context(), logger, req)
 	if err != nil {
 		switch {
 		case errors.Is(err, common.ErrNotFound):

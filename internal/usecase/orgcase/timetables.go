@@ -3,6 +3,7 @@ package orgcase
 import (
 	"context"
 	"errors"
+	"time"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/database/postgres"
@@ -60,8 +61,8 @@ func (o *OrgUseCase) TimetableDelete(ctx context.Context, logger *zap.Logger, or
 	return nil
 }
 
-func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, orgID int) (*orgdto.Timetable, error) {
-	timetable, err := o.org.Timetable(ctx, orgID)
+func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, req orgdto.TimetableReq) (*orgdto.Timetable, error) {
+	timetable, city, err := o.org.Timetable(ctx, req.OrgID, req.UserID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrTimetableNotFound) {
 			return nil, common.ErrNotFound
@@ -70,11 +71,17 @@ func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, orgID in
 	}
 	logger.Info("Fetched timetable")
 	resp := &orgdto.Timetable{
-		OrgID:     orgID,
+		OrgID:     req.OrgID,
 		Timetable: make([]*entity.OpenHours, 0, len(timetable)),
 	}
+	tzid := o.backdata.Cities.GetCityTZ(city)
+	loc, err := time.LoadLocation(tzid)
+	if err != nil {
+		logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", city+"="+tzid), zap.Error(err))
+		loc = time.Local // UTC+03 = MSK
+	}
 	for _, v := range timetable {
-		resp.Timetable = append(resp.Timetable, orgmap.OpenHoursToDTO(v))
+		resp.Timetable = append(resp.Timetable, orgmap.OpenHoursToDTO(v, loc))
 	}
 	return resp, nil
 }
