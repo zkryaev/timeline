@@ -53,7 +53,7 @@ type OrgRepository interface {
 	OrgSave(ctx context.Context, org *orgmodel.OrgRegister) (int, error)
 	OrgUpdate(ctx context.Context, upd *orgmodel.Organization) error
 	OrgByID(ctx context.Context, id int) (*orgmodel.Organization, error)
-	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) ([]*orgmodel.OrgsBySearch, int, error)
+	OrgsBySearch(ctx context.Context, params *orgmodel.SearchParams) (*orgmodel.RespData, error)
 	OrgsInArea(ctx context.Context, area *orgmodel.AreaParams) ([]*orgmodel.OrgByArea, error)
 	OrgDelete(ctx context.Context, orgID int) error
 	OrgSoftDelete(ctx context.Context, orgID int) error
@@ -81,7 +81,7 @@ type RecordRepository interface {
 }
 
 type TimetableRepository interface {
-	Timetable(ctx context.Context, orgID int) ([]*orgmodel.OpenHours, error)
+	Timetable(ctx context.Context, orgID, userID int) ([]*orgmodel.OpenHours, string, error)
 	TimetableAdd(ctx context.Context, orgID int, newTime []*orgmodel.OpenHours) error
 	TimetableUpdate(ctx context.Context, orgID int, upd []*orgmodel.OpenHours) error
 	TimetableDelete(ctx context.Context, orgID, weekday int) error
