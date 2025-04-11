@@ -23,9 +23,12 @@ var (
 	ErrInvalidSign     = errors.New("invalid sign method")
 )
 
+type UUID string
+type TokenData string
+
 type Middleware interface {
 	ExtractToken(r *http.Request) (*jwt.Token, error)
-	IsAccessTokenValid(next http.Handler) http.Handler
+	Authorization(next http.Handler) http.Handler
 	HandlerLogs(next http.Handler) http.Handler
 }
 
@@ -57,10 +60,38 @@ func (m *middleware) HandlerLogs(next http.Handler) http.Handler {
 			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
 		}
 		m.logger.Info(r.Method, zap.String("uuid", uuid.String()), zap.String("uri", uri))
-		ctx := context.WithValue(r.Context(), "uuid", uuid.String()) //nolint:go-staticcheck // keep it simple
+		ctx := context.WithValue(r.Context(), UUID("uuid"), uuid.String()) // nolint:go-staticcheck // keep it simple
 		start := time.Now()
 		next.ServeHTTP(rw, r.WithContext(ctx))
 		m.logger.Info("", zap.String("uuid", uuid.String()), zap.Int("code", rw.StatusCode()), zap.Duration("elapsed", time.Since(start)))
+	})
+}
+
+func (m *middleware) Authorization(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := m.ExtractToken(r)
+		if err != nil {
+			m.logger.Error("ExtractToken", zap.Error(err))
+			http.Error(w, "", http.StatusUnauthorized)
+			return
+		}
+		if err := validation.IsTokenValid(token); err != nil {
+			m.logger.Error("IsTokenValid", zap.Error(err))
+			http.Error(w, "", http.StatusUnauthorized)
+			return
+		}
+		uri, err := url.QueryUnescape(r.RequestURI)
+		if err != nil {
+			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
+		}
+		tdata := common.GetTokenData(token.Claims)
+		if err := common.HasAccess(tdata, uri); err != nil {
+			m.logger.Error("HasAccess", zap.Error(err))
+			http.Error(w, "", http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), TokenData("token"), tdata) // nolint:go-staticcheck // keep it simple
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -76,31 +107,10 @@ func (m *middleware) ExtractToken(r *http.Request) (*jwt.Token, error) {
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, errors.Join(ErrInvalidSign, fmt.Errorf("token sign: %s", token.Method.Alg()))
+			return nil, fmt.Errorf("%s: %s", ErrInvalidSign, token.Method.Alg())
 		}
 		publicKey := &m.secret.PublicKey
 		return publicKey, nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Name}))
 	return token, err
-}
-
-// Валидацпия access токена
-func (m *middleware) IsAccessTokenValid(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := m.ExtractToken(r)
-
-		if err != nil || !token.Valid {
-			http.Error(w, "token expired", http.StatusUnauthorized)
-			return
-		}
-		if err = validation.ValidateTokenClaims(token.Claims); err != nil {
-			http.Error(w, "token claims are invalid", http.StatusUnauthorized)
-			return
-		}
-		if token.Claims.(jwt.MapClaims)["type"].(string) != "access" {
-			http.Error(w, "access token wasn't provided", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
