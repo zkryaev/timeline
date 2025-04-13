@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"timeline/internal/controller/common"
+	"timeline/internal/controller/settings"
 	"timeline/internal/usecase/auth/validation"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,12 +36,14 @@ type Middleware interface {
 type middleware struct {
 	secret *rsa.PrivateKey
 	logger *zap.Logger
+	routes settings.Routes
 }
 
-func New(key *rsa.PrivateKey, logger *zap.Logger) Middleware {
+func New(key *rsa.PrivateKey, logger *zap.Logger, routes settings.Routes) Middleware {
 	return &middleware{
 		secret: key,
 		logger: logger,
+		routes: routes,
 	}
 }
 

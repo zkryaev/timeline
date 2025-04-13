@@ -99,7 +99,6 @@ func main() {
 		zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
 		zap.Bool("ssl", cfg.S3.SSLmode),
 	)
-
 	app := app.New(cfg.App, logger)
 	err = app.SetupControllers(cfg.Token, backdata, db, post, s3storage)
 	if err != nil {

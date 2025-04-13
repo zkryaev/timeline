@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
+	"timeline/internal/controller/settings"
 	"timeline/internal/entity"
 	"timeline/internal/sugar/jwtlib"
 
@@ -37,6 +38,7 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.Middeware = New(
 		suite.mockPrivateKey,
 		zap.NewExample(),
+		settings.NewDefaultRoutes(settings.NewDefaultSettings()),
 	)
 }
 
