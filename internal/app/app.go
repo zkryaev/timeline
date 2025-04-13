@@ -12,6 +12,7 @@ import (
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	s3ctrl "timeline/internal/controller/s3"
+	"timeline/internal/controller/settings"
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/infrastructure"
 	"timeline/internal/sugar/secret"
@@ -31,7 +32,7 @@ type App struct {
 }
 
 func New(cfgApp config.Application, logger *zap.Logger) *App {
-	app := &App{
+	return &App{
 		httpServer: http.Server{
 			Addr:         cfgApp.Host + ":" + cfgApp.Port,
 			ReadTimeout:  cfgApp.Timeout,
@@ -40,7 +41,6 @@ func New(cfgApp config.Application, logger *zap.Logger) *App {
 		},
 		log: logger,
 	}
-	return app
 }
 
 func (a *App) Run() error {
@@ -73,7 +73,8 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		),
 		a.log,
 	)
-	middleware := middleware.New(privateKey, a.log)
+	routes := settings.NewDefaultRoutes(settings.NewDefaultSettings())
+	middleware := middleware.New(privateKey, a.log, routes)
 	authAPI := authctrl.New(
 		auth.New(
 			privateKey,
@@ -120,7 +121,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		middleware,
 		a.log,
 	)
-
 	controllerSet := &controller.Controllers{
 		Auth:   authAPI,
 		User:   userAPI,
@@ -129,6 +129,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		S3:     s3API,
 	}
 
-	a.httpServer.Handler = controller.InitRouter(controllerSet)
+	a.httpServer.Handler = controller.InitRouter(controllerSet, routes)
 	return nil
 }
