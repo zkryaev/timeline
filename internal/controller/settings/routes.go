@@ -1,8 +1,11 @@
 package settings
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 	"timeline/internal/controller/perms"
+	"timeline/internal/entity"
 )
 
 const (
@@ -26,10 +29,11 @@ const (
 	PathSearchOrgs = PathUsers + "/search/org"
 
 	// Organization endpoint
-	PathOrgs             = "/orgs"
+	PathOrgs       = "/orgs"
+	PathServices   = "/services"
+	PathTimetables = "/timetables"
+
 	PathWorkers          = "/workers"
-	PathServices         = "/services"
-	PathTimetables       = "/timetables"
 	PathWorkersSlots     = PathWorkers + "/slots"
 	PathWorkersServices  = PathWorkers + "/services"
 	PathWorkersSchedules = PathWorkers + "/schedules"
@@ -43,29 +47,29 @@ const (
 )
 
 var PathList = []string{
-	// auth
+
 	PathAuth,
 	PathLogin,
 	PathRegistration,
 	PathToken,
 	PathCode,
-	// users
+
 	PathUsers,
 	PathMapOrgs,
 	PathSearchOrgs,
-	// org
+
 	PathOrgs,
 	PathServices,
 	PathTimetables,
-	// org/worker/...
+
 	PathWorkers,
 	PathWorkersSlots,
 	PathWorkersServices,
 	PathWorkersSchedules,
-	// records/...
+
 	PathRecords,
 	PathFeedback,
-	// media
+
 	PathMedia,
 }
 
@@ -174,6 +178,11 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 	return mdata
 }
 
+const (
+	ErrPathNotFound = "path not found in %s: \"%s\""
+	ErrNoPermission = "%s (org_id=%d) has no authorities to call %s \"%s\""
+)
+
 type Routes map[string]endpoint
 
 func NewDefaultRoutes(settings *Settings) Routes {
@@ -182,4 +191,33 @@ func NewDefaultRoutes(settings *Settings) Routes {
 		r[path] = NewEndpointFromPath(settings, path)
 	}
 	return r
+}
+
+// Verifying access rights when entity trying to call a handler
+//
+// Checks provided method and uri with endpoint's restrictions
+func (r Routes) HasAccess(tdata entity.TokenData, uri, method string) error {
+	ind, isMatched := 0, false
+	for i := range PathList {
+		if strings.Contains(uri, PathList[i]) {
+			ind = i
+			isMatched = true
+			break
+		}
+	}
+	if !isMatched {
+		return fmt.Errorf(ErrPathNotFound, "pathlist", uri)
+	}
+	handler, ok := r[PathList[ind]]
+	if !ok {
+		return fmt.Errorf(ErrPathNotFound, "routes", uri)
+	}
+	if !handler.perms.HasPermission(tdata.IsOrg, method) {
+		if tdata.IsOrg {
+			return fmt.Errorf(ErrNoPermission, "org", tdata.ID, method, uri)
+		} else {
+			return fmt.Errorf(ErrNoPermission, "user", tdata.ID, method, uri)
+		}
+	}
+	return nil
 }
