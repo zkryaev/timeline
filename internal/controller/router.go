@@ -6,6 +6,7 @@ import (
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	"timeline/internal/controller/s3"
+	"timeline/internal/controller/settings"
 
 	"github.com/gorilla/mux"
 )
@@ -18,78 +19,7 @@ type Controllers struct {
 	S3     *s3.S3Ctrl
 }
 
-// General
-const (
-	health = "/health"
-	v1     = "/v1"
-)
-
-// Auth
-const (
-	authPrefix        = "/auth"
-	authLogin         = "/login"
-	authRegisterOrg   = "/orgs"
-	authRegisterUser  = "/users"
-	authRefreshToken  = "/tokens/refresh"
-	authSendCodeRetry = "/codes/send"
-	authVerifyCode    = "/codes/verify"
-)
-
-// User
-const (
-	userPrefix     = "/users"
-	userMapOrgs    = "/map/orgs"
-	userSearchOrgs = "/search/orgs"
-	userUpdate     = "/update"
-	userGetInfo    = "/info/{id}"
-)
-
-// Org
-const (
-	orgPrefix  = "/orgs"
-	orgGetInfo = "/info/{id}"
-	orgUpdate  = "/update"
-	// Timetables
-	timetable   = "/timetable"
-	timetableID = "/{orgID}/timetable"
-	// Workers
-	worker         = "/workers"
-	workerID       = "/{orgID}/workers/{workerID}"
-	workerList     = "/{orgID}/workers"
-	workerAssign   = "/workers/service"
-	workerUnAssign = "/{orgID}/workers/service/{workerID}/{serviceID}"
-	// Services
-	service        = "/services"
-	serviceID      = "/{orgID}/services/{serviceID}"
-	serviceWorkers = "/{orgID}/services/{serviceID}/workers"
-	serviceList    = "/{orgID}/services"
-	// Schedule
-	schedule        = "/schedules"
-	scheduleWorkers = "/{orgID}/schedules"
-	scheduleDelete  = "/{orgID}/schedules/{workerID}"
-
-	// Slots
-	slots       = "/{orgID}/slots"
-	slotsWorker = "/{orgID}/slots/workers/{workerID}"
-)
-
-// Record
-const (
-	record     = "/records"
-	recordAdd  = "/creation"
-	recordID   = "/info/{recordID}"
-	recordList = "/list"
-	// Feedback
-	feedback   = "/feedbacks"
-	feedbackID = "/feedbacks/info"
-)
-
-// S3
-const (
-	media = "/media"
-)
-
-func InitRouter(controllersSet *Controllers) *mux.Router {
+func InitRouter(controllersSet *Controllers, routes settings.Routes) *mux.Router {
 	r := mux.NewRouter()
 
 	// Установка доменных контроллеров
@@ -99,81 +29,80 @@ func InitRouter(controllersSet *Controllers) *mux.Router {
 	rec := controllersSet.Record
 	s3 := controllersSet.S3
 
+	// TODO: PROD s := r.Host("www.example.com").Subrouter()
 	r.Use(auth.Middleware.HandlerLogs)
-	r.HandleFunc(health, HealthCheck)
-
-	v1 := r.NewRoute().PathPrefix(v1).Subrouter()
-	// !!!! Пока версия не продовая все ручки доступны без токенов !!!!
+	r.HandleFunc(settings.PathHealth, HealthCheck)
+	V1 := r.NewRoute().PathPrefix(settings.V1).Subrouter()
 	// Auth
-	authRouter := v1.NewRoute().PathPrefix(authPrefix).Subrouter()
-	authRouter.HandleFunc(authLogin, auth.Login).Methods("POST")
-	authRouter.HandleFunc(authRegisterOrg, auth.OrgRegister).Methods("POST")
-	authRouter.HandleFunc(authRegisterUser, auth.UserRegister).Methods("POST")
-	authRouter.HandleFunc(authRefreshToken, auth.UpdateAccessToken).Methods("PUT")
-	authRouter.HandleFunc(authVerifyCode, auth.VerifyCode).Methods("POST")
+	authmux := V1.NewRoute().PathPrefix(settings.PathAuth).Subrouter()
+	authmux.HandleFunc(settings.PathLogin, auth.Login).Methods(routes[settings.PathLogin].Methods.Get(settings.POST)...)
+	authmux.HandleFunc(settings.PathRegistration, auth.OrgRegister).Methods(routes[settings.PathRegistration].Methods.Get(settings.POST)...)
+	authmux.HandleFunc(settings.PathToken, auth.UpdateAccessToken).Methods(routes[settings.PathToken].Methods.Get(settings.PUT)...)
 
-	authProtectedRouter := v1.NewRoute().PathPrefix("/auth").Subrouter()
-	// authProtectedRouter.Use(auth.Middleware.IsTokenValid)
-	authProtectedRouter.HandleFunc(authSendCodeRetry, auth.SendCodeRetry).Methods("POST")
+	Protected := V1.NewRoute().Subrouter()
+	Protected.Use(auth.Middleware.Authorization)
 
-	// User
-	userRouter := v1.NewRoute().PathPrefix(userPrefix).Subrouter()
-	// userRouter.Use(auth.Middleware.IsTokenValid)
-	userRouter.HandleFunc(userMapOrgs, user.OrganizationInArea).Methods("GET")
-	userRouter.HandleFunc(userSearchOrgs, user.SearchOrganization).Methods("GET")
-	userRouter.HandleFunc(userGetInfo, user.GetUserByID).Methods("GET")
-	userRouter.HandleFunc(userUpdate, user.UpdateUser).Methods("PUT")
-	// Org
-	orgRouter := v1.NewRoute().PathPrefix(orgPrefix).Subrouter()
-	// orgRouter.Use(auth.Middleware.IsTokenValid)
-	orgRouter.HandleFunc(orgGetInfo, org.GetOrgByID).Methods("GET")
-	orgRouter.HandleFunc(orgUpdate, org.UpdateOrg).Methods("PUT")
-	// Timetable
-	orgRouter.HandleFunc(timetable, org.TimetableAdd).Methods("POST")
-	orgRouter.HandleFunc(timetable, org.TimetableUpdate).Methods("PUT")
-	orgRouter.HandleFunc(timetableID, org.Timetable).Methods("GET")
-	orgRouter.HandleFunc(timetableID, org.TimetableDelete).Methods("DELETE")
+	authmuxProtected := Protected.NewRoute().PathPrefix(settings.PathAuth).Subrouter()
+	authmuxProtected.HandleFunc(settings.PathCode, auth.SendCodeRetry).Methods(routes[settings.PathCode].Methods.Get(settings.POST)...)
+	authmuxProtected.HandleFunc(settings.PathCode, auth.VerifyCode).Methods(routes[settings.PathCode].Methods.Get(settings.PUT)...)
 
-	// Workers
-	orgRouter.HandleFunc(worker, org.WorkerAdd).Methods("POST")
-	orgRouter.HandleFunc(worker, org.WorkerUpdate).Methods("PUT")
-	orgRouter.HandleFunc(workerID, org.WorkerDelete).Methods("DELETE")
-	orgRouter.HandleFunc(workerID, org.Worker).Methods("GET")
-	orgRouter.HandleFunc(workerList, org.WorkerList).Methods("GET")
-	orgRouter.HandleFunc(workerAssign, org.WorkerAssignService).Methods("POST")
-	orgRouter.HandleFunc(workerUnAssign, org.WorkerUnAssignService).Methods("DELETE")
-	// Services
-	orgRouter.HandleFunc(service, org.ServiceAdd).Methods("POST")
-	orgRouter.HandleFunc(service, org.ServiceUpdate).Methods("PUT")
-	orgRouter.HandleFunc(serviceID, org.Service).Methods("GET")
-	orgRouter.HandleFunc(serviceID, org.ServiceDelete).Methods("DELETE")
-	orgRouter.HandleFunc(serviceWorkers, org.ServiceWorkerList).Methods("GET")
-	orgRouter.HandleFunc(serviceList, org.ServiceList).Methods("GET")
-	// Schedule
-	orgRouter.HandleFunc(schedule, org.AddWorkerSchedule).Methods("POST")
-	orgRouter.HandleFunc(schedule, org.UpdateWorkerSchedule).Methods("PUT")
-	orgRouter.HandleFunc(scheduleWorkers, org.WorkerSchedule).Methods("GET")
-	orgRouter.HandleFunc(scheduleDelete, org.DeleteWorkerSchedule).Methods("DELETE")
-	// Slots
-	orgRouter.HandleFunc(slotsWorker, org.Slots).Methods("GET")
-	orgRouter.HandleFunc(slots, org.UpdateSlot).Methods("PUT")
+	// users
+	Protected.HandleFunc(settings.PathUsers, user.GetUserByID).Methods(routes[settings.PathUsers].Methods.Get(settings.GET)...)
+	Protected.HandleFunc(settings.PathUsers, user.UpdateUser).Methods(routes[settings.PathUsers].Methods.Get(settings.PUT)...)
+	// orgs
+	Protected.HandleFunc(settings.PathOrgs, org.GetOrgByID).Methods(routes[settings.PathOrgs].Methods.Get(settings.GET)...)
+	Protected.HandleFunc(settings.PathOrgs, org.UpdateOrg).Methods(routes[settings.PathOrgs].Methods.Get(settings.PUT)...)
 
-	// Records
-	recRouter := v1.NewRoute().PathPrefix(record).Subrouter()
-	recRouter.HandleFunc(recordAdd, rec.RecordAdd).Methods("POST")
-	recRouter.HandleFunc(recordID, rec.Record).Methods("GET")
-	recRouter.HandleFunc(recordList, rec.RecordList).Methods("GET")
-	recRouter.HandleFunc(recordID, rec.RecordCancel).Methods("PUT")
+	usermuxProtected := Protected.NewRoute().PathPrefix(settings.PathUsers).Subrouter()
+	// users/orgmap
+	usermuxProtected.HandleFunc(settings.PathMapOrgs, user.OrganizationInArea).Methods(routes[settings.PathMapOrgs].Methods.Get(settings.GET)...)
+	// users/search/org
+	usermuxProtected.HandleFunc(settings.PathSearchOrgs, user.SearchOrganization).Methods(routes[settings.PathSearchOrgs].Methods.Get(settings.GET)...)
 
-	// Feedbacks
-	recRouter.HandleFunc(feedback, rec.FeedbackSet).Methods("POST")
-	recRouter.HandleFunc(feedback, rec.FeedbackUpdate).Methods("PUT")
-	recRouter.HandleFunc(feedbackID, rec.Feedbacks).Methods("GET")
-	recRouter.HandleFunc(feedbackID, rec.FeedbackDelete).Methods("DELETE")
+	orgmuxProtected := Protected.NewRoute().PathPrefix(settings.PathOrgs).Subrouter()
+	// orgs/timetables
+	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableAdd).Methods(routes[settings.PathTimetables].Methods.Get(settings.POST)...)
+	orgmuxProtected.HandleFunc(settings.PathTimetables, org.Timetable).Methods(routes[settings.PathTimetables].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableUpdate).Methods(routes[settings.PathTimetables].Methods.Get(settings.PUT)...)
+	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableDelete).Methods(routes[settings.PathTimetables].Methods.Get(settings.DELETE)...)
+	// orgs/services
+	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceAdd).Methods(routes[settings.PathServices].Methods.Get(settings.POST)...)
+	orgmuxProtected.HandleFunc(settings.PathServices, org.Service).Methods(routes[settings.PathServices].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceUpdate).Methods(routes[settings.PathServices].Methods.Get(settings.PUT)...)
+	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceDelete).Methods(routes[settings.PathServices].Methods.Get(settings.DELETE)...)
+	// orgs/workers
+	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerAdd).Methods(routes[settings.PathWorkers].Methods.Get(settings.POST)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkers, org.Worker).Methods(routes[settings.PathWorkers].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerUpdate).Methods(routes[settings.PathWorkers].Methods.Get(settings.PUT)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerDelete).Methods(routes[settings.PathWorkers].Methods.Get(settings.DELETE)...)
+	// orgs/workers/slots
+	orgmuxProtected.HandleFunc(settings.PathWorkersSlots, org.Slots).Methods(routes[settings.PathWorkersSlots].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersSlots, org.UpdateSlot).Methods(routes[settings.PathWorkersSlots].Methods.Get(settings.PUT)...)
+	// orgs/workers/services
+	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.WorkerAssignService).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.POST)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.WorkerUnAssignService).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.DELETE)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.ServiceWorkerList).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.GET)...)
+	// orgs/workers/schedules
+	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.AddWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.POST)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.WorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.UpdateWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.PUT)...)
+	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.DeleteWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.DELETE)...)
 
-	s3Router := v1.NewRoute().Subrouter()
-	s3Router.HandleFunc(media, s3.Upload).Methods("POST")
-	s3Router.HandleFunc(media, s3.Download).Methods("GET")
-	s3Router.HandleFunc(media, s3.Delete).Methods("DELETE")
+	// records
+	Protected.HandleFunc(settings.PathRecords, rec.RecordAdd).Methods(routes[settings.PathRecords].Methods.Get(settings.POST)...)
+	Protected.HandleFunc(settings.PathRecords, rec.Record).Methods(routes[settings.PathRecords].Methods.Get(settings.GET)...)
+	Protected.HandleFunc(settings.PathRecords, rec.RecordCancel).Methods(routes[settings.PathRecords].Methods.Get(settings.PUT)...)
+
+	recmuxProtected := Protected.NewRoute().PathPrefix(settings.PathRecords).Subrouter()
+	// records/feedbacks
+	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackSet).Methods(routes[settings.PathFeedback].Methods.Get(settings.POST)...)
+	recmuxProtected.HandleFunc(settings.PathFeedback, rec.Feedbacks).Methods(routes[settings.PathFeedback].Methods.Get(settings.GET)...)
+	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackUpdate).Methods(routes[settings.PathFeedback].Methods.Get(settings.PUT)...)
+	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackDelete).Methods(routes[settings.PathFeedback].Methods.Get(settings.DELETE)...)
+
+	// media
+	Protected.HandleFunc(settings.PathMedia, s3.Upload).Methods(routes[settings.PathFeedback].Methods.Get(settings.POST)...)
+	Protected.HandleFunc(settings.PathMedia, s3.Download).Methods(routes[settings.PathFeedback].Methods.Get(settings.GET)...)
+	Protected.HandleFunc(settings.PathMedia, s3.Delete).Methods(routes[settings.PathFeedback].Methods.Get(settings.DELETE)...)
 	return r
 }
