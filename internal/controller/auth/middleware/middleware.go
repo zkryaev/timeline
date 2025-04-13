@@ -83,12 +83,8 @@ func (m *middleware) Authorization(next http.Handler) http.Handler {
 			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
-		uri, err := url.QueryUnescape(r.RequestURI)
-		if err != nil {
-			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
-		}
 		tdata := common.GetTokenData(token.Claims)
-		if err := common.HasAccess(tdata, uri); err != nil {
+		if err := m.routes.HasAccess(tdata, r.RequestURI, r.Method); err != nil {
 			m.logger.Error("HasAccess", zap.Error(err))
 			http.Error(w, "", http.StatusUnauthorized)
 			return
