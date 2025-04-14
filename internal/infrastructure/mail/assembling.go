@@ -42,12 +42,37 @@ var (
 		  <span>%%s</span>
 		</div>
 		<div style="margin-bottom: 5px;">
-	 	  <span style="font-weight: bold; color: %s">Время:</span>
+	 	  <span style="font-weight: bold; color: %s">Дата и время записи:</span>
 	  	  <span>%%s</span>
 		</div>
 		  <p>Ждем вас!</p>
 	  </div>
 	  `, emailFont, textColor, labelColor, labelColor, labelColor)
+
+	cancellationTemplate = fmt.Sprintf(`
+	  <div style="font-family: %s; color: %s; line-height: 1.6; margin: 20px; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd;">
+		  <p>Здравствуйте!</p>
+		  <p>Ваша запись на услугу была отменена.</p>
+		  <div style="margin-bottom: 5px;">
+			  <span style="font-weight: bold; color: %s">Организация:</span>
+			  <span>%%s</span>
+		  </div>
+		  <div style="margin-bottom: 5px;">
+			  <span style="font-weight: bold; color: %s">Услуга:</span>
+			  <span>%%s</span>
+		  </div>
+		  <div style="margin-bottom: 5px;">
+			  <span style="font-weight: bold; color: %s">Дата и время записи:</span>
+			  <span>%%s</span>
+		  </div>
+		  <div style="margin-bottom: 5px;">
+			<span style="font-weight: bold; color: %s">Причина отмены:</span>
+			<span>%%s</span>
+		</div>
+		  <p>Если отмена произошла по ошибке или у вас есть вопросы, пожалуйста, свяжитесь с организацией.</p>
+		  <p style="color: #777; font-size: 0.9em;">Это автоматическое уведомление. Пожалуйста, не отвечайте на это письмо.</p>
+	  </div>`,
+		emailFont, textColor, labelColor, labelColor, labelColor)
 )
 
 var (
@@ -58,6 +83,7 @@ var (
 var (
 	VerificationType = "verification"
 	ReminderType     = "reminder"
+	CancelationType  = "cancelation"
 )
 
 // Сборка письма
@@ -81,11 +107,23 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 		body = fmt.Sprintf(reminderTemplate,
 			fields.Organization,
 			fields.Service,
-			fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
+			fields.SessionDate.Format("02.01.2006")+" : "+fields.SessionStart.Format("15:04")+"-"+fields.SessionEnd.Format("15:04"),
 		)
 		if data.IsAttach {
 			icsContent = icsCreate(fields)
 		}
+	case CancelationType:
+		subject = "Ваша запись отменена"
+		fields, ok := data.Value.(*models.CancelMsg)
+		if !ok {
+			return nil, ErrWrongMsgType
+		}
+		body = fmt.Sprintf(reminderTemplate,
+			fields.Organization,
+			fields.Service,
+			fields.SessionDate+" : "+fields.SessionStart+"-"+fields.SessionEnd,
+			fields.CancelReason,
+		)
 	default:
 		return nil, ErrTypeNotExist
 	}
