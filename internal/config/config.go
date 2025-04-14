@@ -18,9 +18,11 @@ type Config struct {
 }
 
 type Application struct {
-	Env              string `yaml:"env" env-required:"true"`
-	IsBackDataLoaded bool   `yaml:"is_backdata_loaded"`
-	HTTPServer       `yaml:"http_server"`
+	Env                 string `yaml:"env" env-required:"true"`
+	UseLocalBackData    bool   `yaml:"use_local_back_data"`
+	EnableAuthorization bool   `yaml:"enable_authorization"`
+
+	HTTPServer `yaml:"http_server"`
 }
 
 type HTTPServer struct {
@@ -62,14 +64,14 @@ type S3 struct {
 	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
 }
 
-func MustLoad() Config {
+func MustLoad() *Config {
 	configPath := envars.GetPathByEnv("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatal("the cfg file doesn't exist at the path: ", configPath)
 	}
 
-	var cfg Config
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	cfg := &Config{}
+	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
 		log.Fatal("failed with reading config: ", err.Error())
 	}
 	return cfg
