@@ -27,7 +27,14 @@ import (
 // @title Timeline API
 // @version 1.0
 // @BasePath /v1
-// @schemes http
+// @host www.timeline.ru
+// @schemes http https
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description "Bearer {token}"
+// @externalDocs.description Документация
+// @externalDocs.url https://github.com/zkryaev/timeline
 func main() {
 	// Подгружаем все переменные окружения
 	if err := godotenv.Load(); err != nil {
@@ -61,18 +68,18 @@ func main() {
 	defer db.Close()
 
 	backdata := &loader.BackData{}
-	if !cfg.App.IsBackDataLoaded {
-		logger.Info("Loading backdata from provided sources...")
-		if err := loader.LoadData(logger, db, backdata); err != nil {
-			logger.Fatal("failed", zap.Error(err))
-		}
-	} else {
-		logger.Info("Skipped loading backdata from sources")
+	if cfg.App.UseLocalBackData {
+		logger.Info("Loading from local storage", zap.Bool("use_local_backdata", cfg.App.UseLocalBackData))
 		logger.Info("Start loading from DB")
 		backdata.Cities, err = db.PreLoadCities(context.Background())
 		if err != nil {
 			logger.Fatal("PreLoadCities", zap.Error(err))
 			return
+		}
+	} else {
+		logger.Info("Loading backdata from provided sources", zap.Bool("use_local_backdata", cfg.App.UseLocalBackData))
+		if err := loader.LoadData(logger, db, backdata); err != nil {
+			logger.Fatal("failed", zap.Error(err))
 		}
 	}
 	logger.Info("Loading data is finished")
