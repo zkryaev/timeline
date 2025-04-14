@@ -1,7 +1,8 @@
 # example
 app:
   env: DEV
-  is_backdata_loaded: false
+  use_local_back_data: true
+  enable_authorization: true
   http_server:
     host: localhost
     port: 8080
