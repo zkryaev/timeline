@@ -75,13 +75,13 @@ var PathList = []string{
 	PathMedia,
 }
 
-type MethodList []string
+type MethodList map[string]string
 
 func newMethodsMap(s *Settings, methods ...string) MethodList {
 	m := make(MethodList, len(methods))
-	for i := range m {
-		if ind, ok := s.SupportedMethodsMap[methods[i]]; ok {
-			m[ind] = methods[i]
+	for i := range len(methods) {
+		if _, ok := s.SupportedMethodsMap[methods[i]]; ok {
+			m[methods[i]] = methods[i]
 		}
 	}
 	return m
@@ -90,10 +90,10 @@ func newMethodsMap(s *Settings, methods ...string) MethodList {
 // Return methods specified by method enum in scope.go
 //
 // Call endpoint.Methods... - to get all methods
-func (mp MethodList) Get(enum ...uint8) []string {
-	list := make([]string, len(enum))
-	for i := range enum {
-		list = append(list, mp[enum[i]])
+func (mp MethodList) Get(menthods ...string) []string {
+	list := make([]string, len(menthods))
+	for i := range menthods {
+		list = append(list, mp[menthods[i]])
 	}
 	return list
 }

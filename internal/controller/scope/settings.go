@@ -5,13 +5,14 @@ import (
 	"timeline/internal/config"
 )
 
+// supported methods
 const (
-	POST = iota
-	GET
-	PUT
-	DELETE
+	POST   = http.MethodPost
+	GET    = http.MethodGet
+	PUT    = http.MethodPut
+	DELETE = http.MethodDelete
 
-	ALL
+	ALL = "ALL"
 )
 
 // supported query param types
@@ -32,7 +33,7 @@ const (
 )
 
 type Settings struct {
-	SupportedMethodsMap map[string]uint8
+	SupportedMethodsMap map[string]struct{}
 	SupportedParams     SupportedParams
 	EnableAuthorization bool
 	EnableRepoS3        bool
@@ -49,11 +50,11 @@ func NewDefaultSettings(appCfg config.Application) *Settings {
 	}
 }
 
-func defaultSupportedMethodsHTTP() map[string]uint8 {
-	return map[string]uint8{
-		http.MethodGet:    GET,
-		http.MethodPost:   POST,
-		http.MethodPut:    PUT,
-		http.MethodDelete: DELETE,
+func defaultSupportedMethodsHTTP() map[string]struct{} {
+	return map[string]struct{}{
+		http.MethodGet:    {},
+		http.MethodPost:   {},
+		http.MethodPut:    {},
+		http.MethodDelete: {},
 	}
 }
