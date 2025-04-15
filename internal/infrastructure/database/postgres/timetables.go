@@ -2,12 +2,11 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -31,20 +30,23 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID int, tdata models.To
 	`
 	timetable := make([]*orgmodel.OpenHours, 0, 1)
 	if err = tx.SelectContext(ctx, &timetable, query, orgID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrTimetableNotFound
 		}
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to select timetable: %w", err)
 	}
 	var city string
+	var entity string
 	switch tdata.IsOrg {
 	case false:
+		entity = "user's"
 		query = `
 			SELECT city
 			FROM users
 			WHERE user_id = $1;
 		`
 	case true:
+		entity = "org's"
 		query = `
 			SELECT city
 			FROM orgs
@@ -52,10 +54,10 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID int, tdata models.To
 		`
 	}
 	if err := tx.QueryRowxContext(ctx, query, tdata.ID).Scan(&city); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrTimetableNotFound
 		}
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, "", fmt.Errorf("failed to commit tx: %w", err)

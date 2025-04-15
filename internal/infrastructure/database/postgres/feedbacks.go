@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/recordmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -35,7 +33,7 @@ func (p *PostgresRepo) FeedbackList(ctx context.Context, params *recordmodel.Fee
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, params.RecordID, params.UserID, params.OrgID).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrServiceNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)

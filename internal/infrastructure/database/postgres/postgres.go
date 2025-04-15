@@ -14,27 +14,33 @@ var (
 )
 
 type PostgresRepo struct {
-	cfg config.Database
-	db  *sqlx.DB
+	cfg       *config.Database
+	presetDSN string
+	useCfg    bool
+	db        *sqlx.DB
 }
 
-func New(cfg config.Database) *PostgresRepo {
+func New(cfg *config.Database, dsn string, useCfg bool) *PostgresRepo {
 	return &PostgresRepo{
-		cfg: cfg,
+		cfg:       cfg,
+		presetDSN: dsn,
+		useCfg:    useCfg,
 	}
 }
 
 func (p *PostgresRepo) Open() error {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		p.cfg.Host,
-		p.cfg.Port,
-		p.cfg.User,
-		p.cfg.Password,
-		p.cfg.Name,
-		p.cfg.SSLmode,
-	)
-	db, err := sqlx.Connect("pgx", dsn)
+	if p.useCfg {
+		p.presetDSN = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			p.cfg.Host,
+			p.cfg.Port,
+			p.cfg.User,
+			p.cfg.Password,
+			p.cfg.Name,
+			p.cfg.SSLmode,
+		)
+	}
+	db, err := sqlx.Connect("pgx", p.presetDSN)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}

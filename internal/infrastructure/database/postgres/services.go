@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -37,7 +36,7 @@ func (p *PostgresRepo) ServiceAdd(ctx context.Context, service *orgmodel.Service
 		service.Cost,
 		service.Description,
 	).Scan(&serviceID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrNoRowsAffected
 		}
 		return 0, err
@@ -76,7 +75,7 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Serv
 		service.ServiceID,
 		service.OrgID,
 	).Err(); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNoRowsAffected
 		}
 		return err
@@ -106,7 +105,7 @@ func (p *PostgresRepo) Service(ctx context.Context, serviceID, orgID int) (*orgm
 	`
 	var service orgmodel.Service
 	if err = tx.GetContext(ctx, &service, query, &serviceID, &orgID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrServiceNotFound
 		}
 		return nil, err
@@ -136,7 +135,7 @@ func (p *PostgresRepo) ServiceList(ctx context.Context, orgID int, limit int, of
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, orgID).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrServiceNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)

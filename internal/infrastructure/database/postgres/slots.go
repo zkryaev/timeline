@@ -2,14 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/sugar/custom"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -153,29 +152,31 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
 	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrSlotsNotFound
 		}
-		return nil, "", fmt.Errorf("selectctx: %w", err)
+		return nil, "", fmt.Errorf("failed to select slots: %w", err)
 	}
+	var entity string
 	switch params.TData.IsOrg {
 	case false:
+		entity = "user's"
 		query = `
 			SELECT city
 			FROM users
 			WHERE user_id = $1;
 		`
 	case true:
+		entity = "org's"
 		query = `
 			SELECT city
 			FROM orgs
 			WHERE org_id = $1;
 		`
 	}
-	city := ""
-	row := tx.QueryRowContext(ctx, query, params.TData.ID)
-	if err := row.Scan(&city); err != nil {
-		return nil, "", fmt.Errorf("queryrowctx: %w", err)
+	var city string
+	if err := tx.QueryRowContext(ctx, query, params.TData.ID).Scan(&city); err != nil {
+		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}
 	if tx.Commit() != nil {
 		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)

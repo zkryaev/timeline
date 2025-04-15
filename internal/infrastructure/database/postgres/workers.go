@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -39,7 +38,7 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (
 		worker.Degree,
 		worker.SessionDuration,
 	).Scan(&workerID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrNoRowsAffected
 		}
 		return 0, fmt.Errorf("failed to add worker to org: %w", err)
@@ -69,7 +68,7 @@ func (p *PostgresRepo) Worker(ctx context.Context, workerID, orgID int) (*orgmod
 	`
 	var worker orgmodel.Worker
 	if err = tx.GetContext(ctx, &worker, query, &workerID, &orgID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrWorkerNotFound
 		}
 		return nil, fmt.Errorf("failed to get worker: %w", err)
@@ -112,7 +111,7 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 		worker.WorkerID,
 		worker.OrgID,
 	).Err(); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNoRowsAffected
 		}
 		return fmt.Errorf("failed to update worker: %w", err)
@@ -230,7 +229,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, orgID, limit, offset int)
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, orgID).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrWorkerNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
@@ -245,7 +244,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, orgID, limit, offset int)
 	`
 	workers := make([]*orgmodel.Worker, 0, 3)
 	if err = tx.SelectContext(ctx, &workers, query, orgID, limit, offset); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrWorkerNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get worker list: %w", err)
@@ -366,7 +365,7 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (str
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, orgID, workerID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrWorkerNotFound
 		}
 		return "", fmt.Errorf("failed to get worker uuid by id: %w", err)

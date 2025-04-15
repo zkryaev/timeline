@@ -2,14 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"timeline/internal/controller/scope"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	pgx "github.com/jackc/pgx/v5"
 )
 
 var (
@@ -104,7 +103,7 @@ func (p *PostgresRepo) OrgUUID(ctx context.Context, orgID int) (string, error) {
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, orgID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrOrgNotFound
 		}
 		return "", fmt.Errorf("failed to get org uuid by id: %w", err)
@@ -201,7 +200,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 	`
 	var org orgmodel.Organization
 	if err = tx.GetContext(ctx, &org, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org by id: %w", err)
@@ -212,7 +211,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		WHERE org_id = $1;
 	`
 	if err = tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
@@ -224,7 +223,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		WHERE org_id = $1;
 	`
 	if err = tx.SelectContext(ctx, &org.ShowcasesURL, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
@@ -279,7 +278,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *orgmodel.AreaParams
 		area.Left.Long,  // Левая граница долготы
 		area.Right.Long, // Правая граница долготы
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
 		return nil, fmt.Errorf("failed to get orgs in area with schedule: %w", err)
@@ -313,10 +312,10 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, params.Name, params.Type).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed to count orgs: %w", err)
 	}
 	query = `SELECT 
 			o.org_id,
@@ -353,10 +352,10 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	stmt.WriteString(boundaires)
 	orgList := make([]*orgmodel.OrgsBySearch, 0, 3)
 	if err = tx.SelectContext(ctx, &orgList, stmt.String(), params.Name, params.Type, params.Limit, params.Offset); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed to search orgs: %w", err)
 	}
 	query = `
 		SELECT city
@@ -368,10 +367,10 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		Data:  orgList,
 	}
 	if err := tx.QueryRowxContext(ctx, query, params.UserID).Scan(&resp.UserCity); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user's city: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)

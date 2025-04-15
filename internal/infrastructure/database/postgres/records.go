@@ -2,13 +2,12 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/recordmodel"
 	"timeline/internal/infrastructure/models/usermodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -58,9 +57,9 @@ func (p *PostgresRepo) Record(ctx context.Context, param recordmodel.RecordParam
 		AND r.record_id = $1
 	`
 	if param.TData.IsOrg {
-		query += " AND org_id = $2;"
+		query += " AND r.org_id = $2;"
 	} else {
-		query += " AND user_id = $2;"
+		query += " AND r.user_id = $2;"
 	}
 	rec := &recordmodel.RecordScrap{
 		RecordID: param.RecordID,
@@ -92,7 +91,7 @@ func (p *PostgresRepo) Record(ctx context.Context, param recordmodel.RecordParam
 		&rec.Reviewed,
 		&rec.CreatedAt,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordNotFound
 		}
 		return nil, err
@@ -134,7 +133,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, req.UserID, req.OrgID, req.Fresh).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrRecordsNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to retrieve found: %w", err)
@@ -183,7 +182,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrRecordsNotFound
 		}
 		return nil, 0, err
@@ -447,7 +446,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordsNotFound
 		}
 		return nil, err

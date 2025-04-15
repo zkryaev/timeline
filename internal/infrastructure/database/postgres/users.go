@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/usermodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -68,7 +67,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, userID int) (*usermodel.Use
 	`
 	var user usermodel.UserInfo
 	if err = tx.GetContext(ctx, &user, query, userID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by id: %w", err)
@@ -240,7 +239,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, userID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrUserNotFound
 		}
 		return "", fmt.Errorf("failed to get user uuid by id: %w", err)
