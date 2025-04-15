@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/settings"
+	"timeline/internal/controller/scope"
 	"timeline/internal/usecase/auth/validation"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -36,10 +36,10 @@ type Middleware interface {
 type middleware struct {
 	secret *rsa.PrivateKey
 	logger *zap.Logger
-	routes settings.Routes
+	routes scope.Routes
 }
 
-func New(key *rsa.PrivateKey, logger *zap.Logger, routes settings.Routes) Middleware {
+func New(key *rsa.PrivateKey, logger *zap.Logger, routes scope.Routes) Middleware {
 	return &middleware{
 		secret: key,
 		logger: logger,
@@ -83,7 +83,7 @@ func (m *middleware) Authorization(next http.Handler) http.Handler {
 			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
-		tdata := common.GetTokenData(token.Claims)
+		tdata := GetTokenData(token.Claims)
 		if err := m.routes.HasAccess(tdata, r.RequestURI, r.Method); err != nil {
 			m.logger.Error("HasAccess", zap.Error(err))
 			http.Error(w, "", http.StatusUnauthorized)
