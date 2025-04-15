@@ -57,8 +57,8 @@ type ReminderRecord struct {
 }
 
 type RecordCancelation struct {
-	RecordID     int
 	TData        models.TokenData
-	IsCanceled   bool
 	CancelReason string
+	RecordID     int
+	IsCanceled   bool
 }

@@ -374,6 +374,14 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 			is_canceled = $1,
 			cancel_reason = $2
 		WHERE record_id = $3
+	`
+	var entity string
+	if rec.TData.IsOrg {
+		entity = " AND org_id = $4"
+	} else {
+		entity = " AND user_id = $4"
+	}
+	query = query + entity + `
 		AND EXISTS (SELECT 1 FROM recslot WHERE slot_date >= CURRENT_TIMESTAMP)
 		RETURNING slot_id;
 	`
@@ -384,6 +392,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 		rec.IsCanceled,
 		rec.CancelReason,
 		rec.RecordID,
+		rec.TData.ID,
 	).Scan(&slotID)
 	switch {
 	case err != nil:
@@ -401,7 +410,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 	res, err := tx.ExecContext(ctx, query, slotID)
 	switch {
 	case err != nil:
-		return fmt.Errorf("failed to cancel selected record: %w", err)
+		return fmt.Errorf("failed to free slot from record after cancel: %w", err)
 	default:
 		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected

@@ -18,8 +18,9 @@ type Slots interface {
 }
 
 // @Summary Get slots
-// @Description Get all slots for specified worker
-// @Tags orgs/slots
+// @Description Получение всех слотов работника
+// @Description `Если авторизация отключена, то время будет в часовом поясе организации из параметров`
+// @Tags orgs/workers/slots
 // @Produce json
 // @Param   worker_id query int true " "
 // @Param   org_id query int true " "
@@ -40,6 +41,10 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		orgID    = query.NewParamInt(scope.ORG_ID, true)
 		workerID = query.NewParamInt(scope.WORKER_ID, true)
 	)
+	if !o.settings.EnableAuthorization {
+		tdata.ID = orgID.Val
+		tdata.IsOrg = true
+	}
 	params := query.NewParams(o.settings, orgID, workerID)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))

@@ -66,7 +66,7 @@ func (p *PostgresRepo) ServiceUpdate(ctx context.Context, service *orgmodel.Serv
 			description = $3
 		WHERE is_delete = false
 		AND service_id = $4 
-		AND org_id = $5;
+		AND ($5 <= 0 OR org_id = $5);
 	`
 	if err = tx.QueryRowContext(ctx, query,
 		service.Name,
@@ -174,7 +174,7 @@ func (p *PostgresRepo) ServiceSoftDelete(ctx context.Context, serviceID, orgID i
 			is_delete = TRUE
 		WHERE is_delete = FALSE 
 		AND service_id = $1
-		AND org_id = $2;
+		AND ($2 <= 0 OR org_id = $2);
 	`
 	res, err := tx.ExecContext(ctx, query, &serviceID, &orgID)
 	switch {

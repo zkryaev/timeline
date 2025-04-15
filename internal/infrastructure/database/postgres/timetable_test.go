@@ -30,7 +30,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 	suite.NoError(suite.db.TimetableAdd(ctx, orgID, []*orgmodel.OpenHours{orgmap.OpenHoursToModel(exp)}))
 	timetable, _, err := suite.db.Timetable(ctx, orgID, modelTData)
 	suite.NoError(err)
-	suite.NotNil(timetable)
+	suite.Require().NotNil(timetable)
 
 	openhours := orgmap.TimetableToEntity(timetable, time.Now().Location())
 	var found bool
@@ -48,7 +48,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 
 	timetable, _, err = suite.db.Timetable(ctx, orgID, modelTData)
 	suite.NoError(err)
-	suite.NotNil(timetable)
+	suite.Require().NotNil(timetable)
 
 	found = false
 	openhours = orgmap.TimetableToEntity(timetable, time.Now().UTC().Location())
@@ -64,7 +64,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 
 	timetable, _, err = suite.db.Timetable(ctx, orgID, modelTData)
 	suite.NoError(err)
-	suite.NotNil(timetable)
+	suite.Require().NotNil(timetable)
 
 	found = false
 	openhours = orgmap.TimetableToEntity(timetable, time.Now().Location())

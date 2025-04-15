@@ -3,9 +3,7 @@ package recordto
 import "timeline/internal/entity"
 
 type Feedback struct {
-	FeedbackID      int    `json:"feedback_id"`
-	RecordID        int    `json:"record_id"`
-	Stars           int    `json:"stars"`
+	TData           entity.TokenData
 	Feedback        string `json:"feedback,omitempty"`
 	Service         string `json:"service_name"`
 	WorkerFirstName string `json:"worker_first_name"`
@@ -13,7 +11,10 @@ type Feedback struct {
 	UserFirstName   string `json:"user_first_name"`
 	UserLastName    string `json:"user_last_name"`
 	RecordDate      string `json:"record_date"`
-	TData           entity.TokenData
+	FeedbackID      int    `json:"feedback_id"`
+	RecordID        int    `json:"record_id"`
+	UserID          int    `json:"user_id,omitempty"`
+	Stars           int    `json:"stars"`
 }
 
 type FeedbackList struct {

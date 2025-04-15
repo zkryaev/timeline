@@ -94,9 +94,9 @@ func ReminderRecordToReminder(model *recordmodel.ReminderRecord, loc *time.Locat
 
 func CancelationToModel(dto *recordto.RecordCancelation) *recordmodel.RecordCancelation {
 	return &recordmodel.RecordCancelation{
-		RecordID:     dto.RecordID,
-		CancelReason: dto.CancelReason,
 		TData:        models.TokenData(dto.TData),
+		CancelReason: dto.CancelReason,
+		RecordID:     dto.RecordID,
 		IsCanceled:   true,
 	}
 }

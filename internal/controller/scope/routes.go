@@ -131,7 +131,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 	// /users
 	case PathUsers:
 		mdata.Methods = newMethodsMap(s, http.MethodGet, http.MethodPut)
-		mdata.perms = perms.GrantPermissions(perms.READ+perms.UPDATE, perms.NONE)
+		mdata.perms = perms.GrantPermissions(perms.READ+perms.UPDATE, perms.READ)
 	// /users/orgmap
 	case PathMapOrgs:
 		mdata.Methods = newMethodsMap(s, http.MethodGet)
@@ -143,7 +143,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 	// /orgs  [ Users: Only Read | Orgs: All ]
 	case PathOrgs:
 		mdata.Methods = newMethodsMap(s, http.MethodGet, http.MethodPut)
-		mdata.perms = perms.GrantPermissions(perms.NONE, perms.READ+perms.UPDATE)
+		mdata.perms = perms.GrantPermissions(perms.READ, perms.READ+perms.UPDATE)
 	// /orgs/timetables
 	case PathTimetables:
 		mdata.Methods = newMethodsMap(s, http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete)

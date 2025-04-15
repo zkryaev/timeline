@@ -48,6 +48,8 @@ type RecordList struct {
 
 type RecordCancelation struct {
 	TData        entity.TokenData
+	UserID       int    `json:"user_id"`
+	OrgID        int    `json:"org_id"`
 	RecordID     int    `json:"record_id"`
 	CancelReason string `json:"cancel_reason"`
 }

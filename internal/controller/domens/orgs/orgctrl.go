@@ -97,13 +97,14 @@ func (o *OrgCtrl) PutOrganization(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.OrgUpdateReq{
-		OrgID: token.ID,
-	}
+	req := &orgdto.OrgUpdateReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = token.ID
 	}
 	if err := o.usecase.OrgUpdate(r.Context(), logger, req); err != nil {
 		switch {

@@ -22,6 +22,7 @@ type Timetable interface {
 
 // @Summary Get timetable
 // @Description Get organization timetable
+// @Description `Если авторизация отключена, то время будет в часовом поясе организации из параметров`
 // @Tags orgs/timetables
 // @Accept  json
 // @Param   org_id query int true " "
@@ -47,6 +48,10 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	if !o.settings.EnableAuthorization {
+		tdata.ID = orgID.Val
+		tdata.IsOrg = true
+	}
 	req := orgdto.TimetableReq{OrgID: orgID.Val, TData: tdata}
 	data, err := o.usecase.Timetable(r.Context(), logger, req)
 	if err != nil {
@@ -69,7 +74,8 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Add timetable
-// @Description
+// @Description Добавить расписание для организации
+// @Description `Если авторизация отключена: прокидывать `org_id` в теле запроса`
 // @Tags orgs/timetables
 // @Accept  json
 // @Param   request body orgdto.Timetable true " "
@@ -86,11 +92,14 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.Timetable{OrgID: tdata.ID}
+	req := &orgdto.Timetable{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err := o.usecase.TimetableAdd(r.Context(), logger, req); err != nil {
 		switch {
@@ -112,7 +121,8 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update timetable
-// @Description
+// @Description Обновление расписания организации
+// @Description `Если авторизация отключена: прокидывать `org_id` в теле запроса`
 // @Tags orgs/timetables
 // @Accept  json
 // @Param   request body orgdto.Timetable true " "
@@ -129,11 +139,14 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.Timetable{OrgID: tdata.ID}
+	req := &orgdto.Timetable{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err := o.usecase.TimetableUpdate(r.Context(), logger, req); err != nil {
 		switch {
@@ -155,11 +168,12 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete timetable
-// @Description
-// If weekday doesnt set then whole timetable will be deleted
+// @Description Удаление расписания организации, если `weekday` выставлен, то удалится заданный день
+// @Description `Если авторизация отключена: прокидывать `org_id` в параметрах`
 // @Tags orgs/timetables
 // @Accept  json
-// @Param weekday query int false "weekday"
+// @Param org_id query int false " "
+// @Param weekday query int false " "
 // @Success 200
 // @Failure 304
 // @Failure 400
@@ -174,13 +188,17 @@ func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var (
+		orgID   = query.NewParamInt(scope.ORG_ID, false)
 		weekday = query.NewParamInt(scope.WEEKDAY, false)
 	)
-	params := query.NewParams(o.settings, weekday)
+	params := query.NewParams(o.settings, weekday, orgID)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if !o.settings.EnableAuthorization {
+		tdata.ID = orgID.Val
 	}
 	if o.usecase.TimetableDelete(r.Context(), logger, tdata.ID, weekday.Val) != nil {
 		switch {

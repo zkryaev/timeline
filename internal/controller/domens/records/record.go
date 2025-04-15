@@ -14,7 +14,7 @@ import (
 )
 
 type Record interface {
-	Record(ctx context.Context, logger *zap.Logger, param recordto.RecordParam) (*recordto.RecordScrap, error)
+	Record(ctx context.Context, logger *zap.Logger, param recordto.RecordParam) (*recordto.RecordList, error)
 	RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error)
 	RecordAdd(ctx context.Context, logger *zap.Logger, rec *recordto.Record) error
 	RecordCancel(ctx context.Context, logger *zap.Logger, rec *recordto.RecordCancelation) error
@@ -38,16 +38,19 @@ func New(usecase Record, middleware middleware.Middleware, logger *zap.Logger, s
 }
 
 // @Summary Record information
-// @Description Get bounded with record information
-// Если `as_list=false` - (ОБЯЗАТЕЛЕН record_id) возвращает данные одной записи.
-// Если `as_list=true` -  (ОТСУТСВУЕТ) возвращает список записей с пагинацией
+// @Description `Если авторизация отключена: `user_id` или `org_id` нужно прокидывать в параметрах, иначе придет пустота - что логично`
+// @Description (Если оба прокинуты, то выберется user_id - это влияет только на время полученных записей)
+// @Description Типы Required параметров
+// @Description `as_list=false` - (ОБЯЗАТЕЛЕН: record_id) возвращает данные одной записи.
+// @Description  `as_list=true` - (ОБЯЗАТЕЛЕН: limit, page) возвращает список записей с пагинацией
 // @Tags records
-// @Param record_id query int true " "
-// @Param limit query int true " "
-// @Param page query int true " "
+// @Param record_id query int false " "
+// @Param limit query int false " "
+// @Param page query int false " "
 // @Param user_id query int false " "
 // @Param org_id query int false " "
-// @Param fresh query bool false "Decide which records must be returned. True - only current & future records. False/NotGiven - olds"
+// @Param as_list query bool false " "
+// @Param fresh query bool false "true - сегодняшние и будущие записи. false/not_given - до текущего дня"
 // @Success 200 {object} recordto.RecordScrap "as_list=false"
 // @Success 200 {object} recordto.RecordList "as_list=true"
 // @Failure 400
@@ -62,22 +65,34 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	asList := query.NewParamBool(scope.AS_LIST, false)
+	var (
+		asList = query.NewParamBool(scope.AS_LIST, false)
+		orgID  = query.NewParamInt(scope.ORG_ID, false)
+		userID = query.NewParamInt(scope.USER_ID, false)
+	)
 	params := query.NewParams(rec.settings, asList)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	var data any
+	if !rec.settings.EnableAuthorization {
+		if orgID.Val != 0 {
+			tdata.ID = orgID.Val
+			tdata.IsOrg = true
+		}
+		if userID.Val != 0 {
+			tdata.ID = userID.Val
+			tdata.IsOrg = false
+		}
+	}
+	var data *recordto.RecordList
 	switch asList.Val {
 	case scope.LIST:
 		var (
-			orgID  = query.NewParamInt(scope.ORG_ID, false)
-			userID = query.NewParamInt(scope.USER_ID, false)
-			limit  = query.NewParamInt(scope.LIMIT, true)
-			page   = query.NewParamInt(scope.PAGE, true)
-			fresh  = query.NewParamBool(scope.FRESH, false)
+			limit = query.NewParamInt(scope.LIMIT, true)
+			page  = query.NewParamInt(scope.PAGE, true)
+			fresh = query.NewParamBool(scope.FRESH, false)
 		)
 		params = query.NewParams(rec.settings, orgID, userID, limit, page, fresh)
 		if err := params.Parse(r.URL.Query()); err != nil {
@@ -119,7 +134,7 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Add record
 // @Description
-// @Tags Records
+// @Tags records
 // @Accept  json
 // @Param record body recordto.Record true " "
 // @Success 200
@@ -141,7 +156,9 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	req.UserID = tdata.ID
+	if rec.settings.EnableAuthorization {
+		req.UserID = tdata.ID
+	}
 	if err := rec.usecase.RecordAdd(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -158,9 +175,10 @@ func (rec *RecordCtrl) RecordAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete a future record
-// @Description Cancel a future record. If record was done, it couldn't be deleted!
-// Удаление только ожидаемой записи, а не уже совершённой.
-// @Tags Records
+// @Description `Если авторизация отключена: `user_id` или `org_id` в теле запроса надо прокидывать, иначе не удалится`
+// @Description (Если прокинуты обе, будет использован user_id)
+// @Description Удаление `ожидаемой` записи. Если запись выполнена, ее не получится удалить
+// @Tags records
 // @Param   req body recordto.RecordCancelation true " "
 // @Success 200
 // @Failure 304
@@ -180,6 +198,15 @@ func (rec *RecordCtrl) RecordCancel(w http.ResponseWriter, r *http.Request) {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if !rec.settings.EnableAuthorization {
+		if req.OrgID != 0 {
+			req.TData.ID = req.OrgID
+			req.TData.IsOrg = true
+		} else {
+			req.TData.ID = req.UserID
+			req.TData.IsOrg = false
+		}
 	}
 	if err := rec.usecase.RecordCancel(r.Context(), logger, req); err != nil {
 		switch {

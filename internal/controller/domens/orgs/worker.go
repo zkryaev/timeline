@@ -14,26 +14,28 @@ import (
 )
 
 type Workers interface {
-	Worker(ctx context.Context, logger *zap.Logger, workerID, OrgID int) (*orgdto.WorkerResp, error)
+	Worker(ctx context.Context, logger *zap.Logger, workerID, OrgID int) (*orgdto.WorkerList, error)
 	WorkerAdd(ctx context.Context, logger *zap.Logger, worker *orgdto.AddWorkerReq) (*orgdto.WorkerResp, error)
 	WorkerUpdate(ctx context.Context, logger *zap.Logger, worker *orgdto.UpdateWorkerReq) error
-	WorkerAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
-	WorkerUnAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
 	WorkerList(ctx context.Context, logger *zap.Logger, OrgID, Limit, Page int) (*orgdto.WorkerList, error)
 	WorkerDelete(ctx context.Context, logger *zap.Logger, WorkerID, OrgID int) error
+	WorkerAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkerUnAssignService(ctx context.Context, logger *zap.Logger, assignInfo *orgdto.AssignWorkerReq) error
+	WorkersServices(ctx context.Context, logger *zap.Logger, ServiceID, OrgID int) ([]*orgdto.WorkerResp, error)
 }
 
 // @Summary Get organization's worker
-// @Description
-// Если `as_list=false` - (ОБЯЗАТЕЛЕН worker_id) возвращает данные одного работника.
-// Если `as_list=true` -  (НЕТ) возвращает список работников с пагинацией
+// @Description Типы Required параметров
+// @Description `org_id` - всегда обязателен
+// @Description Если `as_list=false` - (ОБЯЗАТЕЛЕН:  worker_id) возвращает данные одного работника.
+// @Description Если `as_list=true` -  (ОБЯЗАТЕЛЕН: limit, page) возвращает список работников с пагинацией
 // @Tags orgs/workers
 // @Produce json
 // @Param org_id query int true " "
-// @Param worker_id query int true " "
-// @Param as_list query bool false " "
+// @Param worker_id query int false " "
 // @Param limit query int false " "
 // @Param page query int false " "
+// @Param as_list query bool false " "
 // @Success 200 {object} orgdto.WorkerResp "as_list=false"
 // @Success 200 {object} orgdto.WorkerList "as_list=true"
 // @Failure 400
@@ -52,7 +54,7 @@ func (o *OrgCtrl) Workers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	var data any
+	var data *orgdto.WorkerList
 	var err error
 	switch asList.Val {
 	case scope.LIST:
@@ -95,7 +97,8 @@ func (o *OrgCtrl) Workers(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Add worker
-// @Description
+// @Description Добавление работника к организации
+// @Description `Если авторизация отключена: `org_id`  прокинуть в тело запроса!`
 // @Tags orgs/workers
 // @Accept json
 // @Produce json
@@ -113,13 +116,14 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.AddWorkerReq{
-		OrgID: tdata.ID,
-	}
+	req := &orgdto.AddWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	data, err := o.usecase.WorkerAdd(r.Context(), logger, req)
 	if err != nil {
@@ -142,7 +146,7 @@ func (o *OrgCtrl) WorkerAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update worker info
-// @Description
+// @Description `Если авторизация отключена: `org_id` прокинуть в тело запроса!`
 // @Tags orgs/workers
 // @Accept json
 // @Param   request body orgdto.UpdateWorkerReq true " "
@@ -159,11 +163,14 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.UpdateWorkerReq{OrgID: tdata.ID}
+	req := &orgdto.UpdateWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err := o.usecase.WorkerUpdate(r.Context(), logger, req); err != nil {
 		switch {
@@ -181,7 +188,7 @@ func (o *OrgCtrl) WorkerUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete worker
-// @Description Delete specified worker from specified organization
+// @Description Удаление работника из организации
 // @Tags orgs/workers
 // @Param   worker_id query int true " "
 // @Success 200
@@ -206,6 +213,9 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	if o.settings.EnableAuthorization {
+		tdata.ID = scope.DEAD_ORG_ID
+	}
 	if err := o.usecase.WorkerDelete(r.Context(), logger, workerID.Val, tdata.ID); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -222,7 +232,8 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Assign worker to service
-// @Description Assign a specified worker to a specified service in the specified organization
+// @Description Прикрепление заданного работника на выполнение заданной услуги организации
+// @Description `Если авторизация отключена: `org_id` прокинуть в тело запроса!`
 // @Tags orgs/workers
 // @Accept json
 // @Produce json
@@ -240,11 +251,14 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	req := &orgdto.AssignWorkerReq{OrgID: tdata.ID}
+	req := &orgdto.AssignWorkerReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err := o.usecase.WorkerAssignService(r.Context(), logger, req); err != nil {
 		switch {
@@ -262,7 +276,7 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Unassign worker from
-// @Description Unassign worker from specified organization service
+// @Description Открепление работника от заданной услуги организации
 // @Tags orgs/workers
 // @Accept json
 // @Produce json
@@ -292,9 +306,12 @@ func (o *OrgCtrl) WorkerUnassignService(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	req := &orgdto.AssignWorkerReq{
-		OrgID:     tdata.ID,
+		OrgID:     scope.DEAD_ORG_ID,
 		ServiceID: serviceID.Val,
 		WorkerID:  workerID.Val,
+	}
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err = o.usecase.WorkerUnAssignService(r.Context(), logger, req); err != nil {
 		switch {

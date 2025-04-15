@@ -185,9 +185,12 @@ func (p *PostgresRepo) FeedbackDelete(ctx context.Context, params *recordmodel.F
 		}
 	}()
 	query := `DELETE FROM feedbacks
-		WHERE record_id = $1;
+		WHERE record_id IN (
+			SELECT record_id FROM records 
+			WHERE record_id = $1 AND user_id = $2
+		)
 	`
-	res, err := tx.ExecContext(ctx, query, params.RecordID)
+	res, err := tx.ExecContext(ctx, query, params.RecordID, params.TData.ID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete feedback: %w", err)

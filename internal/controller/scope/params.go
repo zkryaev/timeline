@@ -46,6 +46,12 @@ const (
 	LIST   = true
 )
 
+// For non-auth cases
+const (
+	DEAD_ORG_ID  = 0
+	DEAD_USER_ID = 0
+)
+
 type SupportedParams map[string]map[string]struct{}
 
 func defaultSupportedParams() SupportedParams {

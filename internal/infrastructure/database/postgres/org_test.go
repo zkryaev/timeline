@@ -34,7 +34,7 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 
 	actOrg, err := suite.db.OrgByID(ctx, orgID)
 	suite.NoError(err)
-	suite.NotNil(actOrg)
+	suite.Require().NotNil(actOrg)
 	suite.Equal(orgID, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).OrgID)
 	suite.Equal(&expOrg, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).Info)
 
@@ -58,7 +58,7 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	suite.NoError(err, "without sort")
 	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 	for i := range foundOrgs.Data {
 		org := orgmap.OrgsBySearchToDTO(foundOrgs.Data[i], time.Now().Location())
 		if org.OrgID == orgID {
@@ -71,14 +71,14 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	suite.NoError(err, "rate sort")
 	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 
 	params.SortBy = scope.NAMESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "name sort")
 	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 
 	expOrg.Name = "WELL KNOWN COMPANY"
 	expOrg.Type = "Mega Corporation"
@@ -95,7 +95,7 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	}
 	areaOrgs, err := suite.db.OrgsInArea(ctx, orgmap.AreaToModel(areaParams))
 	suite.NoError(err)
-	suite.NotNil(areaOrgs)
+	suite.Require().NotNil(areaOrgs)
 
 	resp := &general.OrgAreaResp{
 		Found: len(areaOrgs),

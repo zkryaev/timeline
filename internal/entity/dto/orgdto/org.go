@@ -14,7 +14,7 @@ type Organization struct {
 }
 
 type OrgUpdateReq struct {
-	OrgID int
 	entity.OrgInfo
 	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
+	OrgID     int                 `json:"org_id"`
 }

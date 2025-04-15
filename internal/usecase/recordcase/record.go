@@ -38,7 +38,7 @@ func New(backdata *loader.BackData, userRepo infrastructure.UserRepository, orgR
 	}
 }
 
-func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, param recordto.RecordParam) (*recordto.RecordScrap, error) {
+func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, param recordto.RecordParam) (*recordto.RecordList, error) {
 	data, err := r.records.Record(ctx, recordmap.RecordParamToModel(param))
 	if err != nil {
 		if errors.Is(err, postgres.ErrRecordNotFound) {
@@ -59,7 +59,8 @@ func (r *RecordUseCase) Record(ctx context.Context, logger *zap.Logger, param re
 		loc = time.Local // UTC+03 = MSK
 	}
 	logger.Info("Fetched record")
-	return recordmap.RecordScrapToDTO(data, loc), nil
+	single := &recordto.RecordList{List: []*recordto.RecordScrap{recordmap.RecordScrapToDTO(data, loc)}, Found: 1}
+	return single, nil
 }
 
 func (r *RecordUseCase) RecordList(ctx context.Context, logger *zap.Logger, params *recordto.RecordListParams) (*recordto.RecordList, error) {
@@ -135,7 +136,7 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *
 
 func (r *RecordUseCase) RecordCancel(ctx context.Context, logger *zap.Logger, req *recordto.RecordCancelation) error {
 	param := recordto.RecordParam{RecordID: req.RecordID, TData: req.TData}
-	record, err := r.Record(ctx, logger, param)
+	reclist, err := r.Record(ctx, logger, param)
 	if err != nil {
 		return err
 	}
@@ -145,6 +146,7 @@ func (r *RecordUseCase) RecordCancel(ctx context.Context, logger *zap.Logger, re
 		}
 		return err
 	}
+	record := reclist.List[0]
 	logger.Info("Record has been canceled")
 	if r.settings.EnableRepoS3 {
 		r.mail.SendMsg(&models.Message{

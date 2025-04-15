@@ -20,6 +20,7 @@ type Feedback struct {
 }
 
 type FeedbackParams struct {
+	TData      models.TokenData
 	FeedbackID int `db:"feedback_id"`
 	RecordID   int `db:"record_id"`
 	UserID     int `db:"user_id"`

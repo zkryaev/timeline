@@ -77,10 +77,10 @@ func (o *OrgCtrl) WorkersSchedule(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete worker schedule
-// @Description Delete specified worker schedule for a specific organization and worker with an optional weekday filter
+// @Description Удаление расписания работника организации. Если указан weekday, то удален будет только заданный день
 // @Tags orgs/workers/schedule
 // @Param   worker_id query int true " "
-// @Param   weekday query int false ""
+// @Param   weekday query int false " "
 // @Success 200
 // @Failure 304
 // @Failure 400
@@ -105,14 +105,12 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := &orgdto.ScheduleParams{
-		OrgID:    tdata.ID,
+		OrgID:    scope.DEAD_ORG_ID,
 		WorkerID: workerID.Val,
 		Weekday:  weekday.Val,
 	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
 	}
 	if err := o.usecase.DeleteWorkerSchedule(r.Context(), logger, req); err != nil {
 		switch {
@@ -153,7 +151,9 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	req.OrgID = tdata.ID
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
+	}
 	if err := o.usecase.UpdateWorkerSchedule(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -194,7 +194,9 @@ func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	req.OrgID = tdata.ID
+	if o.settings.EnableAuthorization {
+		req.OrgID = tdata.ID
+	}
 	if err := o.usecase.AddWorkerSchedule(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrTimeIncorrect):

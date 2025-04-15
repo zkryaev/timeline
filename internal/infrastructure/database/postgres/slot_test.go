@@ -17,7 +17,7 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 	}
 	slots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err, fmt.Sprintf("worker_id=%d org_id=%d", params.WorkerID, params.OrgID))
-	suite.NotNil(slots)
+	suite.Require().NotNil(slots)
 
 	numSlotsBefore := len(slots)
 	suite.NoError(suite.db.GenerateSlots(ctx), "generate slots failed")

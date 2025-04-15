@@ -42,7 +42,7 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	feedbkList, found, err := suite.db.FeedbackList(ctx, recordmap.FeedParamsToModel(params))
 	suite.NoError(err)
 	suite.NotZero(found)
-	suite.NotNil(feedbkList)
+	suite.Require().NotNil(feedbkList)
 
 	for _, feedbk := range feedbkList {
 		feedback := recordmap.FeedbackToDTO(feedbk)
@@ -57,7 +57,7 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	feedbkList, found, err = suite.db.FeedbackList(ctx, recordmap.FeedParamsToModel(params))
 	suite.NoError(err)
 	suite.NotZero(found)
-	suite.NotNil(feedbkList)
+	suite.Require().NotNil(feedbkList)
 
 	for _, feedbk := range feedbkList {
 		feedback := recordmap.FeedbackToDTO(feedbk)

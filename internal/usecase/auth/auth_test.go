@@ -89,9 +89,9 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 	}
 	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
-	suite.NotNil(tokens)
-	suite.NotNil(tokens.AccessToken)
-	suite.NotNil(tokens.RefreshToken)
+	suite.Require().NotNil(tokens)
+	suite.Require().NotNil(tokens.AccessToken)
+	suite.Require().NotNil(tokens.RefreshToken)
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -180,7 +180,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginVerifiedAccountExpired() {
 
 	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
-	suite.NotNil(tokens)
+	suite.Require().NotNil(tokens)
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -227,7 +227,7 @@ func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenSuccess() {
 
 	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, suite.logger, token)
 	suite.NoError(err)
-	suite.NotNil(tokens)
+	suite.Require().NotNil(tokens)
 }
 
 func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenBadClaims() {

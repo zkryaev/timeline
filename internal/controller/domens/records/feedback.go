@@ -76,7 +76,7 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Set feedback
-// @Description Set feedback for specified record
+// @Description `Если авторизация отключена: прокидывать `user_id` в теле запроса!`
 // @Tags records/feedbacks
 // @Accept  json
 // @Param req body recordto.Feedback true " "
@@ -99,6 +99,10 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	if !rec.settings.EnableAuthorization {
+		req.TData.ID = req.UserID
+		req.TData.IsOrg = false
+	}
 	if err := rec.usecase.FeedbackSet(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -115,7 +119,7 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update feedback
-// @Description Update feedback for specified record
+// @Description `Если авторизация отключена: прокидывать `user_id` в теле запроса!`
 // @Tags records/feedbacks
 // @Accept  json
 // @Param req body recordto.Feedback true " "
@@ -138,6 +142,10 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	if !rec.settings.EnableAuthorization {
+		req.TData.ID = req.UserID
+		req.TData.IsOrg = false
+	}
 	if err := rec.usecase.FeedbackUpdate(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -154,7 +162,7 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete feedback
-// @Description Delete feedback for specified record
+// @Description `Если авторизация отключена: прокидывать `user_id` в в параметрах`
 // @Tags records/feedbacks
 // @Param   record_id query int true " "
 // @Success 200
@@ -164,8 +172,15 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 // @Router /records/feedbacks [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(rec.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	var (
 		recordID = query.NewParamInt(scope.RECORD_ID, true)
+		userID   = query.NewParamInt(scope.USER_ID, false)
 	)
 	params := query.NewParams(rec.settings, recordID)
 	if err := params.Parse(r.URL.Query()); err != nil {
@@ -173,11 +188,15 @@ func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	req := &recordto.FeedbackParams{RecordID: recordID.Val}
+	req := &recordto.FeedbackParams{RecordID: recordID.Val, TData: tdata}
 	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if !rec.settings.EnableAuthorization {
+		req.TData.ID = userID.Val
+		req.TData.IsOrg = false
 	}
 	if err := rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
 		switch {

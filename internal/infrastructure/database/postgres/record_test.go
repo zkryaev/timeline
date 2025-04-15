@@ -66,12 +66,12 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	suite.NoError(err, fmt.Sprintf("org_id=%d slot_id=%d user_id=%d worker_id=%d service_id=%d",
 		org.OrgID, dbSlots[freeSlot].SlotID, user.UserID, dbWorkers[0].WorkerID, dbServices[0].ServiceID))
 	suite.Greater(recordID, 0)
-	suite.NotNil(remindRec)
+	suite.Require().NotNil(remindRec)
 
 	req := recordmodel.RecordParam{RecordID: recordID, TData: models.TokenData{ID: user.UserID, IsOrg: false}}
 	record, err := suite.db.Record(ctx, req)
 	suite.NoError(err, fmt.Sprintf("record_id=%d", recordID))
-	suite.NotNil(record)
+	suite.Require().NotNil(record)
 
 	recParams := &recordto.RecordListParams{}
 	recParams.OrgID = 0
@@ -83,6 +83,7 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	suite.Greater(found, 0)
 
 	cancelReq := &recordto.RecordCancelation{
+		TData:        entity.TokenData{ID: user.UserID},
 		RecordID:     recordID,
 		CancelReason: "TESTING REASON",
 	}

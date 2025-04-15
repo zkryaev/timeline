@@ -63,7 +63,7 @@ func (suite *MiddlewareTestSuite) TestValidToken() {
 
 	token, err := suite.Middeware.ExtractToken(r)
 	suite.NoError(err)
-	suite.NotNil(token)
+	suite.Require().NotNil(token)
 }
 
 func (suite *MiddlewareTestSuite) TestEmptyAuthHeader() {

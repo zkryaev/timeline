@@ -39,11 +39,14 @@ func New(storage S3UseCase, logger *zap.Logger, settings *scope.Settings) *S3Ctr
 
 // UploadFileHandler handles file uploads.
 // @Summary Upload a file
-// @Description Upload a single file with metadata. For orgs showcase: entity=showcase, but entity_id = org_id
+// @Description Загрузка одного медиа файла.
+// @Description Для организаций: entity=gallery/banner, entity_id = org_id (исключение: entity=worker entity_id = worker_id)
+// @Description Для пользователей: entity=user, entity_id = user_id
+// @Description [ `Если авторизация отключена: то можно указывать любые entity_id` ]
 // @Tags Media
 // @Accept multipart/form-data
 // @Produce json
-// @Param file formData file true "File to upload"
+// @Param file formData file true "Media file"
 // @Success 200
 // @Failure 400
 // @Failure 413
@@ -76,23 +79,28 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	switch {
-	case (entity == scope.BANNER || entity == scope.GALLERY || entity == scope.ORG || entity == scope.WORKER) && tdata.IsOrg:
-		if !(entity == scope.WORKER) {
+	if s3.settings.EnableAuthorization {
+		switch {
+		case (entity == scope.BANNER || entity == scope.GALLERY || entity == scope.ORG || entity == scope.WORKER) && tdata.IsOrg:
+			if !(entity == scope.WORKER) {
+				entityID = tdata.ID
+			}
+		case entity == scope.USER && !tdata.IsOrg:
 			entityID = tdata.ID
+		default:
+			var caller string
+			if tdata.IsOrg {
+				caller = scope.ORG
+			} else {
+				caller = scope.USER
+			}
+			logger.Info("forbid to upload media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity))
+			http.Error(w, "", http.StatusUnauthorized)
+			return
 		}
-	case entity == scope.USER && !tdata.IsOrg:
-		entityID = tdata.ID
-	default:
-		var caller string
-		if tdata.IsOrg {
-			caller = scope.ORG
-		} else {
-			caller = scope.USER
-		}
-		logger.Info("forbid to upload media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity))
-		http.Error(w, "", http.StatusUnauthorized)
-		return
+	} else {
+		tdata.ID = scope.DEAD_ORG_ID
+		tdata.IsOrg = false
 	}
 	file, meta, err := r.FormFile("file")
 	switch {
@@ -164,7 +172,8 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 
 // DeleteFileHandler handles file deletions.
 // @Summary Delete a file
-// @Description Delete a file by its URL and associated entity
+// @Description Удаление одного медиа файла по указанному URL
+// @Description [ `Если авторизация отключена: то можно указывать любые url` ]
 // @Tags Media
 // @Accept json
 // @Produce json
@@ -192,19 +201,30 @@ func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	switch {
-	case (entity.Val == scope.BANNER || entity.Val == scope.GALLERY || entity.Val == scope.ORG || entity.Val == scope.WORKER) && tdata.IsOrg:
-	case entity.Val == scope.USER && !tdata.IsOrg:
-	default:
-		var caller string
-		if tdata.IsOrg {
-			caller = "org"
-		} else {
-			caller = "user"
+	if s3.settings.EnableAuthorization {
+		switch {
+		case (entity.Val == scope.BANNER || entity.Val == scope.GALLERY || entity.Val == scope.ORG || entity.Val == scope.WORKER) && tdata.IsOrg:
+		case entity.Val == scope.USER && !tdata.IsOrg:
+		default:
+			var caller string
+			if tdata.IsOrg {
+				caller = "org"
+			} else {
+				caller = "user"
+			}
+			logger.Info("forbid to delete media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity.Val), zap.String("url", url.Val))
+			http.Error(w, "", http.StatusUnauthorized)
+			return
 		}
-		logger.Info("forbid to delete media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity.Val), zap.String("url", url.Val))
-		http.Error(w, "", http.StatusUnauthorized)
-		return
+	} else {
+		switch {
+		case entity.Val == scope.USER:
+			tdata.ID = scope.DEAD_USER_ID
+			tdata.IsOrg = false
+		default:
+			tdata.ID = scope.DEAD_ORG_ID
+			tdata.IsOrg = true
+		}
 	}
 	req := s3dto.DeleteReq{Url: url.Val, Entity: entity.Val, TData: tdata}
 	if err := s3.usecase.Delete(r.Context(), logger, req); err != nil {

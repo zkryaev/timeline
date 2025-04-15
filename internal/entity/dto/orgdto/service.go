@@ -3,13 +3,13 @@ package orgdto
 import "timeline/internal/entity"
 
 type AddServiceReq struct {
-	OrgID       int
+	OrgID       int            `json:"org_id"`
 	ServiceInfo entity.Service `json:"service_info" validate:"required"`
 }
 
 type UpdateServiceReq struct {
+	OrgID       int
 	ServiceID   int            `json:"service_id" validate:"required"`
-	OrgID       int            `json:"org_id" validate:"required"`
 	ServiceInfo entity.Service `json:"service_info" validate:"required"`
 }
 

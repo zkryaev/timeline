@@ -184,14 +184,14 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *or
 									worker_id
 								FROM workers
 								WHERE is_delete = false 
-								AND org_id = $1
+								AND ($1 <= 0 OR org_id = $1)
 								AND worker_id = $2
 							)
 		AND service_id = (SELECT 
 									service_id
 								FROM services
 								WHERE is_delete = false 
-								AND org_id = $1
+								AND ($1 <= 0 OR org_id = $1)
 								AND service_id = $3
 							);
 	`
@@ -271,7 +271,7 @@ func (p *PostgresRepo) WorkerSoftDelete(ctx context.Context, workerID, orgID int
 			is_delete = TRUE
 		WHERE is_delete = FALSE
 		AND worker_id = $1
-		AND org_id = $2;
+		AND ($2 <= 0 OR org_id = $2);
 	`
 	res, err := tx.ExecContext(ctx, mainQuery, workerID, orgID)
 	switch {
@@ -360,11 +360,11 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (str
 	query := `
 		SELECT uuid
 		FROM workers
-		WHERE org_id = $1
-		AND worker_id = $2;
+		WHERE worker_id = $1
+		AND (org_id = $2 OR org_id <= 0);
 	`
 	var uuid string
-	if err = tx.QueryRowContext(ctx, query, orgID, workerID).Scan(&uuid); err != nil {
+	if err = tx.QueryRowContext(ctx, query, workerID).Scan(&uuid); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrWorkerNotFound
 		}

@@ -44,5 +44,6 @@ func FeedParamsToModel(dto *recordto.FeedbackParams) *recordmodel.FeedbackParams
 		OrgID:      dto.OrgID,
 		Limit:      dto.Limit,
 		Offset:     (dto.Page - 1) * dto.Limit,
+		TData:      models.TokenData(dto.TData),
 	}
 }

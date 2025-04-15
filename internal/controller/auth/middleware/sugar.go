@@ -11,7 +11,7 @@ import (
 
 func GetTokenDataFromCtx(settings *scope.Settings, ctx context.Context) (entity.TokenData, error) {
 	if !settings.EnableAuthorization {
-		return entity.TokenData{ID: 1, IsOrg: true}, nil
+		return entity.TokenData{}, nil
 	}
 	tdata, ok := ctx.Value(TokenData("token")).(entity.TokenData)
 	if !ok {
