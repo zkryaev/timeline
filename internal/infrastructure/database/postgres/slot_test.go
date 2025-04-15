@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"time"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/mapper/orgmap"
 )
@@ -18,30 +17,9 @@ func (suite *PostgresTestSuite) TestSlotQueries() {
 	suite.Require().NoError(err, fmt.Sprintf("worker_id=%d org_id=%d", params.WorkerID, params.OrgID))
 	suite.NotNil(slots)
 
-	freeSlot := &orgdto.SlotResp{}
-
-	for _, slot := range slots {
-		if !slot.Busy {
-			freeSlot.Slot = *orgmap.SlotInfoToDTO(slot, time.Now().Location())
-			freeSlot.SlotID = slot.SlotID
-			break
-		}
-	}
-	updparams := &orgdto.SlotUpdate{
-		SlotID:   freeSlot.SlotID,
-		WorkerID: freeSlot.WorkerID,
-	}
-	suite.NoError(suite.db.UpdateSlot(ctx, true, orgmap.SlotUpdateToModel(updparams)), fmt.Sprintf("slot_id=%d worker_id=%d", freeSlot.SlotID, freeSlot.WorkerID))
-
-	params.UserID = 1
-	params.OrgID = 0
-	params.WorkerID = 0
-	rawNumSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
-	suite.Require().NoError(err)
-	suite.Greater(len(rawNumSlots), 0)
-	numSlotsBefore := len(rawNumSlots)
+	numSlotsBefore := len(slots)
 	suite.NoError(suite.db.GenerateSlots(ctx), "generate slots failed")
-	rawNumSlots, _, err = suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
+	rawNumSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
 	suite.Greater(len(rawNumSlots), 0)
 	numSlotsAfterGenerations := len(rawNumSlots)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 
 	"github.com/jackc/pgx/v5"
@@ -13,7 +14,7 @@ var (
 	ErrTimetableNotFound = errors.New("timetable not found")
 )
 
-func (p *PostgresRepo) Timetable(ctx context.Context, orgID, userID int) ([]*orgmodel.OpenHours, string, error) {
+func (p *PostgresRepo) Timetable(ctx context.Context, orgID int, tdata models.TokenData) ([]*orgmodel.OpenHours, string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to start tx: %w", err)
@@ -35,23 +36,22 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID, userID int) ([]*org
 		}
 		return nil, "", err
 	}
-	var entityID int
 	var city string
-	switch {
-	case userID != 0:
+	switch tdata.IsOrg {
+	case false:
 		query = `
 			SELECT city
 			FROM users
 			WHERE user_id = $1;
 		`
-	default:
+	case true:
 		query = `
 			SELECT city
 			FROM orgs
 			WHERE org_id = $1;
 		`
 	}
-	if err := tx.QueryRowxContext(ctx, query, entityID).Scan(&city); err != nil {
+	if err := tx.QueryRowxContext(ctx, query, tdata.ID).Scan(&city); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, "", ErrTimetableNotFound
 		}

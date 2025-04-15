@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"time"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/entity/dto/general"
@@ -48,10 +49,10 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	suite.Require().NoError(suite.db.OrgUpdate(ctx, orgmap.OrgUpdateToModel(updateInfo)))
 
 	params := &general.SearchReq{
-		Page:       1,
-		Limit:      5,
-		Name:       expOrg.Name,
-		IsRateSort: true,
+		Page:   1,
+		Limit:  5,
+		Name:   expOrg.Name,
+		SortBy: scope.RATESORT,
 	}
 	foundOrgs, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "without sort")
@@ -65,25 +66,16 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 			suite.Equal(expOrg.Type, org.Type)
 		}
 	}
-	params.IsRateSort = true
+	params.SortBy = scope.RATESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "rate sort")
 	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
 	suite.NotNil(foundOrgs.Data)
 
-	params.IsRateSort = false
-	params.IsNameSort = true
+	params.SortBy = scope.NAMESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "name sort")
-	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
-	suite.NotNil(foundOrgs.Data)
-
-	params.IsRateSort = true
-	params.IsNameSort = true
-	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
-	suite.NoError(err, "rate & name sort")
 	suite.Greater(foundOrgs.Found, 0)
 	suite.NotNil(foundOrgs)
 	suite.NotNil(foundOrgs.Data)

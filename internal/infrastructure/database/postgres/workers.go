@@ -348,7 +348,7 @@ func (p *PostgresRepo) WorkerDelete(ctx context.Context, workerID, orgID int) er
 	return nil
 }
 
-func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, error) {
+func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return "", fmt.Errorf("failed to start tx: %w", err)
@@ -361,12 +361,13 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, er
 	query := `
 		SELECT uuid
 		FROM workers
-		WHERE worker_id = $1;
+		WHERE org_id = $1
+		AND worker_id = $2;
 	`
 	var uuid string
-	if err = tx.QueryRowContext(ctx, query, workerID).Scan(&uuid); err != nil {
+	if err = tx.QueryRowContext(ctx, query, orgID, workerID).Scan(&uuid); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrOrgNotFound
+			return "", ErrWorkerNotFound
 		}
 		return "", fmt.Errorf("failed to get worker uuid by id: %w", err)
 	}
@@ -375,7 +376,7 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, er
 	}
 	return uuid, nil
 }
-func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID string) error {
+func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, orgID, workerID int, newUUID string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -389,9 +390,10 @@ func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID 
 		UPDATE workers
 		SET
 			uuid = $1
-		WHERE worker_id = $2;
+		WHERE org_id = $2
+		AND worker_id = $3;
 	`
-	res, err := tx.ExecContext(ctx, query, newUUID, workerID)
+	res, err := tx.ExecContext(ctx, query, newUUID, orgID, workerID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set worker's uuid: %w", err)
@@ -406,7 +408,7 @@ func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID 
 	return nil
 }
 
-func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, url string) error {
+func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, orgID int, url string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -416,8 +418,8 @@ func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, url string) error {
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE workers SET uuid = '' WHERE uuid = $1;`
-	res, err := tx.ExecContext(ctx, query, url)
+	query := `UPDATE workers SET uuid = '' WHERE uuid = $1 AND org_id = $2;`
+	res, err := tx.ExecContext(ctx, query, url, orgID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete worker's url: %w", err)

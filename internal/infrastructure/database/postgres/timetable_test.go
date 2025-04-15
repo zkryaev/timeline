@@ -5,6 +5,7 @@ import (
 	"time"
 	"timeline/internal/entity"
 	"timeline/internal/infrastructure/mapper/orgmap"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 )
 
@@ -22,7 +23,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 		BreakEnd:   "13:00",
 	}
 	suite.NoError(suite.db.TimetableAdd(ctx, orgID, []*orgmodel.OpenHours{orgmap.OpenHoursToModel(exp)}))
-	timetable, _, err := suite.db.Timetable(ctx, orgID, 0)
+	timetable, _, err := suite.db.Timetable(ctx, orgID, models.TokenData{})
 	suite.NoError(err)
 	suite.NotNil(timetable)
 
@@ -40,7 +41,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 	exp.Close = "19:00"
 	suite.NoError(suite.db.TimetableUpdate(ctx, orgID, []*orgmodel.OpenHours{orgmap.OpenHoursToModel(exp)}))
 
-	timetable, _, err = suite.db.Timetable(ctx, orgID, 0)
+	timetable, _, err = suite.db.Timetable(ctx, orgID, models.TokenData{})
 	suite.NoError(err)
 	suite.NotNil(timetable)
 
@@ -56,7 +57,7 @@ func (suite *PostgresTestSuite) TestTimetableQueries() {
 
 	suite.NoError(suite.db.TimetableDelete(ctx, orgID, exp.Weekday))
 
-	timetable, _, err = suite.db.Timetable(ctx, orgID, 0)
+	timetable, _, err = suite.db.Timetable(ctx, orgID, models.TokenData{})
 	suite.NoError(err)
 	suite.NotNil(timetable)
 

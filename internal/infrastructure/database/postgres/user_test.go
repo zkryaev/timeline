@@ -57,7 +57,7 @@ func (suite *PostgresTestSuite) TestUserQueries() {
 	actUser = usermap.UserInfoToDTO(userDB)
 	suite.Equal(&expUser, actUser)
 
-	suite.NoError(suite.db.UserDeleteURL(ctx, expUser.UUID))
+	suite.NoError(suite.db.UserDeleteURL(ctx, expUser.UserID, expUser.UUID))
 	userUUID, err := suite.db.UserUUID(ctx, expUser.UserID)
 	suite.NoError(err)
 	suite.Empty(userUUID)

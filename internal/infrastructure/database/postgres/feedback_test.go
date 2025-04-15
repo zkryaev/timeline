@@ -6,17 +6,18 @@ import (
 	"time"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/models/recordmodel"
 )
 
 func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	ctx := context.Background()
 
-	recordID := 2
-	recScrap, err := suite.db.Record(ctx, recordID)
+	recordreq := recordmodel.RecordParam{RecordID: 2}
+	recScrap, err := suite.db.Record(ctx, recordreq)
 	suite.Require().NoError(err)
 
 	exp := &recordto.Feedback{
-		RecordID:        recordID,
+		RecordID:        recordreq.RecordID,
 		Stars:           4,
 		Feedback:        "Хорошая тренировка, но хотелось бы больше внимания.",
 		Service:         recScrap.Service.Name,

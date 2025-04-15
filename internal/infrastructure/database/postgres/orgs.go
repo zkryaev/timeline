@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"timeline/internal/controller/scope"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 
@@ -160,14 +161,14 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta)
 	switch {
 	case (meta.Type == "gallery") || (meta.Type == "banner"):
 		entity = meta.Type
-		query = `DELETE FROM showcase WHERE url = $1;`
+		query = `DELETE FROM showcase WHERE url = $1 AND org_id = $2;`
 	case (meta.Type == "org"):
 		entity = "org"
-		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1;`
+		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1 AND org_id = $2;`
 	default:
 		return fmt.Errorf("image type %s doesn't exist: %w", entity, err)
 	}
-	res, err := tx.ExecContext(ctx, query, meta.URL)
+	res, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete %s's urls: %w", entity, err)
@@ -337,18 +338,15 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
 
 	`
-	sort := "ORDER BY o.rating DESC, o.name ASC"
+	var sort string
 	boundaires := " LIMIT $3 OFFSET $4;"
 	stmt := strings.Builder{}
 	stmt.Grow(len(query) + len(sort) + len(boundaires))
-	switch {
-	case params.IsRateSort && params.IsNameSort:
-	case params.IsRateSort:
+	switch params.SortBy {
+	case scope.NAMESORT:
 		sort = "ORDER BY o.rating DESC"
-	case params.IsNameSort:
+	case scope.RATESORT:
 		sort = "ORDER BY o.name ASC"
-	default:
-		sort = ""
 	}
 	stmt.WriteString(query)
 	stmt.WriteString(sort)

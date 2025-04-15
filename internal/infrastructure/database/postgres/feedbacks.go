@@ -92,7 +92,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		SELECT $1, $2, $3
 		FROM records r
 		JOIN slots s ON s.slot_id = r.slot_id 
-		WHERE r.record_id = $1
+		WHERE r.record_id = $1 AND r.user_id = $4
 		AND CURRENT_TIMESTAMP >= s.session_end;
 	`
 	res, err := tx.ExecContext(
@@ -101,6 +101,7 @@ func (p *PostgresRepo) FeedbackSet(ctx context.Context, feedback *recordmodel.Fe
 		feedback.RecordID,
 		feedback.Stars,
 		feedback.Feedback,
+		feedback.TData.ID,
 	)
 	switch {
 	case err != nil:
@@ -144,11 +145,14 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE feedbacks
+	query := `UPDATE feedbacks f
 		SET
 			stars = $1,
 			feedback = $2
-		WHERE record_id = $3;
+		FROM records r
+		WHERE f.record_id = r.record_id 
+		AND r.record_id = $3
+		AND r.user_id = $4;
 	`
 	res, err := tx.ExecContext(
 		ctx,
@@ -156,6 +160,7 @@ func (p *PostgresRepo) FeedbackUpdate(ctx context.Context, feedback *recordmodel
 		feedback.Stars,
 		feedback.Feedback,
 		feedback.RecordID,
+		feedback.TData.ID,
 	)
 	switch {
 	case err != nil:

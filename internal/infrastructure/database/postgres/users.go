@@ -282,7 +282,7 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, newUUID stri
 	return nil
 }
 
-func (p *PostgresRepo) UserDeleteURL(ctx context.Context, url string) error {
+func (p *PostgresRepo) UserDeleteURL(ctx context.Context, userID int, url string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -292,8 +292,8 @@ func (p *PostgresRepo) UserDeleteURL(ctx context.Context, url string) error {
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE users SET uuid = '' WHERE uuid = $1;`
-	res, err := tx.ExecContext(ctx, query, url)
+	query := `UPDATE users SET uuid = '' WHERE uuid = $1 AND user_id = $2;`
+	res, err := tx.ExecContext(ctx, query, url, userID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete user's url: %w", err)

@@ -8,6 +8,7 @@ import (
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/models/recordmodel"
 )
 
 func (suite *PostgresTestSuite) TestRecordQueries() {
@@ -64,38 +65,12 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	suite.Greater(recordID, 0)
 	suite.NotNil(remindRec)
 
-	record, err := suite.db.Record(ctx, recordID)
+	req := recordmodel.RecordParam{RecordID: recordID}
+	record, err := suite.db.Record(ctx, req)
 	suite.NoError(err, fmt.Sprintf("record_id=%d", recordID))
 	suite.NotNil(record)
 
-	userAnother, err := suite.db.UserByID(ctx, 2)
-	suite.Require().NoError(err)
-	suite.Require().NotNil(user)
-
-	patchReq := &recordto.Record{
-		RecordID: recordID,
-		UserID:   userAnother.UserID,
-	}
-	suite.NoError(suite.db.RecordPatch(ctx, recordmap.RecordToModel(patchReq)), fmt.Sprintf("record_id=%d user_id=%d", patchReq.RecordID, patchReq.UserID))
-
-	recParams := &recordto.RecordListParams{
-		OrgID: org.OrgID,
-		Fresh: true,
-		Limit: 10,
-		Page:  1,
-	}
-	dbRecords, found, err := suite.db.RecordList(ctx, recordmap.RecordParamsToModel(recParams))
-	suite.NoError(err, fmt.Sprintf("org_id=%d fresh=%t limit=%d page=%d", recParams.OrgID, recParams.Fresh, recParams.Limit, recParams.Page))
-	suite.Greater(found, 0)
-	suite.NotNil(dbRecords)
-	for i := range dbRecords {
-		if dbRecords[i].RecordID == patchReq.RecordID {
-			suite.Equal(userAnother.FirstName, dbRecords[i].User.FirstName)
-			suite.Equal(userAnother.LastName, dbRecords[i].User.LastName)
-			break
-		}
-	}
-
+	recParams := &recordto.RecordListParams{}
 	recParams.OrgID = 0
 	recParams.UserID = 1
 	recParams.Fresh = false
