@@ -46,7 +46,7 @@ type UserRepository interface {
 	UserDeleteExpired(ctx context.Context) error
 	UserUUID(ctx context.Context, userID int) (string, error)
 	UserSetUUID(ctx context.Context, userID int, NewUUID string) error
-	UserDeleteURL(ctx context.Context, URL string) error
+	UserDeleteURL(ctx context.Context, userID int, URL string) error
 }
 
 type OrgRepository interface {
@@ -70,10 +70,9 @@ type OrgRepository interface {
 }
 
 type RecordRepository interface {
-	Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error)
+	Record(ctx context.Context, param recordmodel.RecordParam) (*recordmodel.RecordScrap, error)
 	RecordList(ctx context.Context, req *recordmodel.RecordListParams) ([]*recordmodel.RecordScrap, int, error)
 	RecordAdd(ctx context.Context, req *recordmodel.Record) (*recordmodel.ReminderRecord, int, error)
-	RecordPatch(ctx context.Context, req *recordmodel.Record) error
 	RecordDelete(ctx context.Context, recordID int) error
 	RecordCancel(ctx context.Context, req *recordmodel.RecordCancelation) error
 	UpcomingRecords(ctx context.Context) ([]*recordmodel.ReminderRecord, error)
@@ -81,7 +80,7 @@ type RecordRepository interface {
 }
 
 type TimetableRepository interface {
-	Timetable(ctx context.Context, orgID, userID int) ([]*orgmodel.OpenHours, string, error)
+	Timetable(ctx context.Context, orgID int, tdata models.TokenData) ([]*orgmodel.OpenHours, string, error)
 	TimetableAdd(ctx context.Context, orgID int, newTime []*orgmodel.OpenHours) error
 	TimetableUpdate(ctx context.Context, orgID int, upd []*orgmodel.OpenHours) error
 	TimetableDelete(ctx context.Context, orgID, weekday int) error
@@ -96,9 +95,9 @@ type WorkerRepository interface {
 	WorkerList(ctx context.Context, OrgID, Limit, Offset int) ([]*orgmodel.Worker, int, error)
 	WorkerDelete(ctx context.Context, WorkerID, OrgID int) error
 	WorkerSoftDelete(ctx context.Context, WorkerID, OrgID int) error
-	WorkerUUID(ctx context.Context, workerID int) (string, error)
-	WorkerSetUUID(ctx context.Context, workerID int, NewUUID string) error
-	WorkerDeleteURL(ctx context.Context, URL string) error
+	WorkerUUID(ctx context.Context, orgID, workerID int) (string, error)
+	WorkerSetUUID(ctx context.Context, orgID, workerID int, NewUUID string) error
+	WorkerDeleteURL(ctx context.Context, orgID int, URL string) error
 }
 
 type ServiceRepository interface {
@@ -114,8 +113,7 @@ type ServiceRepository interface {
 type SlotRepository interface {
 	GenerateSlots(ctx context.Context) error
 	DeleteExpiredSlots(ctx context.Context) error
-	UpdateSlot(ctx context.Context, busy bool, params *orgmodel.SlotsMeta) error
-	Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, string, error)
+	Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]*orgmodel.Slot, string, error)
 }
 
 type ScheduleRepository interface {
