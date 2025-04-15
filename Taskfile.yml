@@ -42,8 +42,8 @@ tasks:
     desc: "migrations [applying...]"
     silent: true
     cmds:
-      - go run ./cmd/migrator/main.go --dsn={{.MASTER_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance-name=master_db
-      - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance-name=analytics_db
+      - go run ./cmd/migrator/main.go --dsn={{.MASTER_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=master_db
+      - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance=analytics_db
   
   migrate-down:
     desc: "migrations [reverse...]"
@@ -115,19 +115,24 @@ tasks:
     desc: "run tests and show coverage"
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}}
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
       - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
       - go test -short -count=1 -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o ./coverage.html
       - rm coverage.out
 
+  migrate_test_down:
+    cmds:
+      - migrate -database {{.TEST_DSN}} -path {{.MIGRATION_MASTER_PATH}} down -all
   test-db:
     desc: "deploy db -> apply migrations -> run repo tests -> remove db"
     silent: true
     cmds:
-      - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}}
       #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
+      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
+      - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
       - go test -v -count=1 ./internal/infrastructure/database/postgres
   build:
     silent: true
