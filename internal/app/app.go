@@ -12,7 +12,7 @@ import (
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	s3ctrl "timeline/internal/controller/s3"
-	"timeline/internal/controller/settings"
+	"timeline/internal/controller/scope"
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/infrastructure"
 	"timeline/internal/sugar/secret"
@@ -29,10 +29,12 @@ import (
 type App struct {
 	httpServer http.Server
 	log        *zap.Logger
+	appcfg     config.Application
 }
 
 func New(cfgApp config.Application, logger *zap.Logger) *App {
 	return &App{
+		appcfg: cfgApp,
 		httpServer: http.Server{
 			Addr:         cfgApp.Host + ":" + cfgApp.Port,
 			ReadTimeout:  cfgApp.Timeout,
@@ -65,16 +67,10 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		return err
 	}
 
-	s3API := s3ctrl.New(
-		s3usecase.New(
-			storage,
-			storage,
-			s3Service,
-		),
-		a.log,
-	)
-	routes := settings.NewDefaultRoutes(settings.NewDefaultSettings())
+	settings := scope.NewDefaultSettings(a.appcfg)
+	routes := scope.NewDefaultRoutes(settings)
 	middleware := middleware.New(privateKey, a.log, routes)
+
 	authAPI := authctrl.New(
 		auth.New(
 			privateKey,
@@ -83,10 +79,24 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			mailService,
 			tokenCfg,
+			settings,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
+	var s3API *s3ctrl.S3Ctrl
+	if settings.EnableRepoS3 {
+		s3API = s3ctrl.New(
+			s3usecase.New(
+				storage,
+				storage,
+				s3Service,
+			),
+			a.log,
+			settings,
+		)
+	}
 
 	userAPI := users.New(
 		usercase.New(
@@ -98,6 +108,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		a.log,
 		validator,
 		middleware,
+		settings,
 	)
 
 	orgAPI := orgs.New(
@@ -108,6 +119,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
 
 	recordAPI := records.New(
@@ -117,10 +129,13 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			storage,
 			mailService,
+			settings,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
+
 	controllerSet := &controller.Controllers{
 		Auth:   authAPI,
 		User:   userAPI,
@@ -129,6 +144,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		S3:     s3API,
 	}
 
-	a.httpServer.Handler = controller.InitRouter(controllerSet, routes)
+	a.httpServer.Handler = controller.InitRouter(controllerSet, routes, settings)
 	return nil
 }

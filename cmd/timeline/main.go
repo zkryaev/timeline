@@ -47,6 +47,12 @@ func main() {
 	// Инициализация логгера
 	logger := logger.New(cfg.App.Env)
 	logger.Info("Application started")
+	logger.Info("Application settings:")
+	logger.Info("", zap.String("environment", cfg.App.Env))
+	logger.Info("", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
+	logger.Info("", zap.Bool("enable_authorization", cfg.App.Settings.EnableAuthorization))
+	logger.Info("", zap.Bool("enable_repo_s3", cfg.App.Settings.EnableRepoS3))
+	logger.Info("", zap.Bool("enable_repo_mail", cfg.App.Settings.EnableRepoMail))
 	defer logger.Sync()
 	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
 	if err != nil {
@@ -68,8 +74,8 @@ func main() {
 	defer db.Close()
 
 	backdata := &loader.BackData{}
-	if cfg.App.UseLocalBackData {
-		logger.Info("Loading from local storage", zap.Bool("use_local_backdata", cfg.App.UseLocalBackData))
+	if cfg.App.Settings.UseLocalBackData {
+		logger.Info("Loading from local storage", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
 		logger.Info("Start loading from DB")
 		backdata.Cities, err = db.PreLoadCities(context.Background())
 		if err != nil {
@@ -77,37 +83,47 @@ func main() {
 			return
 		}
 	} else {
-		logger.Info("Loading backdata from provided sources", zap.Bool("use_local_backdata", cfg.App.UseLocalBackData))
+		logger.Info("Loading backdata from provided sources", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
 		if err := loader.LoadData(logger, db, backdata); err != nil {
 			logger.Fatal("failed", zap.Error(err))
 		}
 	}
 	logger.Info("Loading data is finished")
 
-	// Поднимаем почтовый сервис параметрами по умолчанию
-	post := mail.New(cfg.Mail, logger, 0, 0, 0)
-	post.Start()
-	logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
-	logger.Info(
-		"MAIL",
-		zap.String("mail server", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
-	)
-	defer post.Shutdown()
-
-	// Подключение к S3
-	s3storage := s3.New(cfg.S3)
-	if err = s3storage.Connect(); err != nil {
-		logger.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
+	var post infrastructure.Mail
+	if cfg.App.Settings.EnableRepoMail {
+		// Поднимаем почтовый сервис параметрами по умолчанию
+		post = mail.New(cfg.Mail, logger, 0, 0, 0)
+		post.Start()
+		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
+		logger.Info(
+			"MAIL",
+			zap.String("mail server", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
+		)
+		defer post.Shutdown()
+	} else {
+		logger.Info("Mail launch skipped")
 	}
-	logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
-	logger.Info(
-		"S3",
-		zap.String("storage", cfg.S3.Host+":"+cfg.S3.DataPort),
-		zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
-		zap.Bool("ssl", cfg.S3.SSLmode),
-	)
+
+	var s3repo *s3.Minio
+	if cfg.App.Settings.EnableRepoMail {
+		// Подключение к S3
+		s3repo = s3.New(cfg.S3)
+		if err = s3repo.Connect(); err != nil {
+			logger.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
+		}
+		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
+		logger.Info(
+			"S3",
+			zap.String("storage", cfg.S3.Host+":"+cfg.S3.DataPort),
+			zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
+			zap.Bool("ssl", cfg.S3.SSLmode),
+		)
+	} else {
+		logger.Info("S3 launch skipped")
+	}
 	app := app.New(cfg.App, logger)
-	err = app.SetupControllers(cfg.Token, backdata, db, post, s3storage)
+	err = app.SetupControllers(cfg.Token, backdata, db, post, s3repo)
 	if err != nil {
 		logger.Fatal(
 			"failed setup controllers",

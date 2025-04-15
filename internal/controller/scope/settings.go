@@ -14,6 +14,7 @@ const (
 	ALL
 )
 
+// supported query param types
 const (
 	INT     = "int"
 	BOOL    = "bool"
@@ -21,15 +22,28 @@ const (
 	FLOAT32 = "float32"
 )
 
+// supported entity types
+const (
+	GALLERY = "gallery"
+	BANNER  = "banner"
+	ORG     = "org"
+	USER    = "user"
+	WORKER  = "worker"
+)
+
 type Settings struct {
 	SupportedMethodsMap map[string]uint8
 	SupportedParams     SupportedParams
 	EnableAuthorization bool
+	EnableRepoS3        bool
+	EnableRepoMail      bool
 }
 
-func NewDefaultSettings(appcfg config.Application) *Settings {
+func NewDefaultSettings(appCfg config.Application) *Settings {
 	return &Settings{
-		EnableAuthorization: appcfg.EnableAuthorization,
+		EnableAuthorization: appCfg.Settings.EnableAuthorization,
+		EnableRepoS3:        appCfg.Settings.EnableRepoS3,
+		EnableRepoMail:      appCfg.Settings.EnableRepoMail,
 		SupportedMethodsMap: defaultSupportedMethodsHTTP(),
 		SupportedParams:     defaultSupportedParams(),
 	}

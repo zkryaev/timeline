@@ -17,11 +17,16 @@ type Config struct {
 	S3    S3
 }
 
-type Application struct {
-	Env                 string `yaml:"env" env-required:"true"`
-	UseLocalBackData    bool   `yaml:"use_local_back_data"`
-	EnableAuthorization bool   `yaml:"enable_authorization"`
+type Settings struct {
+	UseLocalBackData    bool `yaml:"use_local_back_data"`
+	EnableAuthorization bool `yaml:"enable_authorization"`
+	EnableRepoS3        bool `yaml:"enable_repo_s3"`
+	EnableRepoMail      bool `yaml:"enable_repo_mail"`
+}
 
+type Application struct {
+	Env        string   `yaml:"env" env-required:"true"`
+	Settings   Settings `yaml:"settings"`
 	HTTPServer `yaml:"http_server"`
 }
 
