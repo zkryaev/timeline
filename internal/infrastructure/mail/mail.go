@@ -42,7 +42,7 @@ type MailServer struct {
 	contexts     []models.WorkerContext
 }
 
-// При передаче 0 в параметры будут выставлены default значения
+// When passing 0 to the parameters, default values will be set
 func New(cfg config.Mail, logger *zap.Logger, writeTimeout time.Duration, msgBucketSize, workers int) infrastructure.Mail {
 	if writeTimeout == 0 {
 		writeTimeout = DefaultSendTimeout

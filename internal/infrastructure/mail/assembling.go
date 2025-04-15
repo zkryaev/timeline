@@ -155,7 +155,7 @@ func icsCreate(msg *models.ReminderMsg) string {
 	event.SetEndAt(msg.SessionEnd)
 	event.SetSummary(msg.Service)
 	event.SetLocation(msg.Address)
-	event.SetDescription(msg.Description)
+	event.SetDescription(msg.ServiceDesc)
 	event.SetOrganizer("timeline@gmail.com", ics.WithCN(msg.Organization))
 	reminder := ics.NewAlarm(reminderUID)
 	reminder.SetSummary(msg.Service)
