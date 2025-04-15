@@ -34,6 +34,13 @@ func RecordToDTO(model *recordmodel.Record) *recordto.Record {
 	}
 }
 
+func RecordParamToModel(dto recordto.RecordParam) recordmodel.RecordParam {
+	return recordmodel.RecordParam{
+		RecordID: dto.RecordID,
+		TData:    models.TokenData(dto.TData),
+	}
+}
+
 func RecordParamsToModel(dto *recordto.RecordListParams) *recordmodel.RecordListParams {
 	return &recordmodel.RecordListParams{
 		OrgID:    dto.OrgID,
@@ -42,6 +49,7 @@ func RecordParamsToModel(dto *recordto.RecordListParams) *recordmodel.RecordList
 		Fresh:    dto.Fresh,
 		Limit:    dto.Limit,
 		Offset:   (dto.Page - 1) * dto.Limit,
+		TData:    models.TokenData(dto.TData),
 	}
 }
 
@@ -66,28 +74,29 @@ func RecordListToDTO(model []*recordmodel.RecordScrap, loc *time.Location) []*re
 	return list
 }
 
-func RecordToReminder(model *recordmodel.ReminderRecord) *models.ReminderMsg {
+func ReminderRecordToReminder(model *recordmodel.ReminderRecord, loc *time.Location) *models.ReminderMsg {
 	return &models.ReminderMsg{
 		Organization: model.OrgName,
 		Service:      model.ServiceName,
-		Description:  model.ServiceDescription,
+		ServiceDesc:  model.ServiceDescription,
 		Address:      model.OrgAddress,
 		SessionStart: time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(),
 			model.Begin.Hour(), model.Begin.Minute(), model.Begin.Second(),
 			model.Begin.Nanosecond(), model.Date.Location(),
-		),
+		).In(loc),
 		SessionEnd: time.Date(model.Date.Year(), model.Date.Month(), model.Date.Day(),
 			model.End.Hour(), model.End.Minute(), model.End.Second(),
 			model.End.Nanosecond(), model.Date.Location(),
-		),
-		SessionDate: model.Date,
+		).In(loc),
+		SessionDate: model.Date.In(loc),
 	}
 }
 
 func CancelationToModel(dto *recordto.RecordCancelation) *recordmodel.RecordCancelation {
 	return &recordmodel.RecordCancelation{
 		RecordID:     dto.RecordID,
-		IsCanceled:   true,
 		CancelReason: dto.CancelReason,
+		TData:        models.TokenData(dto.TData),
+		IsCanceled:   true,
 	}
 }
