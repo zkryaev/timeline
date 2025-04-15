@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	ErrWrongClaims   = errors.New("invalid token claims")
-	ErrNotAccessType = errors.New("token type is not \"access\"")
+	ErrWrongClaimsID   = errors.New("invalid token claims: id")
+	ErrWrongClaimsOrg  = errors.New("invalid token claims: is_org")
+	ErrWrongClaimsType = errors.New("invalid token claims: type")
+	ErrNotAccessType   = errors.New("token type is not access")
 )
 
 func IsCodeExpired(createdAt time.Time) bool {
@@ -30,7 +32,7 @@ func IsTokenValid(token *jwt.Token) (err error) {
 		return fmt.Errorf("token.Valid : %v", token.Valid)
 	}
 	if err = ValidateTokenClaims(token.Claims); err != nil {
-		return fmt.Errorf("%s: %w", ErrWrongClaims.Error(), err)
+		return fmt.Errorf("ValidateTokenClaims: %w", err)
 	}
 	if token.Claims.(jwt.MapClaims)["type"].(string) != "access" {
 		return fmt.Errorf("%s: type=%q", ErrNotAccessType.Error(), token.Claims.(jwt.MapClaims)["type"].(string))
@@ -41,13 +43,13 @@ func IsTokenValid(token *jwt.Token) (err error) {
 // Проверяем наличие полей и верного ли они типа
 func ValidateTokenClaims(c jwt.Claims) error {
 	if _, ok := c.(jwt.MapClaims)["id"].(float64); !ok {
-		return fmt.Errorf("\"id\" invalid")
+		return ErrWrongClaimsID
 	}
 	if _, ok := c.(jwt.MapClaims)["is_org"].(bool); !ok {
-		return fmt.Errorf("\"is_org\" invalid")
+		return ErrWrongClaimsOrg
 	}
 	if _, ok := c.(jwt.MapClaims)["type"].(string); !ok {
-		return fmt.Errorf("\"type\" invalid")
+		return ErrWrongClaimsType
 	}
 	return nil
 }
