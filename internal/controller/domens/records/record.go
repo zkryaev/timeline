@@ -51,8 +51,7 @@ func New(usecase Record, middleware middleware.Middleware, logger *zap.Logger, s
 // @Param org_id query int false " "
 // @Param as_list query bool false " "
 // @Param fresh query bool false "true - сегодняшние и будущие записи. false/not_given - до текущего дня"
-// @Success 200 {object} recordto.RecordScrap "as_list=false"
-// @Success 200 {object} recordto.RecordList "as_list=true"
+// @Success 200 {object} recordto.RecordList
 // @Failure 400
 // @Failure 404
 // @Failure 500

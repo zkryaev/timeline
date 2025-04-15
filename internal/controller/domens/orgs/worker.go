@@ -36,7 +36,6 @@ type Workers interface {
 // @Param limit query int false " "
 // @Param page query int false " "
 // @Param as_list query bool false " "
-// @Success 200 {object} orgdto.WorkerResp "as_list=false"
 // @Success 200 {object} orgdto.WorkerList "as_list=true"
 // @Failure 400
 // @Failure 404
