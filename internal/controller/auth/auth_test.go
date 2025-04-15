@@ -41,6 +41,9 @@ func (suite *AuthTestSuite) SetupTest() {
 		log.Fatal(err)
 	}
 	suite.mockPrivateKey = privateKey
+	suite.appcfg.Settings.EnableAuthorization = true
+	suite.appcfg.Settings.EnableRepoMail = false
+	suite.appcfg.Settings.EnableRepoS3 = false
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
 	suite.Auth = New(suite.mockAuthUseCase, suite.mockMiddleware, zap.NewExample(), scope.NewDefaultSettings(suite.appcfg))
 }

@@ -84,7 +84,7 @@ func TestValidateTokenClaims(t *testing.T) {
 				"is_org": false,
 				"type":   "access",
 			},
-			exp: ErrWrongClaims,
+			exp: ErrWrongClaimsID,
 		},
 		{
 			name: "is_org type is incorrect",
@@ -93,7 +93,7 @@ func TestValidateTokenClaims(t *testing.T) {
 				"is_org": "false",
 				"type":   "access",
 			},
-			exp: ErrWrongClaims,
+			exp: ErrWrongClaimsOrg,
 		},
 		{
 			name: "type field type is incorrect",
@@ -102,7 +102,7 @@ func TestValidateTokenClaims(t *testing.T) {
 				"is_org": false,
 				"type":   666999,
 			},
-			exp: ErrWrongClaims,
+			exp: ErrWrongClaimsType,
 		},
 	}
 

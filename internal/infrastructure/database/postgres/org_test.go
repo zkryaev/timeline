@@ -52,12 +52,12 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 		Page:   1,
 		Limit:  5,
 		Name:   expOrg.Name,
-		SortBy: scope.RATESORT,
+		UserID: 1,
 	}
 	foundOrgs, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "without sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
 	suite.NotNil(foundOrgs.Data)
 	for i := range foundOrgs.Data {
 		org := orgmap.OrgsBySearchToDTO(foundOrgs.Data[i], time.Now().Location())
@@ -69,15 +69,15 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	params.SortBy = scope.RATESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "rate sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
 	suite.NotNil(foundOrgs.Data)
 
 	params.SortBy = scope.NAMESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "name sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
 	suite.NotNil(foundOrgs.Data)
 
 	expOrg.Name = "WELL KNOWN COMPANY"

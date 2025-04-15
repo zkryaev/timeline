@@ -14,7 +14,7 @@ type PostgresTestSuite struct {
 }
 
 func (suite *PostgresTestSuite) SetupTest() {
-	cfg := config.Database{
+	cfg := &config.Database{
 		Protocol: "postgres",
 		Host:     "localhost",
 		Port:     "5555",
@@ -23,13 +23,9 @@ func (suite *PostgresTestSuite) SetupTest() {
 		Password: "passwd",
 		SSLmode:  "disable",
 	}
-	db := New(cfg)
-	err := db.Open()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	if err = db.Open(); err != nil {
-		log.Fatal(err.Error())
+	db := New(cfg, "", true)
+	if err := db.Open(); err != nil {
+		log.Fatalf("SetupTest: \"%s\" cfg.presetDSN=\"%s\"", err.Error(), db.presetDSN)
 	}
 	suite.db = db
 }

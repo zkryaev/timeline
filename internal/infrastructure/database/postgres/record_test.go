@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"timeline/internal/entity"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/orgmap"
 	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/recordmodel"
 )
 
@@ -30,6 +32,7 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	params := &orgdto.SlotReq{
 		WorkerID: dbWorkers[0].WorkerID,
 		OrgID:    org.OrgID,
+		TData:    entity.TokenData{ID: org.OrgID, IsOrg: true},
 	}
 	dbSlots, _, err := suite.db.Slots(ctx, orgmap.SlotReqToModel(params))
 	suite.Require().NoError(err)
@@ -65,7 +68,7 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	suite.Greater(recordID, 0)
 	suite.NotNil(remindRec)
 
-	req := recordmodel.RecordParam{RecordID: recordID}
+	req := recordmodel.RecordParam{RecordID: recordID, TData: models.TokenData{ID: user.UserID, IsOrg: false}}
 	record, err := suite.db.Record(ctx, req)
 	suite.NoError(err, fmt.Sprintf("record_id=%d", recordID))
 	suite.NotNil(record)
