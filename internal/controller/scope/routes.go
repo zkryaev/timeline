@@ -27,7 +27,7 @@ const (
 	// User endpoint
 	PathUsers      = "/users"
 	PathMapOrgs    = PathUsers + "/orgmap"
-	PathSearchOrgs = PathUsers + "/search/org"
+	PathSearchOrgs = PathUsers + "/search/orgs"
 
 	// Organization endpoint
 	PathOrgs       = "/orgs"
@@ -136,7 +136,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 	case PathMapOrgs:
 		mdata.Methods = newMethodsMap(s, http.MethodGet)
 		mdata.perms = perms.GrantPermissions(perms.READ, perms.NONE)
-	// /users/search/org
+	// /users/search/orgs
 	case PathSearchOrgs:
 		mdata.Methods = newMethodsMap(s, http.MethodGet)
 		mdata.perms = perms.GrantPermissions(perms.READ, perms.NONE)

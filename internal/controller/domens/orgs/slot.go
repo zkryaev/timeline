@@ -4,50 +4,49 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/orgdto"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 type Slots interface {
 	Slots(ctx context.Context, logger *zap.Logger, req *orgdto.SlotReq) ([]*orgdto.SlotResp, error)
-	UpdateSlot(ctx context.Context, logger *zap.Logger, req *orgdto.SlotUpdate) error
 }
 
 // @Summary Get slots
 // @Description Get all slots for specified worker
-// @Tags organization/slots
+// @Tags orgs/slots
 // @Produce json
-// @Param   workerID path int true "worker_id"
-// @Param   orgID path int true "org_id"
+// @Param   worker_id query int true " "
+// @Param   org_id query int true " "
 // @Success 200 {array} orgdto.SlotResp
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /orgs/{orgID}/slots/workers/{workerID} [get]
+// @Router /orgs/workers/slots [get]
 func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "workerID", "orgID")
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
 	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	var (
+		orgID    = query.NewParamInt(scope.ORG_ID, true)
+		workerID = query.NewParamInt(scope.WORKER_ID, true)
+	)
+	params := query.NewParams(o.settings, orgID, workerID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	token, _ := o.middleware.ExtractToken(r)
-	tdata := common.GetTokenData(token.Claims)
-	req := &orgdto.SlotReq{WorkerID: params["workerID"], OrgID: params["orgID"]}
-	if !tdata.IsOrg {
-		req.UserID = tdata.ID
-	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
+	req := &orgdto.SlotReq{OrgID: orgID.Val, WorkerID: workerID.Val, TData: tdata}
 	data, err := o.usecase.Slots(r.Context(), logger, req)
 	if err != nil {
 		switch {
@@ -66,39 +65,4 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-}
-
-// @Summary Update slots
-// @Description Update specified slot for specified worker
-// @Tags organization/slots
-// @Accept json
-// @Param   request body orgdto.SlotUpdate true "slots info"
-// @Param   orgID path int true "org_id"
-// @Success 200
-// @Failure 304
-// @Failure 400
-// @Failure 500
-// @Router /orgs/{orgID}/slots [put]
-func (o *OrgCtrl) UpdateSlot(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	req := &orgdto.SlotUpdate{}
-	if err := common.DecodeAndValidate(r, req); err != nil {
-		logger.Error("DecodeAndValidate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	if err := o.usecase.UpdateSlot(r.Context(), logger, req); err != nil {
-		switch {
-		case errors.Is(err, common.ErrNothingChanged):
-			logger.Info("UpdateSlot", zap.Error(err))
-			http.Error(w, "", http.StatusNotModified)
-			return
-		default:
-			logger.Error("UpdateSlot", zap.Error(err))
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-	}
-	w.WriteHeader(http.StatusOK)
 }

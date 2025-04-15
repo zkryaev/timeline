@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/orgdto"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -27,35 +27,39 @@ type OrgCtrl struct {
 	usecase    Org
 	Logger     *zap.Logger
 	middleware middleware.Middleware
+	settings   *scope.Settings
 }
 
-func New(usecase Org, middleware middleware.Middleware, logger *zap.Logger) *OrgCtrl {
+func New(usecase Org, middleware middleware.Middleware, logger *zap.Logger, settings *scope.Settings) *OrgCtrl {
 	return &OrgCtrl{
 		usecase:    usecase,
 		Logger:     logger,
 		middleware: middleware,
+		settings:   settings,
 	}
 }
 
-// @Summary Organization information
-// @Description Get organization information
-// @Tags Organization
-// @Param   id path int true "org_id"
+// @Summary Full organization info
+// @Description
+// @Tags orgs
+// @Param   org_id query int true "database id"
 // @Success 200 {object} orgdto.Organization
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /orgs/info/{id} [get]
-func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "id")
-	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+// @Router /orgs [get]
+func (o *OrgCtrl) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	var (
+		orgID = query.NewParamInt(scope.ORG_ID, true)
+	)
+	params := query.NewParams(o.settings, orgID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := o.usecase.Organization(r.Context(), logger, params["id"])
+	data, err := o.usecase.Organization(r.Context(), logger, orgID.Val)
 	if err != nil {
 		switch {
 		case errors.Is(err, common.ErrNotFound):
@@ -75,20 +79,27 @@ func (o *OrgCtrl) GetOrgByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Update org info
-// @Description Update organization information
-// @Tags Organization
+// @Summary Change organization info
+// @Description
+// @Tags orgs
 // @Accept  json
-// @Param   request body orgdto.OrgUpdateReq true "New org info"
+// @Param   request body orgdto.OrgUpdateReq true " "
 // @Success 200
 // @Failure 400
 // @Failure 304
 // @Failure 500
-// @Router /orgs/update [put]
-func (o *OrgCtrl) UpdateOrg(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	req := &orgdto.OrgUpdateReq{}
+// @Router /orgs [put]
+func (o *OrgCtrl) PutOrganization(w http.ResponseWriter, r *http.Request) {
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	token, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Error("TokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	req := &orgdto.OrgUpdateReq{
+		OrgID: token.ID,
+	}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)

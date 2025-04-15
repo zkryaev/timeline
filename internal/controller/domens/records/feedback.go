@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/recordto"
-	"timeline/internal/sugar/custom"
 
 	"go.uber.org/zap"
 )
@@ -21,57 +21,39 @@ type Feedback interface {
 }
 
 // @Summary Feedback info
-// @Description Get feedbakc for specified record
-// @Tags record / feedback
-// @Param limit query int true "Limit the number of results"
-// @Param page query int true "Page number for pagination"
-// @Param   recordID query int true "record_id"
-// @Param   orgID query int true "org_id"
-// @Param   userID query int true "user_id"
+// @Description Get feedback for specified record
+// @Tags records/feedbacks
+// @Param limit query int true " "
+// @Param page query int true " "
+// @Param record_id query int false " "
+// @Param org_id query int false " "
+// @Param user_id query int false " "
 // @Success 200 {object} recordto.FeedbackList
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /records/feedbacks/info [get]
+// @Router /records/feedbacks [get]
 func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := rec.Logger.With(zap.String("uuid", uuid))
-	query := map[string]bool{
-		"limit":     true,
-		"page":      true,
-		"record_id": false,
-		"org_id":    false,
-		"user_id":   false,
-	}
-	if err := validation.IsQueryValid(r, query); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	params := map[string]string{
-		"limit":     "int",
-		"page":      "int",
-		"record_id": "int",
-		"org_id":    "int",
-		"user_id":   "int",
-	}
-	queryParams, err := custom.QueryParamsConv(params, r.URL.Query())
-	if err != nil {
-		logger.Error("QueryParamsConv", zap.Error(err))
+	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	var (
+		limit    = query.NewParamInt(scope.LIMIT, true)
+		page     = query.NewParamInt(scope.PAGE, true)
+		orgID    = query.NewParamInt(scope.ORG_ID, false)
+		userID   = query.NewParamInt(scope.USER_ID, false)
+		recordID = query.NewParamInt(scope.RECORD_ID, false)
+	)
+	params := query.NewParams(rec.settings, limit, page, orgID, userID, recordID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &recordto.FeedbackParams{
-		RecordID: queryParams["record_id"].(int),
-		UserID:   queryParams["user_id"].(int),
-		OrgID:    queryParams["org_id"].(int),
-		Limit:    queryParams["limit"].(int),
-		Page:     queryParams["page"].(int),
-	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		RecordID: recordID.Val,
+		UserID:   userID.Val,
+		OrgID:    orgID.Val,
+		Limit:    limit.Val,
+		Page:     page.Val,
 	}
 	data, err := rec.usecase.FeedbackList(r.Context(), logger, req)
 	if err != nil {
@@ -95,18 +77,23 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Set feedback
 // @Description Set feedback for specified record
-// @Tags record / feedback
+// @Tags records/feedbacks
 // @Accept  json
-// @Param feedback body recordto.Feedback true "Feedback data"
+// @Param req body recordto.Feedback true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks [post]
 func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := rec.Logger.With(zap.String("uuid", uuid))
-	req := &recordto.Feedback{}
+	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(rec.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	req := &recordto.Feedback{TData: tdata}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -129,18 +116,23 @@ func (rec *RecordCtrl) FeedbackSet(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Update feedback
 // @Description Update feedback for specified record
-// @Tags record / feedback
+// @Tags records/feedbacks
 // @Accept  json
-// @Param feedback body recordto.Feedback true "Feedback data"
+// @Param req body recordto.Feedback true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /records/feedbacks [put]
 func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := rec.Logger.With(zap.String("uuid", uuid))
-	req := &recordto.Feedback{}
+	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(rec.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	req := &recordto.Feedback{TData: tdata}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -163,37 +155,31 @@ func (rec *RecordCtrl) FeedbackUpdate(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Delete feedback
 // @Description Delete feedback for specified record
-// @Tags record / feedback
-// @Param   recordID query int true "record_id"
+// @Tags records/feedbacks
+// @Param   record_id query int true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /records/feedbacks/info [delete]
+// @Router /records/feedbacks [delete]
 func (rec *RecordCtrl) FeedbackDelete(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := rec.Logger.With(zap.String("uuid", uuid))
-	query := map[string]bool{
-		"record_id": true,
-	}
-	if err := validation.IsQueryValid(r, query); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
+	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	var (
+		recordID = query.NewParamInt(scope.RECORD_ID, true)
+	)
+	params := query.NewParams(rec.settings, recordID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	recordid, err := strconv.Atoi(r.URL.Query().Get("record_id"))
-	if err != nil {
-		logger.Error("Atoi", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	req := &recordto.FeedbackParams{RecordID: recordid}
-	if common.Validate(req) != nil {
+	req := &recordto.FeedbackParams{RecordID: recordID.Val}
+	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
+	if err := rec.usecase.FeedbackDelete(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
 			logger.Info("FeedbackDelete", zap.Error(err))

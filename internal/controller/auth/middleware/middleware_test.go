@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
-	"timeline/internal/controller/settings"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/sugar/jwtlib"
 
@@ -25,6 +25,7 @@ type MiddlewareTestSuite struct {
 	suite.Suite
 	Middeware      Middleware
 	tokenCfg       config.Token
+	appCfg         config.Application
 	mockPrivateKey *rsa.PrivateKey
 }
 
@@ -35,10 +36,11 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	}
 	suite.mockPrivateKey = privateKey
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
+	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
 		zap.NewExample(),
-		settings.NewDefaultRoutes(settings.NewDefaultSettings()),
+		scope.NewDefaultRoutes(settings),
 	)
 }
 

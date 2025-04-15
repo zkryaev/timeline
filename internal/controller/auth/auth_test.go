@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/sugar/jwtlib"
@@ -29,6 +30,7 @@ type AuthTestSuite struct {
 	mockMiddleware  *mocks.Middleware
 	mockPrivateKey  *rsa.PrivateKey
 	tokenCfg        config.Token
+	appcfg          config.Application
 }
 
 func (suite *AuthTestSuite) SetupTest() {
@@ -40,7 +42,7 @@ func (suite *AuthTestSuite) SetupTest() {
 	}
 	suite.mockPrivateKey = privateKey
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
-	suite.Auth = New(suite.mockAuthUseCase, suite.mockMiddleware, zap.NewExample())
+	suite.Auth = New(suite.mockAuthUseCase, suite.mockMiddleware, zap.NewExample(), scope.NewDefaultSettings(suite.appcfg))
 }
 
 func TestAuthTestSuite(t *testing.T) {
@@ -91,6 +93,6 @@ func (suite *AuthTestSuite) TestUpdateAccessTokenRefreshError() {
 	suite.mockMiddleware.On("ExtractToken", r).Return(token, nil)
 	logger := suite.Auth.Logger.With(zap.String("uuid", ""))
 	suite.mockAuthUseCase.On("UpdateAccessToken", r.Context(), logger, token).Return(nil, errors.New("mustn't be called"))
-	suite.Auth.UpdateAccessToken(w, r)
+	suite.Auth.PutAccessToken(w, r)
 	suite.Require().Equal(http.StatusBadRequest, w.Result().StatusCode)
 }

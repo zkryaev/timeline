@@ -6,7 +6,7 @@ import (
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	"timeline/internal/controller/s3"
-	"timeline/internal/controller/settings"
+	"timeline/internal/controller/scope"
 
 	"github.com/gorilla/mux"
 )
@@ -19,7 +19,7 @@ type Controllers struct {
 	S3     *s3.S3Ctrl
 }
 
-func InitRouter(controllersSet *Controllers, routes settings.Routes) *mux.Router {
+func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scope.Settings) *mux.Router {
 	r := mux.NewRouter()
 
 	// Установка доменных контроллеров
@@ -31,78 +31,82 @@ func InitRouter(controllersSet *Controllers, routes settings.Routes) *mux.Router
 
 	// TODO: PROD s := r.Host("www.example.com").Subrouter()
 	r.Use(auth.Middleware.HandlerLogs)
-	r.HandleFunc(settings.PathHealth, HealthCheck)
-	V1 := r.NewRoute().PathPrefix(settings.V1).Subrouter()
+	r.HandleFunc(scope.PathHealth, HealthCheck)
+	V1 := r.NewRoute().PathPrefix(scope.V1).Subrouter()
 	// Auth
-	authmux := V1.NewRoute().PathPrefix(settings.PathAuth).Subrouter()
-	authmux.HandleFunc(settings.PathLogin, auth.Login).Methods(routes[settings.PathLogin].Methods.Get(settings.POST)...)
-	authmux.HandleFunc(settings.PathRegistration, auth.OrgRegister).Methods(routes[settings.PathRegistration].Methods.Get(settings.POST)...)
-	authmux.HandleFunc(settings.PathToken, auth.UpdateAccessToken).Methods(routes[settings.PathToken].Methods.Get(settings.PUT)...)
+	authmux := V1.NewRoute().PathPrefix(scope.PathAuth).Subrouter()
+	authmux.HandleFunc(scope.PathLogin, auth.Login).Methods(routes[scope.PathLogin].Methods.Get(scope.POST)...)
+	authmux.HandleFunc(scope.PathUsersRegistration, auth.UserRegister).Methods(routes[scope.PathUsersRegistration].Methods.Get(scope.POST)...)
+	authmux.HandleFunc(scope.PathOrgsRegistration, auth.OrganizationRegister).Methods(routes[scope.PathOrgsRegistration].Methods.Get(scope.POST)...)
+	authmux.HandleFunc(scope.PathToken, auth.PutAccessToken).Methods(routes[scope.PathToken].Methods.Get(scope.PUT)...)
 
 	Protected := V1.NewRoute().Subrouter()
-	Protected.Use(auth.Middleware.Authorization)
+	if settings.EnableAuthorization {
+		Protected.Use(auth.Middleware.Authorization)
+	}
 
-	authmuxProtected := Protected.NewRoute().PathPrefix(settings.PathAuth).Subrouter()
-	authmuxProtected.HandleFunc(settings.PathCode, auth.SendCodeRetry).Methods(routes[settings.PathCode].Methods.Get(settings.POST)...)
-	authmuxProtected.HandleFunc(settings.PathCode, auth.VerifyCode).Methods(routes[settings.PathCode].Methods.Get(settings.PUT)...)
+	authmuxProtected := Protected.NewRoute().PathPrefix(scope.PathAuth).Subrouter()
+	authmuxProtected.HandleFunc(scope.PathCode, auth.CodeSend).Methods(routes[scope.PathCode].Methods.Get(scope.POST)...)
+	authmuxProtected.HandleFunc(scope.PathCode, auth.CodeConfirm).Methods(routes[scope.PathCode].Methods.Get(scope.PUT)...)
 
 	// users
-	Protected.HandleFunc(settings.PathUsers, user.GetUserByID).Methods(routes[settings.PathUsers].Methods.Get(settings.GET)...)
-	Protected.HandleFunc(settings.PathUsers, user.UpdateUser).Methods(routes[settings.PathUsers].Methods.Get(settings.PUT)...)
+	Protected.HandleFunc(scope.PathUsers, user.GetUser).Methods(routes[scope.PathUsers].Methods.Get(scope.GET)...)
+	Protected.HandleFunc(scope.PathUsers, user.UpdateUser).Methods(routes[scope.PathUsers].Methods.Get(scope.PUT)...)
 	// orgs
-	Protected.HandleFunc(settings.PathOrgs, org.GetOrgByID).Methods(routes[settings.PathOrgs].Methods.Get(settings.GET)...)
-	Protected.HandleFunc(settings.PathOrgs, org.UpdateOrg).Methods(routes[settings.PathOrgs].Methods.Get(settings.PUT)...)
+	Protected.HandleFunc(scope.PathOrgs, org.GetOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.GET)...)
+	Protected.HandleFunc(scope.PathOrgs, org.PutOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.PUT)...)
 
-	usermuxProtected := Protected.NewRoute().PathPrefix(settings.PathUsers).Subrouter()
+	usermuxProtected := Protected.NewRoute().PathPrefix(scope.PathUsers).Subrouter()
 	// users/orgmap
-	usermuxProtected.HandleFunc(settings.PathMapOrgs, user.OrganizationInArea).Methods(routes[settings.PathMapOrgs].Methods.Get(settings.GET)...)
+	usermuxProtected.HandleFunc(scope.PathMapOrgs, user.OrganizationInArea).Methods(routes[scope.PathMapOrgs].Methods.Get(scope.GET)...)
 	// users/search/org
-	usermuxProtected.HandleFunc(settings.PathSearchOrgs, user.SearchOrganization).Methods(routes[settings.PathSearchOrgs].Methods.Get(settings.GET)...)
+	usermuxProtected.HandleFunc(scope.PathSearchOrgs, user.SearchOrganization).Methods(routes[scope.PathSearchOrgs].Methods.Get(scope.GET)...)
 
-	orgmuxProtected := Protected.NewRoute().PathPrefix(settings.PathOrgs).Subrouter()
+	orgmuxProtected := Protected.NewRoute().PathPrefix(scope.PathOrgs).Subrouter()
 	// orgs/timetables
-	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableAdd).Methods(routes[settings.PathTimetables].Methods.Get(settings.POST)...)
-	orgmuxProtected.HandleFunc(settings.PathTimetables, org.Timetable).Methods(routes[settings.PathTimetables].Methods.Get(settings.GET)...)
-	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableUpdate).Methods(routes[settings.PathTimetables].Methods.Get(settings.PUT)...)
-	orgmuxProtected.HandleFunc(settings.PathTimetables, org.TimetableDelete).Methods(routes[settings.PathTimetables].Methods.Get(settings.DELETE)...)
+	orgmuxProtected.HandleFunc(scope.PathTimetables, org.TimetableAdd).Methods(routes[scope.PathTimetables].Methods.Get(scope.POST)...)
+	orgmuxProtected.HandleFunc(scope.PathTimetables, org.Timetable).Methods(routes[scope.PathTimetables].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathTimetables, org.TimetableUpdate).Methods(routes[scope.PathTimetables].Methods.Get(scope.PUT)...)
+	orgmuxProtected.HandleFunc(scope.PathTimetables, org.TimetableDelete).Methods(routes[scope.PathTimetables].Methods.Get(scope.DELETE)...)
 	// orgs/services
-	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceAdd).Methods(routes[settings.PathServices].Methods.Get(settings.POST)...)
-	orgmuxProtected.HandleFunc(settings.PathServices, org.Service).Methods(routes[settings.PathServices].Methods.Get(settings.GET)...)
-	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceUpdate).Methods(routes[settings.PathServices].Methods.Get(settings.PUT)...)
-	orgmuxProtected.HandleFunc(settings.PathServices, org.ServiceDelete).Methods(routes[settings.PathServices].Methods.Get(settings.DELETE)...)
+	orgmuxProtected.HandleFunc(scope.PathServices, org.ServiceAdd).Methods(routes[scope.PathServices].Methods.Get(scope.POST)...)
+	orgmuxProtected.HandleFunc(scope.PathServices, org.Service).Methods(routes[scope.PathServices].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathServices, org.ServiceUpdate).Methods(routes[scope.PathServices].Methods.Get(scope.PUT)...)
+	orgmuxProtected.HandleFunc(scope.PathServices, org.ServiceDelete).Methods(routes[scope.PathServices].Methods.Get(scope.DELETE)...)
 	// orgs/workers
-	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerAdd).Methods(routes[settings.PathWorkers].Methods.Get(settings.POST)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkers, org.Worker).Methods(routes[settings.PathWorkers].Methods.Get(settings.GET)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerUpdate).Methods(routes[settings.PathWorkers].Methods.Get(settings.PUT)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkers, org.WorkerDelete).Methods(routes[settings.PathWorkers].Methods.Get(settings.DELETE)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkers, org.WorkerAdd).Methods(routes[scope.PathWorkers].Methods.Get(scope.POST)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkers, org.Workers).Methods(routes[scope.PathWorkers].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkers, org.WorkerUpdate).Methods(routes[scope.PathWorkers].Methods.Get(scope.PUT)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkers, org.WorkerDelete).Methods(routes[scope.PathWorkers].Methods.Get(scope.DELETE)...)
 	// orgs/workers/slots
-	orgmuxProtected.HandleFunc(settings.PathWorkersSlots, org.Slots).Methods(routes[settings.PathWorkersSlots].Methods.Get(settings.GET)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersSlots, org.UpdateSlot).Methods(routes[settings.PathWorkersSlots].Methods.Get(settings.PUT)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersSlots, org.Slots).Methods(routes[scope.PathWorkersSlots].Methods.Get(scope.GET)...)
 	// orgs/workers/services
-	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.WorkerAssignService).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.POST)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.WorkerUnAssignService).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.DELETE)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersServices, org.ServiceWorkerList).Methods(routes[settings.PathWorkersServices].Methods.Get(settings.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersServices, org.WorkerAssignService).Methods(routes[scope.PathWorkersServices].Methods.Get(scope.POST)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersServices, org.WorkerUnassignService).Methods(routes[scope.PathWorkersServices].Methods.Get(scope.DELETE)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersServices, org.WorkersServices).Methods(routes[scope.PathWorkersServices].Methods.Get(scope.GET)...)
 	// orgs/workers/schedules
-	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.AddWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.POST)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.WorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.GET)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.UpdateWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.PUT)...)
-	orgmuxProtected.HandleFunc(settings.PathWorkersSchedules, org.DeleteWorkerSchedule).Methods(routes[settings.PathWorkersSchedules].Methods.Get(settings.DELETE)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.AddWorkerSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.POST)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.WorkersSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.UpdateWorkerSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.PUT)...)
+	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.DeleteWorkerSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.DELETE)...)
 
 	// records
-	Protected.HandleFunc(settings.PathRecords, rec.RecordAdd).Methods(routes[settings.PathRecords].Methods.Get(settings.POST)...)
-	Protected.HandleFunc(settings.PathRecords, rec.Record).Methods(routes[settings.PathRecords].Methods.Get(settings.GET)...)
-	Protected.HandleFunc(settings.PathRecords, rec.RecordCancel).Methods(routes[settings.PathRecords].Methods.Get(settings.PUT)...)
+	Protected.HandleFunc(scope.PathRecords, rec.RecordAdd).Methods(routes[scope.PathRecords].Methods.Get(scope.POST)...)
+	Protected.HandleFunc(scope.PathRecords, rec.Record).Methods(routes[scope.PathRecords].Methods.Get(scope.GET)...)
+	Protected.HandleFunc(scope.PathRecords, rec.RecordCancel).Methods(routes[scope.PathRecords].Methods.Get(scope.PUT)...)
 
-	recmuxProtected := Protected.NewRoute().PathPrefix(settings.PathRecords).Subrouter()
+	recmuxProtected := Protected.NewRoute().PathPrefix(scope.PathRecords).Subrouter()
 	// records/feedbacks
-	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackSet).Methods(routes[settings.PathFeedback].Methods.Get(settings.POST)...)
-	recmuxProtected.HandleFunc(settings.PathFeedback, rec.Feedbacks).Methods(routes[settings.PathFeedback].Methods.Get(settings.GET)...)
-	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackUpdate).Methods(routes[settings.PathFeedback].Methods.Get(settings.PUT)...)
-	recmuxProtected.HandleFunc(settings.PathFeedback, rec.FeedbackDelete).Methods(routes[settings.PathFeedback].Methods.Get(settings.DELETE)...)
+	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackSet).Methods(routes[scope.PathFeedback].Methods.Get(scope.POST)...)
+	recmuxProtected.HandleFunc(scope.PathFeedback, rec.Feedbacks).Methods(routes[scope.PathFeedback].Methods.Get(scope.GET)...)
+	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackUpdate).Methods(routes[scope.PathFeedback].Methods.Get(scope.PUT)...)
+	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackDelete).Methods(routes[scope.PathFeedback].Methods.Get(scope.DELETE)...)
 
 	// media
-	Protected.HandleFunc(settings.PathMedia, s3.Upload).Methods(routes[settings.PathFeedback].Methods.Get(settings.POST)...)
-	Protected.HandleFunc(settings.PathMedia, s3.Download).Methods(routes[settings.PathFeedback].Methods.Get(settings.GET)...)
-	Protected.HandleFunc(settings.PathMedia, s3.Delete).Methods(routes[settings.PathFeedback].Methods.Get(settings.DELETE)...)
+	if settings.EnableRepoS3 {
+		Protected.HandleFunc(scope.PathMedia, s3.Upload).Methods(routes[scope.PathFeedback].Methods.Get(scope.POST)...)
+		Protected.HandleFunc(scope.PathMedia, s3.Download).Methods(routes[scope.PathFeedback].Methods.Get(scope.GET)...)
+		Protected.HandleFunc(scope.PathMedia, s3.Delete).Methods(routes[scope.PathFeedback].Methods.Get(scope.DELETE)...)
+	}
 	return r
 }

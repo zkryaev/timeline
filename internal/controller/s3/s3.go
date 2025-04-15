@@ -7,9 +7,12 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"timeline/internal/controller/auth/middleware"
+	"timeline/internal/controller/common"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/controller/validation"
 	"timeline/internal/entity/dto/s3dto"
-	"timeline/internal/sugar/custom"
 
 	"go.uber.org/zap"
 )
@@ -17,18 +20,20 @@ import (
 type S3UseCase interface {
 	Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.CreateFileDTO) error
 	Download(ctx context.Context, logger *zap.Logger, URL string) (*s3dto.File, error)
-	Delete(ctx context.Context, logger *zap.Logger, entity string, URL string) error
+	Delete(ctx context.Context, logger *zap.Logger, req s3dto.DeleteReq) error
 }
 
 type S3Ctrl struct {
-	usecase S3UseCase
-	logger  *zap.Logger
+	usecase  S3UseCase
+	logger   *zap.Logger
+	settings *scope.Settings
 }
 
-func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
+func New(storage S3UseCase, logger *zap.Logger, settings *scope.Settings) *S3Ctrl {
 	return &S3Ctrl{
-		usecase: storage,
-		logger:  logger,
+		usecase:  storage,
+		logger:   logger,
+		settings: settings,
 	}
 }
 
@@ -38,8 +43,6 @@ func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 // @Tags Media
 // @Accept multipart/form-data
 // @Produce json
-// @Param entity formData string true "Entity associated with the file"
-// @Param entityID formData int true "Entity ID"
 // @Param file formData file true "File to upload"
 // @Success 200
 // @Failure 400
@@ -48,8 +51,13 @@ func New(storage S3UseCase, logger *zap.Logger) *S3Ctrl {
 // @Failure 500
 // @Router /media [post]
 func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := s3.logger.With(zap.String("uuid", uuid))
+	logger := common.LoggerWithUUID(s3.settings, s3.logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(s3.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	const maxUploadSize = 2 << 20 // 2 MB
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil && !errors.Is(err, io.EOF) {
 		logger.Error("ParseMultipartForm", zap.Error(err))
@@ -66,6 +74,24 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 	case entity == "":
 		logger.Error("entity is empty")
 		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	switch {
+	case (entity == scope.BANNER || entity == scope.GALLERY || entity == scope.ORG || entity == scope.WORKER) && tdata.IsOrg:
+		if !(entity == scope.WORKER) {
+			entityID = tdata.ID
+		}
+	case entity == scope.USER && !tdata.IsOrg:
+		entityID = tdata.ID
+	default:
+		var caller string
+		if tdata.IsOrg {
+			caller = scope.ORG
+		} else {
+			caller = scope.USER
+		}
+		logger.Info("forbid to upload media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity))
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 	file, meta, err := r.FormFile("file")
@@ -88,6 +114,7 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 	domen := s3dto.DomenInfo{
 		Entity:   entity,
 		EntityID: entityID,
+		TData:    tdata,
 	}
 	dto := &s3dto.CreateFileDTO{
 		DomenInfo: domen,
@@ -109,32 +136,21 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 // @Tags Media
 // @Accept json
 // @Produce application/octet-stream
-// @Param url query string true "File URL"
-// @Success 200 {file} string "File data"
+// @Param url query string true "url for s3"
+// @Success 200 {file} string "bytes"
 // @Failure 400
 // @Failure 500
 // @Router /media [get]
 func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := s3.logger.With(zap.String("uuid", uuid))
-	params := map[string]bool{
-		"url": true,
-	}
-	if err := validation.IsQueryValid(r, params); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
+	logger := common.LoggerWithUUID(s3.settings, s3.logger, r.Context())
+	url := query.NewParamString(scope.URL, true)
+	params := query.NewParams(s3.settings, url)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	queryContract := map[string]string{
-		"url": "string",
-	}
-	query, err := custom.QueryParamsConv(queryContract, r.URL.Query())
-	if err != nil {
-		logger.Error("QueryParamsConv", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	f, err := s3.usecase.Download(r.Context(), logger, query["url"].(string))
+	f, err := s3.usecase.Download(r.Context(), logger, url.Val)
 	if err != nil {
 		logger.Error("Download", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
@@ -152,35 +168,46 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 // @Tags Media
 // @Accept json
 // @Produce json
-// @Param url query string true "File URL"
-// @Param entity query string true "Associated entity"
+// @Param url query string true "url for s3"
+// @Param entity query string true "banner, gallery, org, user, worker"
 // @Success 200
 // @Failure 400
 // @Failure 500
 // @Router /media [delete]
 func (s3 *S3Ctrl) Delete(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := s3.logger.With(zap.String("uuid", uuid))
-	params := map[string]bool{
-		"url":    true,
-		"entity": true,
-	}
-	if err := validation.IsQueryValid(r, params); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	queryContract := map[string]string{
-		"url":    "string",
-		"entity": "string",
-	}
-	query, err := custom.QueryParamsConv(queryContract, r.URL.Query())
+	logger := common.LoggerWithUUID(s3.settings, s3.logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(s3.settings, r.Context())
 	if err != nil {
-		logger.Error("QueryParamsConv", zap.Error(err))
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	var (
+		url    = query.NewParamString(scope.URL, true)
+		entity = query.NewParamString(scope.ENTITY, true)
+	)
+	params := query.NewParams(s3.settings, url, entity)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if err = s3.usecase.Delete(r.Context(), logger, query["entity"].(string), query["url"].(string)); err != nil {
+	switch {
+	case (entity.Val == scope.BANNER || entity.Val == scope.GALLERY || entity.Val == scope.ORG || entity.Val == scope.WORKER) && tdata.IsOrg:
+	case entity.Val == scope.USER && !tdata.IsOrg:
+	default:
+		var caller string
+		if tdata.IsOrg {
+			caller = "org"
+		} else {
+			caller = "user"
+		}
+		logger.Info("forbid to delete media", zap.String("caller", caller), zap.Int("caller_id", tdata.ID), zap.String("entity", entity.Val), zap.String("url", url.Val))
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+	req := s3dto.DeleteReq{Url: url.Val, Entity: entity.Val, TData: tdata}
+	if err := s3.usecase.Delete(r.Context(), logger, req); err != nil {
 		logger.Error("Delete", zap.Error(err))
 		http.Error(w, "", http.StatusInternalServerError)
 		return

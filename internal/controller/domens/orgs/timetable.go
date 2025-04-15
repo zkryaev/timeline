@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/orgdto"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -22,29 +22,32 @@ type Timetable interface {
 
 // @Summary Get timetable
 // @Description Get organization timetable
-// @Tags organization / timetables
+// @Tags orgs/timetables
 // @Accept  json
-// @Param   orgID path int true "org_id"
+// @Param   org_id query int true " "
 // @Success 200 {object} orgdto.Timetable
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /orgs/{orgID}/timetable [get]
+// @Router /orgs/timetables [get]
 func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	path, err := validation.FetchPathID(mux.Vars(r), "orgID")
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
 	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	var (
+		orgID = query.NewParamInt(scope.ORG_ID, true)
+	)
+	params := query.NewParams(o.settings, orgID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	token, _ := o.middleware.ExtractToken(r)
-	tdata := common.GetTokenData(token.Claims)
-	req := orgdto.TimetableReq{OrgID: path["orgID"]}
-	if !tdata.IsOrg {
-		req.UserID = tdata.ID
-	}
+	req := orgdto.TimetableReq{OrgID: orgID.Val, TData: tdata}
 	data, err := o.usecase.Timetable(r.Context(), logger, req)
 	if err != nil {
 		switch {
@@ -66,19 +69,24 @@ func (o *OrgCtrl) Timetable(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Add timetable
-// @Description Add organization timetable
-// @Tags organization / timetables
+// @Description
+// @Tags orgs/timetables
 // @Accept  json
-// @Param   request body orgdto.Timetable true "New org info"
+// @Param   request body orgdto.Timetable true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /orgs/timetable [post]
+// @Router /orgs/timetables [post]
 func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	req := &orgdto.Timetable{}
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	req := &orgdto.Timetable{OrgID: tdata.ID}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -104,19 +112,24 @@ func (o *OrgCtrl) TimetableAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update timetable
-// @Description Update organization timetable
-// @Tags organization / timetables
+// @Description
+// @Tags orgs/timetables
 // @Accept  json
-// @Param   request body orgdto.Timetable true "New org info"
+// @Param   request body orgdto.Timetable true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
 // @Router /orgs/timetable [put]
 func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	req := &orgdto.Timetable{}
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	req := &orgdto.Timetable{OrgID: tdata.ID}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -142,35 +155,34 @@ func (o *OrgCtrl) TimetableUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete timetable
-// @Description Delete organization timetable. If weekday doesnt set then whole timetable will be deleted
-// @Tags organization / timetables
+// @Description
+// If weekday doesnt set then whole timetable will be deleted
+// @Tags orgs/timetables
 // @Accept  json
-// @Param orgID path int true "org_id"
 // @Param weekday query int false "weekday"
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /orgs/{orgID}/timetable [delete]
+// @Router /orgs/timetables [delete]
 func (o *OrgCtrl) TimetableDelete(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
 	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	var (
+		weekday = query.NewParamInt(scope.WEEKDAY, false)
+	)
+	params := query.NewParams(o.settings, weekday)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	var weekday int
-	if r.URL.Query().Get("weekday") != "" {
-		weekday, err = strconv.Atoi(r.URL.Query().Get("weekday"))
-		if err != nil {
-			logger.Error("Atoi", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
-	if o.usecase.TimetableDelete(r.Context(), logger, params["orgID"], weekday) != nil {
+	if o.usecase.TimetableDelete(r.Context(), logger, tdata.ID, weekday.Val) != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
 			logger.Info("TimetableDelete", zap.Error(err))

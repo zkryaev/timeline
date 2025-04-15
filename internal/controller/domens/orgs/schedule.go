@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
+	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/orgdto"
-	"timeline/internal/sugar/custom"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -23,50 +22,39 @@ type Schedule interface {
 
 // @Summary Get worker schedule
 // @Description Get specified worker schedule for specified org with weekday filter. If no weekday then all week will be returned
-// @Tags organization/schedule
+// @Tags orgs/workers/schedule
 // @Produce json
-// @Param   orgID path int true "org_id"
-// @Param   workerID query int true "Returned schedule for specified worker, otherwise for all org's workers"
-// @Param weekday query int false "weekday"
-// @Param limit query int true "Limit the number of results"
-// @Param page query int true "Page number for pagination"
+// @Param orgID query int true " "
+// @Param workerID query int true " "
+// @Param weekday query int false " "
+// @Param limit query int true " "
+// @Param page query int true " "
 // @Success 200 {object} orgdto.ScheduleList
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /orgs/{orgID}/schedules [get]
-func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "orgID")
-	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	query := map[string]string{
-		"worker_id": "int",
-		"weekday":   "int",
-		"limit":     "int",
-		"page":      "int",
-	}
-	queryParams, err := custom.QueryParamsConv(query, r.URL.Query())
-	if err != nil {
-		logger.Error("QueryParamsConv", zap.Error(err))
+// @Router /orgs/workers/schedules [get]
+func (o *OrgCtrl) WorkersSchedule(w http.ResponseWriter, r *http.Request) {
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	var (
+		orgID    = query.NewParamInt(scope.ORG_ID, true)
+		workerID = query.NewParamInt(scope.WORKER_ID, true)
+		weekday  = query.NewParamInt(scope.WEEKDAY, false)
+		limit    = query.NewParamInt(scope.LIMIT, true)
+		page     = query.NewParamInt(scope.PAGE, true)
+	)
+	params := query.NewParams(o.settings, orgID, workerID, weekday, limit, page)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	req := &orgdto.ScheduleParams{
-		WorkerID: queryParams["worker_id"].(int),
-		OrgID:    params["orgID"],
-		Weekday:  queryParams["weekday"].(int),
-		Limit:    queryParams["limit"].(int),
-		Page:     queryParams["page"].(int),
-	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		OrgID:    orgID.Val,
+		WorkerID: workerID.Val,
+		Weekday:  weekday.Val,
+		Limit:    limit.Val,
+		Page:     page.Val,
 	}
 	data, err := o.usecase.WorkerSchedule(r.Context(), logger, req)
 	if err != nil {
@@ -90,37 +78,36 @@ func (o *OrgCtrl) WorkerSchedule(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Delete worker schedule
 // @Description Delete specified worker schedule for a specific organization and worker with an optional weekday filter
-// @Tags organization/schedule
-// @Param   workerID path int true "worker_id"
-// @Param   orgID path int true "org_id"
-// @Param   weekday query int false "weekday"
+// @Tags orgs/workers/schedule
+// @Param   worker_id query int true " "
+// @Param   weekday query int false ""
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /orgs/{orgID}/schedules/{workerID} [delete]
+// @Router /orgs/workers/schedules [delete]
 func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "orgID", "workerID")
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
 	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	var (
+		workerID = query.NewParamInt(scope.WORKER_ID, true)
+		weekday  = query.NewParamInt(scope.WEEKDAY, false)
+	)
+	params := query.NewParams(o.settings, workerID, weekday)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	var weekday int
-	if r.URL.Query().Get("weekday") != "" {
-		weekday, err = strconv.Atoi(r.URL.Query().Get("weekday"))
-		if err != nil {
-			logger.Error("Atoi", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
 	req := &orgdto.ScheduleParams{
-		WorkerID: params["workerID"],
-		OrgID:    params["orgID"],
-		Weekday:  weekday,
+		OrgID:    tdata.ID,
+		WorkerID: workerID.Val,
+		Weekday:  weekday.Val,
 	}
 	if err := common.Validate(req); err != nil {
 		logger.Error("Validate", zap.Error(err))
@@ -144,23 +131,29 @@ func (o *OrgCtrl) DeleteWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Update worker schedule
 // @Description Update the schedule for a specific worker in an organization
-// @Tags organization/schedule
+// @Tags orgs/workers/schedule
 // @Accept json
-// @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
+// @Param   schedule body orgdto.WorkerSchedule true " "
 // @Success 200
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /orgs/schedules [put]
+// @Router /orgs/workers/schedules [put]
 func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	req := &orgdto.WorkerSchedule{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	req.OrgID = tdata.ID
 	if err := o.usecase.UpdateWorkerSchedule(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -178,7 +171,7 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Add worker schedule
 // @Description Add a new schedule for a specific worker in an organization
-// @Tags organization/schedule
+// @Tags orgs/workers/schedule
 // @Accept json
 // @Produce json
 // @Param   schedule body orgdto.WorkerSchedule true "Schedule data"
@@ -186,16 +179,22 @@ func (o *OrgCtrl) UpdateWorkerSchedule(w http.ResponseWriter, r *http.Request) {
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /orgs/schedules [post]
+// @Router /orgs/workers/schedules [post]
 func (o *OrgCtrl) AddWorkerSchedule(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := o.Logger.With(zap.String("uuid", uuid))
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	req := &orgdto.WorkerSchedule{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	req.OrgID = tdata.ID
 	if err := o.usecase.AddWorkerSchedule(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrTimeIncorrect):

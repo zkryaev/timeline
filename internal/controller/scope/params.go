@@ -22,15 +22,25 @@ const (
 	NAME    = "name"
 	TYPE    = "type"
 	SORT_BY = "sort_by"
-	ORDER   = "order"
 
 	// MAP
 	MIN_LAT = "min_lat"
 	MIN_LON = "min_lon"
 	MAX_LAT = "max_lat"
 	MAX_LON = "max_lon"
+
+	// s3 storage
+	URL    = "url"
+	ENTITY = "entity"
 )
 
+// SORT_BY value
+const (
+	NAMESORT = NAME
+	RATESORT = "rate"
+)
+
+// AS_LIST value
 const (
 	SINGLE = false
 	LIST   = true
@@ -42,7 +52,7 @@ func defaultSupportedParams() SupportedParams {
 	return SupportedParams{
 		INT:     {USER_ID: {}, ORG_ID: {}, WORKER_ID: {}, SERVICE_ID: {}, RECORD_ID: {}, LIMIT: {}, PAGE: {}, WEEKDAY: {}},
 		BOOL:    {AS_LIST: {}, FRESH: {}},
-		STRING:  {NAME: {}, TYPE: {}, SORT_BY: {}, ORDER: {}},
+		STRING:  {URL: {}, ENTITY: {}, NAME: {}, TYPE: {}, SORT_BY: {}},
 		FLOAT32: {MIN_LAT: {}, MIN_LON: {}, MAX_LAT: {}, MAX_LON: {}},
 	}
 }
