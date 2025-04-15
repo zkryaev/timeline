@@ -137,10 +137,10 @@ type BackgroundDataStore interface {
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД
-func GetDB(name string, cfg config.Database) (Database, error) {
+func GetDB(name string, cfg *config.Database) (Database, error) {
 	switch name {
 	case "postgres":
-		return postgres.New(cfg), nil
+		return postgres.New(cfg, "", true), nil
 	default:
 		return nil, fmt.Errorf("unexpected db name")
 	}
