@@ -15,6 +15,11 @@ type Record struct {
 	Reviewed  bool `json:"reviewed"`
 }
 
+type RecordParam struct {
+	RecordID int
+	TData    entity.TokenData
+}
+
 type RecordListParams struct {
 	OrgID    int  `json:"org_id"`
 	UserID   int  `json:"user_id"`
@@ -22,6 +27,7 @@ type RecordListParams struct {
 	Reviewed bool `json:"reviewed"`
 	Limit    int  `json:"limit"`
 	Page     int  `json:"page"`
+	TData    entity.TokenData
 }
 
 type RecordScrap struct {
@@ -41,6 +47,7 @@ type RecordList struct {
 }
 
 type RecordCancelation struct {
+	TData        entity.TokenData
 	RecordID     int    `json:"record_id"`
 	CancelReason string `json:"cancel_reason"`
 }

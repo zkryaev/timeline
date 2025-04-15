@@ -6,7 +6,7 @@ import (
 )
 
 type Organization struct {
-	OrgID        int                 `json:"id"`
+	OrgID        int                 `json:"org_id"`
 	UUID         string              `json:"uuid,omitempty"`
 	ShowcasesURL []*s3dto.FileURL    `json:"showcases_url,omitempty"`
 	Info         *entity.OrgInfo     `json:"info,omitempty"`
@@ -14,7 +14,7 @@ type Organization struct {
 }
 
 type OrgUpdateReq struct {
-	OrgID int `json:"org_id" validate:"required"`
+	OrgID int
 	entity.OrgInfo
 	Timetable []*entity.OpenHours `json:"timetable,omitempty"`
 }

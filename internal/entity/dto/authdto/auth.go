@@ -32,10 +32,6 @@ type UserRegisterReq struct {
 	entity.User
 }
 
-type RegisterResp struct {
-	ID int `json:"id"`
-}
-
 type OrgRegisterReq struct {
 	UUID string
 	Credentials

@@ -1,5 +1,7 @@
 package recordto
 
+import "timeline/internal/entity"
+
 type Feedback struct {
 	FeedbackID      int    `json:"feedback_id"`
 	RecordID        int    `json:"record_id"`
@@ -11,6 +13,7 @@ type Feedback struct {
 	UserFirstName   string `json:"user_first_name"`
 	UserLastName    string `json:"user_last_name"`
 	RecordDate      string `json:"record_date"`
+	TData           entity.TokenData
 }
 
 type FeedbackList struct {
@@ -25,4 +28,5 @@ type FeedbackParams struct {
 	OrgID      int
 	Limit      int
 	Page       int
+	TData      entity.TokenData
 }

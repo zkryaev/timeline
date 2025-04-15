@@ -8,6 +8,6 @@ type Timetable struct {
 }
 
 type TimetableReq struct {
-	OrgID  int
-	UserID int
+	OrgID int
+	TData entity.TokenData
 }
