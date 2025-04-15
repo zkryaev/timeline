@@ -41,31 +41,31 @@ services:
         timeout: 5s          
         retries: 5
 
-    # minio:
-    #   image: minio/minio:latest
-    #   container_name: minio
-    #   command: server /data --console-address ":${S3_CONSOLE_PORT}"
-    #   ports:
-    #     - "${S3_DATA_PORT}:${S3_DATA_PORT}" # Порт для доступа к API MinIO
-    #     - "${S3_CONSOLE_PORT}:${S3_CONSOLE_PORT}" # Порт для веб-интерфейса MinIO Console
-    #   environment:
-    #     MINIO_ROOT_USER: ${S3_ROOT_USER}
-    #     MINIO_ROOT_PASSWORD: ${S3_ROOT_PASSWORD}
-    #     MINIO_CACHE_EXPIRY: ${MINIO_CACHE_TTL}
-    #     MINIO_USE_SSL: ${S3_SSLMODE}
-    #     MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
-    #     MINIO_CACHE: /mnt/minio_cache
-    #   networks:
-    #     - default
-    #   #volumes:
-    #     #- minio_data:/data
-    #     #- minio_config:/root/.minio
-    #   healthcheck:
-    #     test: ["CMD", "curl", "-f", "http://localhost:${S3_DATA_PORT}/minio/health/live"]
-    #     start_period: 20s
-    #     interval: 30s        
-    #     timeout: 5s          
-    #     retries: 5
+    minio:
+      image: minio/minio:latest
+      container_name: minio
+      command: server /data --console-address ":${S3_CONSOLE_PORT}"
+      ports:
+        - "${S3_DATA_PORT}:${S3_DATA_PORT}" # Порт для доступа к API MinIO
+        - "${S3_CONSOLE_PORT}:${S3_CONSOLE_PORT}" # Порт для веб-интерфейса MinIO Console
+      environment:
+        MINIO_ROOT_USER: ${S3_ROOT_USER}
+        MINIO_ROOT_PASSWORD: ${S3_ROOT_PASSWORD}
+        MINIO_CACHE_EXPIRY: ${MINIO_CACHE_TTL}
+        MINIO_USE_SSL: ${S3_SSLMODE}
+        MINIO_DEFAULT_BUCKETS: ${S3_DEFAULT_BUCKET}
+        MINIO_CACHE: /mnt/minio_cache
+      networks:
+        - default
+      #volumes:
+        #- minio_data:/data
+        #- minio_config:/root/.minio
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:${S3_DATA_PORT}/minio/health/live"]
+        start_period: 20s
+        interval: 30s        
+        timeout: 5s          
+        retries: 5
 
     analytics_app:
       image: petrgrachev/timeline-analytics:1.0.3
