@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
@@ -32,9 +32,11 @@ type UserUseCase struct {
 	records  infrastructure.RecordRepository
 	mail     infrastructure.Mail
 	backdata *loader.BackData
+	settings *scope.Settings
 }
 
-func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository, backdata *loader.BackData) *UserUseCase {
+func New(userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, recRepo infrastructure.RecordRepository,
+	backdata *loader.BackData, settings *scope.Settings) *UserUseCase {
 	return &UserUseCase{
 		user:     userRepo,
 		org:      orgRepo,
@@ -72,7 +74,6 @@ func (u *UserUseCase) UserUpdate(ctx context.Context, logger *zap.Logger, newUse
 }
 
 func (u *UserUseCase) SearchOrgs(ctx context.Context, logger *zap.Logger, sreq *general.SearchReq) (*general.SearchResp, error) {
-	sreq.Name = strings.TrimSpace(sreq.Name)
 	data, err := u.org.OrgsBySearch(ctx, orgmap.SearchToModel(sreq))
 	if err != nil {
 		if errors.Is(err, postgres.ErrOrgsNotFound) {
@@ -117,6 +118,9 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, logger *zap.Logger, area *
 }
 
 func (u *UserUseCase) UserRecordReminder(ctx context.Context, logger *zap.Logger) error {
+	if !u.settings.EnableRepoMail {
+		return nil
+	}
 	data, err := u.records.UpcomingRecords(ctx)
 	if err != nil {
 		if errors.Is(err, postgres.ErrRecordsNotFound) {
@@ -125,17 +129,26 @@ func (u *UserUseCase) UserRecordReminder(ctx context.Context, logger *zap.Logger
 		return err
 	}
 	logger.Info("Fetched user's upcoming records")
-	for i := range data {
-		msg := &models.Message{
-			Email:    data[i].UserEmail,
-			Type:     mail.ReminderType,
-			Value:    recordmap.RecordToReminder(data[i]),
-			IsAttach: false,
+	if len(data) > 0 {
+		for i := range data {
+			tzid := u.backdata.Cities.GetCityTZ(data[0].UserCity)
+			loc, err := time.LoadLocation(tzid)
+			if err != nil {
+				logger.Error("failed to load location, set UTC+03 (MSK)", zap.String("city-tzid", data[0].UserCity+"="+tzid), zap.Error(err))
+				loc = time.Local // UTC+03 = MSK
+			}
+			msg := &models.Message{
+				Email:    data[i].UserEmail,
+				Type:     mail.ReminderType,
+				Value:    recordmap.ReminderRecordToReminder(data[i], loc),
+				IsAttach: false,
+			}
+			if err = u.mail.SendMsg(msg); err != nil {
+				return err
+			}
 		}
-		if err = u.mail.SendMsg(msg); err != nil {
-			return err
-		}
-		logger.Info("Notification has been sent to user's email")
+		logger.Info("Notifications has been sent to user's email")
 	}
+	logger.Info("There are no records to be reminded of")
 	return nil
 }
