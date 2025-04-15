@@ -7,20 +7,13 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/s3dto"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/models"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-)
-
-const (
-	GALLERY = "gallery"
-	BANNER  = "banner"
-	ORG     = "org"
-	USER    = "user"
-	WORKER  = "worker"
 )
 
 var (
@@ -61,7 +54,7 @@ func (s *S3UseCase) Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.C
 	LogFetched := fmt.Sprintf("Fetched current %s uuid", dto.Entity)
 	LogSaved := fmt.Sprintf("New %s uuid has been saved", dto.Entity)
 	switch {
-	case dto.Entity == ORG:
+	case dto.Entity == scope.ORG:
 		prevURL, err = s.org.OrgUUID(ctx, dto.EntityID)
 		if err != nil {
 			return fmt.Errorf("%w: %w", ErrGetUUID, err)
@@ -71,7 +64,7 @@ func (s *S3UseCase) Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.C
 			return fmt.Errorf("%w: %w", ErrSetUUID, err)
 		}
 		logger.Info(LogSaved)
-	case dto.Entity == USER:
+	case dto.Entity == scope.USER:
 		prevURL, err = s.user.UserUUID(ctx, dto.EntityID)
 		if err != nil {
 			return fmt.Errorf("%w: %w", ErrGetUUID, err)
@@ -81,17 +74,17 @@ func (s *S3UseCase) Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.C
 			return fmt.Errorf("%w: %w", ErrSetUUID, err)
 		}
 		logger.Info(LogSaved)
-	case dto.Entity == WORKER:
-		prevURL, err = s.org.WorkerUUID(ctx, dto.EntityID)
+	case dto.Entity == scope.WORKER:
+		prevURL, err = s.org.WorkerUUID(ctx, dto.TData.ID, dto.EntityID)
 		if err != nil {
 			return fmt.Errorf("%w: %w", ErrGetUUID, err)
 		}
 		logger.Info(LogFetched)
-		if err = s.org.WorkerSetUUID(ctx, dto.EntityID, url); err != nil {
+		if err = s.org.WorkerSetUUID(ctx, dto.EntityID, dto.TData.ID, url); err != nil {
 			return fmt.Errorf("%w: %w", ErrSetUUID, err)
 		}
 		logger.Info(LogSaved)
-	case (dto.Entity == GALLERY) || (dto.Entity == BANNER):
+	case (dto.Entity == scope.GALLERY) || (dto.Entity == scope.BANNER):
 		idStr := strconv.Itoa(dto.EntityID)
 		b := strings.Builder{}
 		b.Grow(len("org") + 1 + len(idStr) + len(url))
@@ -152,36 +145,37 @@ func (s *S3UseCase) Download(ctx context.Context, logger *zap.Logger, url string
 	}, nil
 }
 
-func (s *S3UseCase) Delete(ctx context.Context, logger *zap.Logger, entity string, url string) error {
-	if err := validateURL(url); err != nil {
+func (s *S3UseCase) Delete(ctx context.Context, logger *zap.Logger, req s3dto.DeleteReq) error {
+	if err := validateURL(req.Url); err != nil {
 		return err
 	}
 	logger.Info("URL is valid")
 	meta := &models.ImageMeta{
-		URL:  url,
-		Type: entity,
+		URL:     req.Url,
+		Type:    req.Entity,
+		DomenID: req.TData.ID,
 	}
-	LogDeleteURL := fmt.Sprintf("%s's URL has been deleted", entity)
+	LogDeleteURL := fmt.Sprintf("%s's URL has been deleted", req.Entity)
 	switch {
-	case entity == ORG:
+	case req.Entity == scope.ORG:
 		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
 			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
-	case (entity == GALLERY) || (entity == BANNER):
+	case (req.Entity == scope.GALLERY) || (req.Entity == scope.BANNER):
 		if err := s.org.OrgDeleteURL(ctx, meta); err != nil {
 			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
-	case entity == USER:
-		if err := s.user.UserDeleteURL(ctx, url); err != nil {
+	case req.Entity == scope.USER:
+		if err := s.user.UserDeleteURL(ctx, meta.DomenID, req.Url); err != nil {
 			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
-	case entity == WORKER:
-		if err := s.org.WorkerDeleteURL(ctx, url); err != nil {
+	case req.Entity == scope.WORKER:
+		if err := s.org.WorkerDeleteURL(ctx, meta.DomenID, req.Url); err != nil {
 			return fmt.Errorf("%w: %w", ErrDelete, err)
 		}
 	}
 	logger.Info(LogDeleteURL)
-	if err := s.minio.Delete(ctx, url); err != nil {
+	if err := s.minio.Delete(ctx, req.Url); err != nil {
 		return fmt.Errorf("%w: %w", ErrDelete, err)
 	}
 	logger.Info("Image has been deleted")
