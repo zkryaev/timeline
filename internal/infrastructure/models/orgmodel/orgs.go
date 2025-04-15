@@ -64,14 +64,13 @@ type OrgRegister struct {
 }
 
 type SearchParams struct {
-	Page       int
-	Limit      int
-	Offset     int
-	Name       string
-	Type       string
-	IsRateSort bool
-	IsNameSort bool
-	UserID     int
+	Page   int
+	Limit  int
+	Offset int
+	Name   string
+	Type   string
+	SortBy string
+	UserID int
 }
 
 type AreaParams struct {
@@ -80,7 +79,7 @@ type AreaParams struct {
 }
 
 type RespData struct {
-	Found int
+	Found    int
 	UserCity string
-	Data []*OrgsBySearch
+	Data     []*OrgsBySearch
 }

@@ -1,6 +1,9 @@
 package recordmodel
 
-import "database/sql"
+import (
+	"database/sql"
+	"timeline/internal/infrastructure/models"
+)
 
 type Feedback struct {
 	FeedbackID      sql.NullInt32  `db:"feedback_id"`
@@ -13,6 +16,7 @@ type Feedback struct {
 	UserFirstName   sql.NullString `db:"user_first_name"`
 	UserLastName    sql.NullString `db:"user_last_name"`
 	RecordDate      sql.NullTime   `db:"record_date"`
+	TData           models.TokenData
 }
 
 type FeedbackParams struct {

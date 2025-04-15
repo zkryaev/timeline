@@ -19,3 +19,8 @@ type HashCreds struct {
 	Email      string `db:"email"`
 	PasswdHash string `db:"passwd_hash"`
 }
+
+type TokenData struct {
+	ID    int
+	IsOrg bool
+}

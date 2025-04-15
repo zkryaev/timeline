@@ -1,6 +1,9 @@
 package orgmodel
 
-import "time"
+import (
+	"time"
+	"timeline/internal/infrastructure/models"
+)
 
 type Slot struct {
 	SlotID           int       `db:"slot_id"`
@@ -12,10 +15,8 @@ type Slot struct {
 	Busy             bool      `db:"busy"`
 }
 
-type SlotsMeta struct {
-	SlotID   int `db:"slot_id"`
+type SlotsReq struct {
 	WorkerID int `db:"worker_id"`
-	UserID   int
-	OrgID    int
-	// WorkerScheduleID int `db:"worker_schedule_id"`
+	OrgID    int `db:"org_id"`
+	TData    models.TokenData
 }
