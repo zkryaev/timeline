@@ -8,6 +8,7 @@ import (
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/infrastructure/mapper/orgmap"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/usecase/common"
 	"timeline/internal/usecase/common/validation"
 
@@ -62,7 +63,7 @@ func (o *OrgUseCase) TimetableDelete(ctx context.Context, logger *zap.Logger, or
 }
 
 func (o *OrgUseCase) Timetable(ctx context.Context, logger *zap.Logger, req orgdto.TimetableReq) (*orgdto.Timetable, error) {
-	timetable, city, err := o.org.Timetable(ctx, req.OrgID, req.UserID)
+	timetable, city, err := o.org.Timetable(ctx, req.OrgID, models.TokenData(req.TData))
 	if err != nil {
 		if errors.Is(err, postgres.ErrTimetableNotFound) {
 			return nil, common.ErrNotFound
