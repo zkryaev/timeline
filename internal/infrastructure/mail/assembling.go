@@ -72,7 +72,7 @@ var (
 		  <p>Если отмена произошла по ошибке или у вас есть вопросы, пожалуйста, свяжитесь с организацией.</p>
 		  <p style="color: #777; font-size: 0.9em;">Это автоматическое уведомление. Пожалуйста, не отвечайте на это письмо.</p>
 	  </div>`,
-		emailFont, textColor, labelColor, labelColor, labelColor)
+		emailFont, textColor, labelColor, labelColor, labelColor, labelColor)
 )
 
 var (
@@ -118,7 +118,7 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 		if !ok {
 			return nil, ErrWrongMsgType
 		}
-		body = fmt.Sprintf(reminderTemplate,
+		body = fmt.Sprintf(cancellationTemplate,
 			fields.Organization,
 			fields.Service,
 			fields.SessionDate+" : "+fields.SessionStart+"-"+fields.SessionEnd,
