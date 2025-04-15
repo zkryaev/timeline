@@ -54,7 +54,7 @@ func main() {
 	logger.Info("", zap.Bool("enable_repo_s3", cfg.App.Settings.EnableRepoS3))
 	logger.Info("", zap.Bool("enable_repo_mail", cfg.App.Settings.EnableRepoMail))
 	defer logger.Sync()
-	db, err := infrastructure.GetDB(os.Getenv("DB"), cfg.DB)
+	db, err := infrastructure.GetDB(os.Getenv("DB"), &cfg.DB)
 	if err != nil {
 		logger.Fatal("incorrect db type", zap.Error(err))
 	}

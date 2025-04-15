@@ -17,7 +17,7 @@ func main() {
 	var dsn, migrationsPath, instanceName string
 	flag.StringVar(&migrationsPath, "migrations-path", "", "path to the migrations folder")
 	flag.StringVar(&dsn, "dsn", "", "database dsn (e.g., postgres://user:password@host:port/dbname?sslmode=disable)")
-	flag.StringVar(&instanceName, "instance-name", "", "instance name (e.g., analytics_db")
+	flag.StringVar(&instanceName, "instance", "", "instance name (e.g., analytics_db)")
 	flag.Parse()
 
 	if dsn == "" {
@@ -48,7 +48,7 @@ func main() {
 	}
 	if err = m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
-			log.Println("migrator: instance: %s: no migrations to apply", instanceName)
+			log.Printf("migrator: instance: %s: no migrations to apply", instanceName)
 			return
 		}
 		log.Fatalf("migrator: instance: %s: %s", instanceName, err.Error())
