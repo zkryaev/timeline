@@ -88,6 +88,7 @@ func SearchToModel(dto *general.SearchReq) *orgmodel.SearchParams {
 		Name:   dto.Name,
 		Type:   dto.Type,
 		SortBy: dto.SortBy,
+		UserID: dto.UserID,
 	}
 }
 
