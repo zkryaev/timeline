@@ -6,11 +6,7 @@ app:
     enable_authorization: true
     enable_repo_s3: true
     enable_repo_mail: true
-  http_server:
-    host: localhost
-    port: 8080
-    timeout: 10s
-    idle_timeout: 5m # connection ttl with client
+    enable_metrics: false
 
 token: 
   access_ttl: 1m
