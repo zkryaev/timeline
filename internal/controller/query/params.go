@@ -14,7 +14,7 @@ type Params []Param
 
 func NewParams(settings *scope.Settings, params ...Param) Params {
 	supported := settings.SupportedParams
-	list := make(Params, len(params))
+	list := make(Params, 0, len(params))
 	for _, spec := range params {
 		ptype := supported.GetParam(spec.getName())
 		switch {
