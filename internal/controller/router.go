@@ -40,7 +40,7 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	authmux.HandleFunc(scope.PathOrgsRegistration, auth.OrganizationRegister).Methods(routes[scope.PathOrgsRegistration].Methods.Get(scope.POST)...)
 	authmux.HandleFunc(scope.PathToken, auth.PutAccessToken).Methods(routes[scope.PathToken].Methods.Get(scope.PUT)...)
 
-	Protected := V1.NewRoute().Subrouter()
+	Protected := V1.NewRoute().PathPrefix("0").Subrouter()
 	if settings.EnableAuthorization {
 		Protected.Use(auth.Middleware.Authorization)
 	}
