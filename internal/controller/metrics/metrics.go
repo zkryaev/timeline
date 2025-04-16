@@ -89,3 +89,16 @@ func NewDefaultMetrics() *Metrics {
 		),
 	}
 }
+
+func (m *Metrics) UpdateRequestMetrics(method, urlpath, status string, duration time.Duration) {
+	m.RequestDuration.WithLabelValues(
+		method,
+		urlpath,
+		status,
+	).Observe(duration.Seconds())
+	m.RequestCounter.WithLabelValues(
+		method,
+		urlpath,
+		status,
+	).Inc()
+}
