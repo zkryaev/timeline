@@ -50,17 +50,17 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	authmuxProtected.HandleFunc(scope.PathCode, auth.CodeConfirm).Methods(routes[scope.PathCode].Methods.Get(scope.PUT)...)
 
 	// users
-	usermuxProtected := Protected.NewRoute().PathPrefix(scope.PathUsers).Subrouter()
-	usermuxProtected.HandleFunc("", user.GetUser).Methods(routes[scope.PathUsers].Methods.Get(scope.GET)...)
-	usermuxProtected.HandleFunc("", user.UpdateUser).Methods(routes[scope.PathUsers].Methods.Get(scope.PUT)...)
+	usermuxProtected := Protected.NewRoute().PathPrefix("1").Subrouter()
+	usermuxProtected.HandleFunc(scope.PathUsers, user.GetUser).Methods(routes[scope.PathUsers].Methods.Get(scope.GET)...)
+	usermuxProtected.HandleFunc(scope.PathUsers, user.UpdateUser).Methods(routes[scope.PathUsers].Methods.Get(scope.PUT)...)
 	// users/orgmap
 	usermuxProtected.HandleFunc(scope.PathMapOrgs, user.OrganizationInArea).Methods(routes[scope.PathMapOrgs].Methods.Get(scope.GET)...)
 	// users/search/org
 	usermuxProtected.HandleFunc(scope.PathSearchOrgs, user.SearchOrganization).Methods(routes[scope.PathSearchOrgs].Methods.Get(scope.GET)...)
 	// orgs
-	orgmuxProtected := Protected.NewRoute().PathPrefix(scope.PathOrgs).Subrouter()
-	orgmuxProtected.HandleFunc("", org.GetOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.GET)...)
-	orgmuxProtected.HandleFunc("", org.PutOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.PUT)...)
+	orgmuxProtected := Protected.NewRoute().PathPrefix("2").Subrouter()
+	orgmuxProtected.HandleFunc(scope.PathOrgs, org.GetOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc(scope.PathOrgs, org.PutOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.PUT)...)
 	// orgs/timetables
 	orgmuxProtected.HandleFunc(scope.PathTimetables, org.TimetableAdd).Methods(routes[scope.PathTimetables].Methods.Get(scope.POST)...)
 	orgmuxProtected.HandleFunc(scope.PathTimetables, org.Timetable).Methods(routes[scope.PathTimetables].Methods.Get(scope.GET)...)
@@ -89,10 +89,10 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.DeleteWorkerSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.DELETE)...)
 
 	// records
-	recmuxProtected := Protected.NewRoute().PathPrefix(scope.PathRecords).Subrouter()
-	Protected.HandleFunc("", rec.RecordAdd).Methods(routes[scope.PathRecords].Methods.Get(scope.POST)...)
-	Protected.HandleFunc("", rec.Record).Methods(routes[scope.PathRecords].Methods.Get(scope.GET)...)
-	Protected.HandleFunc("", rec.RecordCancel).Methods(routes[scope.PathRecords].Methods.Get(scope.PUT)...)
+	recmuxProtected := Protected.NewRoute().PathPrefix("3").Subrouter()
+	Protected.HandleFunc(scope.PathRecords, rec.RecordAdd).Methods(routes[scope.PathRecords].Methods.Get(scope.POST)...)
+	Protected.HandleFunc(scope.PathRecords, rec.Record).Methods(routes[scope.PathRecords].Methods.Get(scope.GET)...)
+	Protected.HandleFunc(scope.PathRecords, rec.RecordCancel).Methods(routes[scope.PathRecords].Methods.Get(scope.PUT)...)
 	// records/feedbacks
 	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackSet).Methods(routes[scope.PathFeedback].Methods.Get(scope.POST)...)
 	recmuxProtected.HandleFunc(scope.PathFeedback, rec.Feedbacks).Methods(routes[scope.PathFeedback].Methods.Get(scope.GET)...)
