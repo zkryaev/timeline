@@ -38,6 +38,7 @@ type Settings struct {
 	EnableAuthorization bool
 	EnableRepoS3        bool
 	EnableRepoMail      bool
+	EnableMetrics       bool
 }
 
 func NewDefaultSettings(appCfg config.Application) *Settings {
@@ -45,6 +46,7 @@ func NewDefaultSettings(appCfg config.Application) *Settings {
 		EnableAuthorization: appCfg.Settings.EnableAuthorization,
 		EnableRepoS3:        appCfg.Settings.EnableRepoS3,
 		EnableRepoMail:      appCfg.Settings.EnableRepoMail,
+		EnableMetrics:       appCfg.Settings.EnableMetrics,
 		SupportedMethodsMap: defaultSupportedMethodsHTTP(),
 		SupportedParams:     defaultSupportedParams(),
 	}

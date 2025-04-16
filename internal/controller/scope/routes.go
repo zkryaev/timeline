@@ -14,7 +14,8 @@ const (
 
 const (
 	// Utility endpoint
-	PathHealth = "/health" // docker health handler
+	PathHealth  = "/health"  // docker health handler
+	PathMetrics = "/metrics" // prometheus
 
 	// Auth endpoint
 	PathAuth              = "/auth"
