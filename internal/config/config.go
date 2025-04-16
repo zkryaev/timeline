@@ -10,31 +10,33 @@ import (
 )
 
 type Config struct {
-	App   Application `yaml:"app"`
-	DB    Database
-	Mail  Mail
-	Token Token `yaml:"token"`
-	S3    S3
+	App        Application `yaml:"app"`
+	DB         Database
+	Mail       Mail
+	Token      Token `yaml:"token"`
+	S3         S3
+	Prometheus Prometheus
 }
 
 type Settings struct {
-	UseLocalBackData    bool `yaml:"use_local_back_data"`
-	EnableAuthorization bool `yaml:"enable_authorization"`
-	EnableRepoS3        bool `yaml:"enable_repo_s3"`
-	EnableRepoMail      bool `yaml:"enable_repo_mail"`
+	UseLocalBackData    bool `yaml:"use_local_back_data" env-default:"true"`
+	EnableAuthorization bool `yaml:"enable_authorization" env-default:"true"`
+	EnableRepoS3        bool `yaml:"enable_repo_s3" env-default:"true"`
+	EnableRepoMail      bool `yaml:"enable_repo_mail" env-default:"true"`
+	EnableMetrics       bool `yaml:"enable_metrics" env-default:"true"`
 }
 
 type Application struct {
-	Env        string   `yaml:"env" env-required:"true"`
-	Settings   Settings `yaml:"settings"`
-	HTTPServer `yaml:"http_server"`
+	Env      string   `yaml:"env" env-required:"true"`
+	Settings Settings `yaml:"settings"`
+	Server   HTTPServer
 }
 
 type HTTPServer struct {
-	Host        string        `yaml:"host" env-default:"localhost"`
-	Port        string        `yaml:"port" env-default:"8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"5m"`
+	Host        string        `env:"APP_HTTP_HOST" env-default:"localhost"`
+	Port        string        `env:"APP_HTTP_PORT" env-default:"8080"`
+	Timeout     time.Duration `env:"APP_HTTP_TIMEOUT" env-default:"4s"`
+	IdleTimeout time.Duration `env:"APP_HTTP_IDLE_TIMEOUT" env-default:"5m"`
 }
 
 type Database struct {
@@ -67,6 +69,11 @@ type S3 struct {
 	DataPort      string `env:"S3_DATA_PORT" env-default:"9000"`
 	ConsolePort   string `env:"S3_CONSOLE_PORT" env-default:"9001"`
 	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
+}
+
+type Prometheus struct {
+	Host string `env:"PROMETHEUS_HOST" env-required:"true"`
+	Port string `env:"PROMETHEUS_PORT" env-required:"true"`
 }
 
 func MustLoad() *Config {
