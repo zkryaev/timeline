@@ -30,7 +30,10 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	s3 := controllersSet.S3
 
 	// TODO: PROD s := r.Host("www.example.com").Subrouter()
-	r.Use(auth.Middleware.HandlerLogs)
+	if settings.EnableMetrics {
+		r.Use(auth.Middleware.RequestMetrics)
+	}
+	r.Use(auth.Middleware.RequestLogger)
 	r.HandleFunc(scope.PathHealth, HealthCheck)
 	V1 := r.NewRoute().PathPrefix(scope.V1).Subrouter()
 	// Auth
@@ -42,7 +45,7 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 
 	Protected := V1.NewRoute().Subrouter()
 	if settings.EnableAuthorization {
-		Protected.Use(auth.Middleware.Authorization)
+		Protected.Use(auth.Middleware.RequestAuthorization)
 	}
 
 	authmuxProtected := Protected.NewRoute().PathPrefix(scope.PathAuth).Subrouter()
