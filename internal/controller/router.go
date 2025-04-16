@@ -52,15 +52,15 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	// users
 	usermuxProtected := Protected.NewRoute().PathPrefix(scope.PathUsers).Subrouter()
 	usermuxProtected.HandleFunc("", user.GetUser).Methods(routes[scope.PathUsers].Methods.Get(scope.GET)...)
-	usermuxProtected.HandleFunc(scope.PathUsers, user.UpdateUser).Methods(routes[scope.PathUsers].Methods.Get(scope.PUT)...)
+	usermuxProtected.HandleFunc("", user.UpdateUser).Methods(routes[scope.PathUsers].Methods.Get(scope.PUT)...)
 	// users/orgmap
 	usermuxProtected.HandleFunc(scope.PathMapOrgs, user.OrganizationInArea).Methods(routes[scope.PathMapOrgs].Methods.Get(scope.GET)...)
 	// users/search/org
 	usermuxProtected.HandleFunc(scope.PathSearchOrgs, user.SearchOrganization).Methods(routes[scope.PathSearchOrgs].Methods.Get(scope.GET)...)
 	// orgs
 	orgmuxProtected := Protected.NewRoute().PathPrefix(scope.PathOrgs).Subrouter()
-	orgmuxProtected.HandleFunc(scope.PathOrgs, org.GetOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.GET)...)
-	orgmuxProtected.HandleFunc(scope.PathOrgs, org.PutOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.PUT)...)
+	orgmuxProtected.HandleFunc("", org.GetOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.GET)...)
+	orgmuxProtected.HandleFunc("", org.PutOrganization).Methods(routes[scope.PathOrgs].Methods.Get(scope.PUT)...)
 	// orgs/timetables
 	orgmuxProtected.HandleFunc(scope.PathTimetables, org.TimetableAdd).Methods(routes[scope.PathTimetables].Methods.Get(scope.POST)...)
 	orgmuxProtected.HandleFunc(scope.PathTimetables, org.Timetable).Methods(routes[scope.PathTimetables].Methods.Get(scope.GET)...)
