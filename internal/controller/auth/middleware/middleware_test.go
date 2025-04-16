@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/sugar/jwtlib"
 
@@ -24,6 +25,7 @@ type MiddlewareTestSuite struct {
 	suite.Suite
 	Middeware      Middleware
 	tokenCfg       config.Token
+	appCfg         config.Application
 	mockPrivateKey *rsa.PrivateKey
 }
 
@@ -34,9 +36,16 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	}
 	suite.mockPrivateKey = privateKey
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
+	suite.appCfg.Settings.EnableAuthorization = true
+	suite.appCfg.Settings.EnableRepoS3 = false
+	suite.appCfg.Settings.EnableRepoMail = false
+	suite.appCfg.Settings.EnableMetrics = false
+	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
 		zap.NewExample(),
+		scope.NewDefaultRoutes(settings),
+		nil,
 	)
 }
 
@@ -56,7 +65,7 @@ func (suite *MiddlewareTestSuite) TestValidToken() {
 
 	token, err := suite.Middeware.ExtractToken(r)
 	suite.NoError(err)
-	suite.NotNil(token)
+	suite.Require().NotNil(token)
 }
 
 func (suite *MiddlewareTestSuite) TestEmptyAuthHeader() {

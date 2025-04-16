@@ -31,7 +31,7 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 
 	dbWorker, err := suite.db.Worker(ctx, workerID, org.OrgID)
 	suite.NoError(err)
-	suite.NotNil(dbWorker)
+	suite.Require().NotNil(dbWorker)
 	actWorker := orgmap.WorkerToDTO(dbWorker)
 	suite.Equal(&expWorker, actWorker.WorkerInfo)
 
@@ -49,7 +49,7 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 	dbWorkers, found, err := suite.db.WorkerList(ctx, org.OrgID, 10, 0)
 	suite.NoError(err)
 	suite.Greater(found, 0)
-	suite.NotNil(dbWorkers)
+	suite.Require().NotNil(dbWorkers)
 	for i := range dbWorkers {
 		actworker := orgmap.WorkerToDTO(dbWorkers[i])
 		if actworker.WorkerID == workerID {
@@ -60,7 +60,7 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 	services, found, err := suite.db.ServiceList(ctx, org.OrgID, 10, 0)
 	suite.NoError(err)
 	suite.Greater(found, 0)
-	suite.NotNil(services)
+	suite.Require().NotNil(services)
 	service := orgmap.ServiceToDTO(services[0])
 
 	assreq := &orgdto.AssignWorkerReq{
@@ -72,7 +72,7 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 
 	serviceWorkers, err := suite.db.ServiceWorkerList(ctx, service.ServiceID, org.OrgID)
 	suite.NoError(err)
-	suite.NotNil(serviceWorkers)
+	suite.Require().NotNil(serviceWorkers)
 	for i := range serviceWorkers {
 		worker := orgmap.WorkerToDTO(dbWorkers[i])
 		if worker.WorkerID == workerID {
@@ -83,7 +83,7 @@ func (suite *PostgresTestSuite) TestWorkerQueries() {
 	suite.Require().NoError(suite.db.WorkerUnAssignService(ctx, orgmap.AssignWorkerToModel(assreq)))
 	serviceWorkers, err = suite.db.ServiceWorkerList(ctx, service.ServiceID, org.OrgID)
 	suite.NoError(err)
-	suite.NotNil(serviceWorkers)
+	suite.Require().NotNil(serviceWorkers)
 	for i := range serviceWorkers {
 		suite.NotEqual(workerID, serviceWorkers[i].WorkerID)
 	}

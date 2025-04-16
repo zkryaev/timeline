@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"timeline/internal/controller/auth/middleware"
 	"timeline/internal/controller/common"
-	"timeline/internal/controller/validation"
+	"timeline/internal/controller/query"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/general"
 	"timeline/internal/entity/dto/userdto"
 
 	"github.com/go-playground/validator"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -28,36 +27,40 @@ type UserCtrl struct {
 	usecase    User
 	Logger     *zap.Logger
 	middleware middleware.Middleware
+	settings   *scope.Settings
 }
 
-func New(usecase User, logger *zap.Logger, validator *validator.Validate, middleware middleware.Middleware) *UserCtrl {
+func New(usecase User, logger *zap.Logger, validator *validator.Validate, middleware middleware.Middleware, settings *scope.Settings) *UserCtrl {
 	return &UserCtrl{
 		usecase:    usecase,
 		Logger:     logger,
 		middleware: middleware,
+		settings:   settings,
 	}
 }
 
 // @Summary Get user
-// @Description Get user by his id
-// @Tags User
+// @Description
+// @Tags user
 // @Accept  json
 // @Produce  json
-// @Param id path int true "user_id"
+// @Param user_id query int true " "
 // @Success 200 {object} entity.User
 // @Failure 400
 // @Failure 500
-// @Router /users/info/{id} [get]
-func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := u.Logger.With(zap.String("uuid", uuid))
-	params, err := validation.FetchPathID(mux.Vars(r), "id")
-	if err != nil {
-		logger.Error("FetchPathID", zap.Error(err))
+// @Router /users [get]
+func (u *UserCtrl) GetUser(w http.ResponseWriter, r *http.Request) {
+	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
+	var (
+		userID = query.NewParamInt(scope.USER_ID, true)
+	)
+	params := query.NewParams(u.settings, userID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	data, err := u.usecase.User(r.Context(), logger, params["id"])
+	data, err := u.usecase.User(r.Context(), logger, userID.Val)
 	if err != nil {
 		switch {
 		case errors.Is(err, common.ErrNotFound):
@@ -77,26 +80,32 @@ func (u *UserCtrl) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Update
-// @Description Update user information
-// @Tags User
+// @Summary Update user
+// @Description
+// @Tags user
 // @Accept  json
 // @Produce  json
-// @Param   request body userdto.UserUpdateReq true "New user info"
+// @Param   req body userdto.UserUpdateReq true " "
 // @Success 200 {object} userdto.UserUpdateReq
 // @Failure 304
 // @Failure 400
 // @Failure 500
-// @Router /users/update [put]
+// @Router /users [put]
 func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := u.Logger.With(zap.String("uuid", uuid))
+	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(u.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	req := &userdto.UserUpdateReq{}
 	if err := common.DecodeAndValidate(r, req); err != nil {
 		logger.Error("DecodeAndValidate", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	req.UserID = tdata.ID
 	if err := u.usecase.UserUpdate(r.Context(), logger, req); err != nil {
 		switch {
 		case errors.Is(err, common.ErrNothingChanged):
@@ -114,57 +123,54 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Organization Searching
 // @Description Get organizations that are satisfiered to search params
-// @Tags User
+// @Tags user
 // @Accept  json
 // @Produce  json
-// @Param limit query int true "Limit the number of results"
-// @Param page query int true "Page number for pagination"
+// @Param limit query int true " "
+// @Param page query int true " "
 // @Param name query string false "Name of the organization to search for"
 // @Param type query string false "Type of the organization"
-// @Param is_rate_sort query bool false "on/off rating sort"
-// @Param is_name_sort query bool false "on/off name sort"
+// @Param sort_by query string false "Values: name/rate"
 // @Success 200 {object} general.SearchResp
 // @Failure 400
 // @Failure 404
 // @Failure 500
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := u.Logger.With(zap.String("uuid", uuid))
-	query := map[string]bool{
-		"limit":        true,
-		"page":         true,
-		"name":         false,
-		"type":         false,
-		"is_rate_sort": false,
-		"is_name_sort": false,
-	}
-	if err := validation.IsQueryValid(r, query); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
+	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
+	var (
+		limit   = query.NewParamInt(scope.LIMIT, true)
+		page    = query.NewParamInt(scope.PAGE, true)
+		orgName = query.NewParamString(scope.NAME, false)
+		orgType = query.NewParamString(scope.TYPE, false)
+		sortBy  = query.NewParamString(scope.SORT_BY, false)
+	)
+	params := query.NewParams(u.settings, limit, page, orgName, orgType, sortBy)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
-	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
-	rateSort, _ := strconv.ParseBool(r.URL.Query().Get("is_rate_sort"))
-	nameSort, _ := strconv.ParseBool(r.URL.Query().Get("is_name_sort"))
-
-	token, _ := u.middleware.ExtractToken(r)
-	tdata := common.GetTokenData(token.Claims)
+	switch sortBy.Val {
+	case scope.NAMESORT:
+	case scope.RATESORT:
+	default:
+		sortBy.Val = ""
+	}
+	tdata, err := middleware.GetTokenDataFromCtx(u.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 
 	req := &general.SearchReq{
-		Page:       int(page),
-		Limit:      int(limit),
-		Name:       r.URL.Query().Get("name"),
-		Type:       r.URL.Query().Get("type"),
-		IsRateSort: rateSort,
-		IsNameSort: nameSort,
-		UserID:     tdata.ID,
-	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		Page:   page.Val,
+		Limit:  limit.Val,
+		Name:   orgName.Val,
+		Type:   orgType.Val,
+		SortBy: sortBy.Val,
+		UserID: tdata.ID,
 	}
 	data, err := u.usecase.SearchOrgs(r.Context(), logger, req)
 	if err != nil {
@@ -188,7 +194,7 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Show Organizations on Map
 // @Description Get organizations that located at the given area
-// @Tags User
+// @Tags user
 // @Accept  json
 // @Produce  json
 // @Param min_lat query float32 true "Minimum latitude for the search area"
@@ -199,39 +205,30 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /users/map/orgs [get]
+// @Router /users/orgmap [get]
 func (u *UserCtrl) OrganizationInArea(w http.ResponseWriter, r *http.Request) {
-	uuid, _ := r.Context().Value("uuid").(string)
-	logger := u.Logger.With(zap.String("uuid", uuid))
-	query := map[string]bool{
-		"min_lat":  true,
-		"min_long": true,
-		"max_lat":  true,
-		"max_long": true,
-	}
-	if err := validation.IsQueryValid(r, query); err != nil {
-		logger.Error("IsQueryValid", zap.Error(err))
+	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
+	var (
+		minLat = query.NewParamFloat32(scope.MIN_LAT, true)
+		minLon = query.NewParamFloat32(scope.MIN_LON, true)
+		maxLat = query.NewParamFloat32(scope.MAX_LAT, true)
+		maxLon = query.NewParamFloat32(scope.MAX_LON, true)
+	)
+	params := query.NewParams(u.settings, minLat, minLon, maxLat, maxLon)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	minLat, _ := strconv.ParseFloat(r.URL.Query().Get("min_lat"), 64)
-	minLong, _ := strconv.ParseFloat(r.URL.Query().Get("min_long"), 64)
-	maxLat, _ := strconv.ParseFloat(r.URL.Query().Get("max_lat"), 64)
-	maxLong, _ := strconv.ParseFloat(r.URL.Query().Get("max_long"), 64)
 	req := &general.OrgAreaReq{
 		LeftLowerCorner: entity.Coordinates{
-			Lat:  minLat,
-			Long: minLong,
+			Lat:  float64(minLat.Val),
+			Long: float64(minLon.Val),
 		},
 		RightUpperCorner: entity.Coordinates{
-			Lat:  maxLat,
-			Long: maxLong,
+			Lat:  float64(maxLat.Val),
+			Long: float64(maxLon.Val),
 		},
-	}
-	if err := common.Validate(req); err != nil {
-		logger.Error("Validate", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
 	}
 	data, err := u.usecase.OrgsInArea(r.Context(), logger, req)
 	if err != nil {

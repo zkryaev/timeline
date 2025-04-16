@@ -8,6 +8,6 @@ const (
 
 type ImageMeta struct {
 	URL     string `db:"url"`
-	DomenID int
 	Type    string `db:"type"`
+	DomenID int
 }

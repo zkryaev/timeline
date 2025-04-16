@@ -1,8 +1,8 @@
 package orgdto
 
 type WorkerSchedule struct {
-	WorkerID        int         `json:"worker_id"`
 	OrgID           int         `json:"org_id"`
+	WorkerID        int         `json:"worker_id"`
 	SessionDuration int         `json:"session_duration,omitempty"`
 	Schedule        []*Schedule `json:"schedule"`
 }
@@ -13,9 +13,9 @@ type ScheduleList struct {
 }
 
 type ScheduleParams struct {
-	WorkerID int `json:"worker_id"`
-	OrgID    int `json:"org_id" validate:"required"`
-	Weekday  int `json:"weekday"`
+	WorkerID int
+	OrgID    int
+	Weekday  int
 	Limit    int
 	Page     int
 }

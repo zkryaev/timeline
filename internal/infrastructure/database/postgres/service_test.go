@@ -25,7 +25,7 @@ func (suite *PostgresTestSuite) TestServiceQueries() {
 
 	service, err := suite.db.Service(ctx, serviceID, exp.OrgID)
 	suite.NoError(err)
-	suite.NotNil(service)
+	suite.Require().NotNil(service)
 	suite.Equal(&exp.ServiceInfo, orgmap.ServiceToEntity(service))
 
 	expected := &orgdto.UpdateServiceReq{
@@ -42,7 +42,7 @@ func (suite *PostgresTestSuite) TestServiceQueries() {
 
 	serviceList, found, err := suite.db.ServiceList(ctx, expected.OrgID, 5, 0)
 	suite.NoError(err)
-	suite.NotNil(serviceList)
+	suite.Require().NotNil(serviceList)
 	suite.NotZero(found)
 
 	for i := range serviceList {
@@ -55,7 +55,7 @@ func (suite *PostgresTestSuite) TestServiceQueries() {
 	suite.NoError(suite.db.ServiceDelete(ctx, expected.ServiceID, expected.OrgID))
 	serviceList, found, err = suite.db.ServiceList(ctx, expected.OrgID, 5, 0)
 	suite.NoError(err)
-	suite.NotNil(serviceList)
+	suite.Require().NotNil(serviceList)
 	suite.Zero(found)
 
 	for i := range serviceList {

@@ -12,7 +12,7 @@ func UserRegisterToModel(dto *authdto.UserRegisterReq) *usermodel.UserRegister {
 	return &usermodel.UserRegister{
 		UUID: dto.UUID,
 		HashCreds: models.HashCreds{
-			Email:      dto.Email,
+			Email:      dto.User.Email,
 			PasswdHash: dto.Password,
 		},
 		UserInfo: usermodel.UserInfo{
@@ -56,5 +56,6 @@ func UserInfoToDTO(model *usermodel.UserInfo) *entity.User {
 		Telephone: model.Telephone,
 		City:      model.City,
 		About:     model.About,
+		Email:     model.Email,
 	}
 }

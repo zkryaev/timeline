@@ -33,7 +33,7 @@ func (suite *PostgresTestSuite) TestUserQueries() {
 
 	userDB, err := suite.db.UserByID(ctx, expUser.UserID)
 	suite.NoError(err)
-	suite.NotNil(userDB)
+	suite.Require().NotNil(userDB)
 	actUser := usermap.UserInfoToDTO(userDB)
 	suite.Equal(&expUser, actUser)
 
@@ -53,11 +53,11 @@ func (suite *PostgresTestSuite) TestUserQueries() {
 
 	userDB, err = suite.db.UserByID(ctx, expUser.UserID)
 	suite.NoError(err)
-	suite.NotNil(userDB)
+	suite.Require().NotNil(userDB)
 	actUser = usermap.UserInfoToDTO(userDB)
 	suite.Equal(&expUser, actUser)
 
-	suite.NoError(suite.db.UserDeleteURL(ctx, expUser.UUID))
+	suite.NoError(suite.db.UserDeleteURL(ctx, expUser.UserID, expUser.UUID))
 	userUUID, err := suite.db.UserUUID(ctx, expUser.UserID)
 	suite.NoError(err)
 	suite.Empty(userUUID)

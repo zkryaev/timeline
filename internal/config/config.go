@@ -10,24 +10,33 @@ import (
 )
 
 type Config struct {
-	App   Application `yaml:"app"`
-	DB    Database
-	Mail  Mail
-	Token Token `yaml:"token"`
-	S3    S3
+	App        Application `yaml:"app"`
+	DB         Database
+	Mail       Mail
+	Token      Token `yaml:"token"`
+	S3         S3
+	Prometheus Prometheus
+}
+
+type Settings struct {
+	UseLocalBackData    bool `yaml:"use_local_back_data" env-default:"true"`
+	EnableAuthorization bool `yaml:"enable_authorization" env-default:"true"`
+	EnableRepoS3        bool `yaml:"enable_repo_s3" env-default:"true"`
+	EnableRepoMail      bool `yaml:"enable_repo_mail" env-default:"true"`
+	EnableMetrics       bool `yaml:"enable_metrics" env-default:"true"`
 }
 
 type Application struct {
-	Env              string `yaml:"env" env-required:"true"`
-	IsBackDataLoaded bool   `yaml:"is_backdata_loaded"`
-	HTTPServer       `yaml:"http_server"`
+	Env      string   `yaml:"env" env-required:"true"`
+	Settings Settings `yaml:"settings"`
+	Server   HTTPServer
 }
 
 type HTTPServer struct {
-	Host        string        `yaml:"host" env-default:"localhost"`
-	Port        string        `yaml:"port" env-default:"8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"5m"`
+	Host        string        `env:"APP_HTTP_HOST" env-default:"localhost"`
+	Port        string        `env:"APP_HTTP_PORT" env-default:"8080"`
+	Timeout     time.Duration `env:"APP_HTTP_TIMEOUT" env-default:"4s"`
+	IdleTimeout time.Duration `env:"APP_HTTP_IDLE_TIMEOUT" env-default:"5m"`
 }
 
 type Database struct {
@@ -62,14 +71,19 @@ type S3 struct {
 	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
 }
 
-func MustLoad() Config {
+type Prometheus struct {
+	Host string `env:"PROMETHEUS_HOST" env-required:"true"`
+	Port string `env:"PROMETHEUS_PORT" env-required:"true"`
+}
+
+func MustLoad() *Config {
 	configPath := envars.GetPathByEnv("CONFIG_PATH")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatal("the cfg file doesn't exist at the path: ", configPath)
 	}
 
-	var cfg Config
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	cfg := &Config{}
+	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
 		log.Fatal("failed with reading config: ", err.Error())
 	}
 	return cfg

@@ -31,7 +31,7 @@ func (suite *PostgresTestSuite) TestScheduleQueries() {
 	schedules, err := suite.db.WorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params))
 	suite.NoError(err, fmt.Sprintf("worker_id=%d org_id=%d weekday=%d limit=%d page=%d",
 		params.WorkerID, params.OrgID, params.Weekday, params.Limit, params.Page))
-	suite.NotNil(schedules)
+	suite.Require().NotNil(schedules)
 
 	addReq := &orgdto.WorkerSchedule{
 		WorkerID:        worker.WorkerID,
@@ -52,7 +52,7 @@ func (suite *PostgresTestSuite) TestScheduleQueries() {
 	scheduleList, err := suite.db.WorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params))
 	suite.NoError(err, fmt.Sprintf("worker_id=%d org_id=%d weekday=%d limit=%d page=%d",
 		params.WorkerID, params.OrgID, params.Weekday, params.Limit, params.Page))
-	suite.NotNil(scheduleList)
+	suite.Require().NotNil(scheduleList)
 	var isFound bool
 	var indExpected [2]int
 	for i, workerSched := range scheduleList.Workers {
@@ -78,7 +78,7 @@ func (suite *PostgresTestSuite) TestScheduleQueries() {
 	scheduleList, err = suite.db.WorkerSchedule(ctx, orgmap.ScheduleParamsToModel(params))
 	suite.NoError(err, fmt.Sprintf("worker_id=%d org_id=%d weekday=%d limit=%d page=%d",
 		params.WorkerID, params.OrgID, params.Weekday, params.Limit, params.Page))
-	suite.NotNil(scheduleList)
+	suite.Require().NotNil(scheduleList)
 	for _, workerSched := range scheduleList.Workers {
 		if workerSched.WorkerID == worker.WorkerID && workerSched.OrgID == org.OrgID {
 			scheds := orgmap.WorkerScheduleToDTO(workerSched)

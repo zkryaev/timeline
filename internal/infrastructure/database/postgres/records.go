@@ -2,13 +2,12 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/recordmodel"
 	"timeline/internal/infrastructure/models/usermodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -16,7 +15,7 @@ var (
 	ErrRecordsNotFound = errors.New("records not found")
 )
 
-func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.RecordScrap, error) {
+func (p *PostgresRepo) Record(ctx context.Context, param recordmodel.RecordParam) (*recordmodel.RecordScrap, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start tx: %w", err)
@@ -34,10 +33,12 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 			w.last_name AS worker_last_name, 
 			o.org_id AS org_id,
 			o.name AS org_name,
+			o.city AS org_city,
 			u.user_id AS user_id,
 			u.first_name AS user_first_name,
 			u.last_name AS user_last_name, 
 			u.city AS user_city,
+			u.email AS user_email,
 			s.date,
 			s.session_begin,
 			s.session_end,
@@ -53,10 +54,15 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		JOIN workers w ON r.worker_id = w.worker_id
 		LEFT JOIN feedbacks f ON r.record_id = f.record_id
 		WHERE r.is_canceled = FALSE
-		AND r.record_id = $1;
+		AND r.record_id = $1
 	`
+	if param.TData.IsOrg {
+		query += " AND r.org_id = $2;"
+	} else {
+		query += " AND r.user_id = $2;"
+	}
 	rec := &recordmodel.RecordScrap{
-		RecordID: recordID,
+		RecordID: param.RecordID,
 		Org:      &orgmodel.OrgInfo{},
 		User:     &usermodel.UserInfo{},
 		Slot:     &orgmodel.Slot{},
@@ -64,17 +70,19 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		Worker:   &orgmodel.Worker{},
 		Feedback: &recordmodel.Feedback{},
 	}
-	if err = tx.QueryRowxContext(ctx, query, recordID).Scan(
+	if err = tx.QueryRowxContext(ctx, query, param.RecordID, param.TData.ID).Scan(
 		&rec.Service.Name,
 		&rec.Service.Cost,
 		&rec.Worker.FirstName,
 		&rec.Worker.LastName,
 		&rec.Org.OrgID,
 		&rec.Org.Name,
+		&rec.Org.City,
 		&rec.User.UserID,
 		&rec.User.FirstName,
 		&rec.User.LastName,
 		&rec.User.City,
+		&rec.User.Email,
 		&rec.Slot.Date,
 		&rec.Slot.Begin,
 		&rec.Slot.End,
@@ -83,7 +91,7 @@ func (p *PostgresRepo) Record(ctx context.Context, recordID int) (*recordmodel.R
 		&rec.Reviewed,
 		&rec.CreatedAt,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordNotFound
 		}
 		return nil, err
@@ -125,7 +133,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, req.UserID, req.OrgID, req.Fresh).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrRecordsNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to retrieve found: %w", err)
@@ -140,6 +148,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			r.org_id AS org_id,
 			o.name AS org_name,
 			o.type AS org_type,
+			o.city AS org_city,
 			r.user_id AS user_id,
 			COALESCE(u.uuid, '') AS user_uuid,
 			u.first_name AS user_first_name,
@@ -173,7 +182,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 	recs := make([]*recordmodel.RecordScrap, 0, 3)
 	rows, err := tx.QueryContext(ctx, query, req.UserID, req.OrgID, req.Fresh, req.Limit, req.Offset)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrRecordsNotFound
 		}
 		return nil, 0, err
@@ -197,6 +206,7 @@ func (p *PostgresRepo) RecordList(ctx context.Context, req *recordmodel.RecordLi
 			&rec.Org.OrgID,
 			&rec.Org.Name,
 			&rec.Org.Type,
+			&rec.Org.City,
 			&rec.User.UserID,
 			&rec.User.UUID,
 			&rec.User.FirstName,
@@ -310,51 +320,6 @@ func (p *PostgresRepo) RecordAdd(ctx context.Context, req *recordmodel.Record) (
 	return record, recordID, nil
 }
 
-func (p *PostgresRepo) RecordPatch(ctx context.Context, req *recordmodel.Record) error {
-	tx, err := p.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-	query := `UPDATE records
-		SET
-			user_id = COALESCE(NULLIF($1, 0), user_id),
-			org_id = COALESCE(NULLIF($2, 0), org_id),
-			service_id = COALESCE(NULLIF($3, 0), service_id),
-			slot_id = COALESCE(NULLIF($4, 0), slot_id),
-			worker_id = COALESCE(NULLIF($5, 0), worker_id),
-			reviewed = COALESCE($6, reviewed)
-		WHERE record_id = $7;
-	`
-	res, err := tx.ExecContext(
-		ctx,
-		query,
-		req.UserID,
-		req.OrgID,
-		req.ServiceID,
-		req.SlotID,
-		req.WorkerID,
-		req.Reviewed,
-		req.RecordID,
-	)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to patch selected record: %w", err)
-	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
-			return ErrNoRowsAffected
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit tx: %w", err)
-	}
-	return nil
-}
-
 // Only for tests!
 func (p *PostgresRepo) RecordDelete(ctx context.Context, recordID int) error {
 	tx, err := p.db.Beginx()
@@ -409,6 +374,14 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 			is_canceled = $1,
 			cancel_reason = $2
 		WHERE record_id = $3
+	`
+	var entity string
+	if rec.TData.IsOrg {
+		entity = " AND org_id = $4"
+	} else {
+		entity = " AND user_id = $4"
+	}
+	query = query + entity + `
 		AND EXISTS (SELECT 1 FROM recslot WHERE slot_date >= CURRENT_TIMESTAMP)
 		RETURNING slot_id;
 	`
@@ -419,6 +392,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 		rec.IsCanceled,
 		rec.CancelReason,
 		rec.RecordID,
+		rec.TData.ID,
 	).Scan(&slotID)
 	switch {
 	case err != nil:
@@ -436,7 +410,7 @@ func (p *PostgresRepo) RecordCancel(ctx context.Context, rec *recordmodel.Record
 	res, err := tx.ExecContext(ctx, query, slotID)
 	switch {
 	case err != nil:
-		return fmt.Errorf("failed to cancel selected record: %w", err)
+		return fmt.Errorf("failed to free slot from record after cancel: %w", err)
 	default:
 		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
 			return ErrNoRowsAffected
@@ -461,6 +435,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	query := `
 		SELECT 
 			u.email AS user_email,
+			u.city AS user_city,
 			srvc.name AS service_name,
 			srvc.description AS service_description,
 			o.name AS org_name,
@@ -480,7 +455,7 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	recs := make([]*recordmodel.ReminderRecord, 0, 2)
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordsNotFound
 		}
 		return nil, err
@@ -489,14 +464,15 @@ func (p *PostgresRepo) UpcomingRecords(ctx context.Context) ([]*recordmodel.Remi
 	rec := &recordmodel.ReminderRecord{}
 	for rows.Next() {
 		err = rows.Scan(
-			rec.UserEmail,
-			rec.ServiceName,
-			rec.ServiceDescription,
-			rec.OrgName,
-			rec.OrgAddress,
-			rec.Date,
-			rec.Begin,
-			rec.End,
+			&rec.UserEmail,
+			&rec.UserCity,
+			&rec.ServiceName,
+			&rec.ServiceDescription,
+			&rec.OrgName,
+			&rec.OrgAddress,
+			&rec.Date,
+			&rec.Begin,
+			&rec.End,
 		)
 		if err != nil {
 			return nil, err

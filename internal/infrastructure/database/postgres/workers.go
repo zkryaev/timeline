@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -39,7 +38,7 @@ func (p *PostgresRepo) WorkerAdd(ctx context.Context, worker *orgmodel.Worker) (
 		worker.Degree,
 		worker.SessionDuration,
 	).Scan(&workerID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrNoRowsAffected
 		}
 		return 0, fmt.Errorf("failed to add worker to org: %w", err)
@@ -69,7 +68,7 @@ func (p *PostgresRepo) Worker(ctx context.Context, workerID, orgID int) (*orgmod
 	`
 	var worker orgmodel.Worker
 	if err = tx.GetContext(ctx, &worker, query, &workerID, &orgID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrWorkerNotFound
 		}
 		return nil, fmt.Errorf("failed to get worker: %w", err)
@@ -112,7 +111,7 @@ func (p *PostgresRepo) WorkerUpdate(ctx context.Context, worker *orgmodel.Worker
 		worker.WorkerID,
 		worker.OrgID,
 	).Err(); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNoRowsAffected
 		}
 		return fmt.Errorf("failed to update worker: %w", err)
@@ -185,14 +184,14 @@ func (p *PostgresRepo) WorkerUnAssignService(ctx context.Context, assignInfo *or
 									worker_id
 								FROM workers
 								WHERE is_delete = false 
-								AND org_id = $1
+								AND ($1 <= 0 OR org_id = $1)
 								AND worker_id = $2
 							)
 		AND service_id = (SELECT 
 									service_id
 								FROM services
 								WHERE is_delete = false 
-								AND org_id = $1
+								AND ($1 <= 0 OR org_id = $1)
 								AND service_id = $3
 							);
 	`
@@ -230,7 +229,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, orgID, limit, offset int)
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, orgID).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrWorkerNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get org's service list: %w", err)
@@ -245,7 +244,7 @@ func (p *PostgresRepo) WorkerList(ctx context.Context, orgID, limit, offset int)
 	`
 	workers := make([]*orgmodel.Worker, 0, 3)
 	if err = tx.SelectContext(ctx, &workers, query, orgID, limit, offset); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, 0, ErrWorkerNotFound
 		}
 		return nil, 0, fmt.Errorf("failed to get worker list: %w", err)
@@ -272,7 +271,7 @@ func (p *PostgresRepo) WorkerSoftDelete(ctx context.Context, workerID, orgID int
 			is_delete = TRUE
 		WHERE is_delete = FALSE
 		AND worker_id = $1
-		AND org_id = $2;
+		AND ($2 <= 0 OR org_id = $2);
 	`
 	res, err := tx.ExecContext(ctx, mainQuery, workerID, orgID)
 	switch {
@@ -348,7 +347,7 @@ func (p *PostgresRepo) WorkerDelete(ctx context.Context, workerID, orgID int) er
 	return nil
 }
 
-func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, error) {
+func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return "", fmt.Errorf("failed to start tx: %w", err)
@@ -361,12 +360,13 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, er
 	query := `
 		SELECT uuid
 		FROM workers
-		WHERE worker_id = $1;
+		WHERE worker_id = $1
+		AND (org_id = $2 OR org_id <= 0);
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, workerID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrOrgNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrWorkerNotFound
 		}
 		return "", fmt.Errorf("failed to get worker uuid by id: %w", err)
 	}
@@ -375,7 +375,7 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, workerID int) (string, er
 	}
 	return uuid, nil
 }
-func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID string) error {
+func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, orgID, workerID int, newUUID string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -389,9 +389,10 @@ func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID 
 		UPDATE workers
 		SET
 			uuid = $1
-		WHERE worker_id = $2;
+		WHERE org_id = $2
+		AND worker_id = $3;
 	`
-	res, err := tx.ExecContext(ctx, query, newUUID, workerID)
+	res, err := tx.ExecContext(ctx, query, newUUID, orgID, workerID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to set worker's uuid: %w", err)
@@ -406,7 +407,7 @@ func (p *PostgresRepo) WorkerSetUUID(ctx context.Context, workerID int, newUUID 
 	return nil
 }
 
-func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, url string) error {
+func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, orgID int, url string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -416,8 +417,8 @@ func (p *PostgresRepo) WorkerDeleteURL(ctx context.Context, url string) error {
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE workers SET uuid = '' WHERE uuid = $1;`
-	res, err := tx.ExecContext(ctx, query, url)
+	query := `UPDATE workers SET uuid = '' WHERE uuid = $1 AND org_id = $2;`
+	res, err := tx.ExecContext(ctx, query, url, orgID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete worker's url: %w", err)

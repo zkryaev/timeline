@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"time"
 	"timeline/internal/infrastructure/models"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -160,7 +158,7 @@ func (p *PostgresRepo) AccountExpiration(ctx context.Context, email string, isOr
 	}
 	var data models.ExpInfo
 	if err = tx.QueryRowContext(ctx, query, email).Scan(&data.ID, &data.Hash, &data.CreatedAt, &data.Verified); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrAccountNotFound
 		}
 		return nil, fmt.Errorf("failed to get meta info: %w", err)

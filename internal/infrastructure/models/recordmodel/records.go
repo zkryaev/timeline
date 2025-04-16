@@ -2,6 +2,7 @@ package recordmodel
 
 import (
 	"time"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/infrastructure/models/usermodel"
 )
@@ -23,6 +24,12 @@ type RecordListParams struct {
 	Fresh    bool
 	Limit    int
 	Offset   int
+	TData    models.TokenData
+}
+
+type RecordParam struct {
+	RecordID int `db:"record_id"`
+	TData    models.TokenData
 }
 
 type RecordScrap struct {
@@ -50,7 +57,8 @@ type ReminderRecord struct {
 }
 
 type RecordCancelation struct {
+	TData        models.TokenData
+	CancelReason string
 	RecordID     int
 	IsCanceled   bool
-	CancelReason string
 }

@@ -8,11 +8,21 @@ import (
 type ReminderMsg struct {
 	Organization string
 	Service      string
-	Description  string
+	ServiceDesc  string
 	Address      string
 	SessionStart time.Time
 	SessionEnd   time.Time
 	SessionDate  time.Time
+}
+
+type CancelMsg struct {
+	Organization string
+	Service      string
+	ServiceDecs  string
+	SessionStart string
+	SessionEnd   string
+	SessionDate  string
+	CancelReason string
 }
 
 type Message struct {

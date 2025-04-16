@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 	"timeline/internal/entity/dto/recordto"
+	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/recordmodel"
 )
 
@@ -13,6 +14,7 @@ func FeedbackToModel(dto *recordto.Feedback) *recordmodel.Feedback {
 		RecordID:   sql.NullInt32{Int32: int32(dto.RecordID), Valid: true},
 		Stars:      sql.NullInt32{Int32: int32(dto.Stars), Valid: true},
 		Feedback:   sql.NullString{String: dto.Feedback, Valid: true},
+		TData:      models.TokenData(dto.TData),
 	}
 }
 
@@ -42,5 +44,6 @@ func FeedParamsToModel(dto *recordto.FeedbackParams) *recordmodel.FeedbackParams
 		OrgID:      dto.OrgID,
 		Limit:      dto.Limit,
 		Offset:     (dto.Page - 1) * dto.Limit,
+		TData:      models.TokenData(dto.TData),
 	}
 }

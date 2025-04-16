@@ -2,13 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
+	"timeline/internal/controller/scope"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	pgx "github.com/jackc/pgx/v5"
 )
 
 var (
@@ -103,7 +103,7 @@ func (p *PostgresRepo) OrgUUID(ctx context.Context, orgID int) (string, error) {
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, orgID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrOrgNotFound
 		}
 		return "", fmt.Errorf("failed to get org uuid by id: %w", err)
@@ -160,14 +160,14 @@ func (p *PostgresRepo) OrgDeleteURL(ctx context.Context, meta *models.ImageMeta)
 	switch {
 	case (meta.Type == "gallery") || (meta.Type == "banner"):
 		entity = meta.Type
-		query = `DELETE FROM showcase WHERE url = $1;`
+		query = `DELETE FROM showcase WHERE url = $1 AND org_id = $2;`
 	case (meta.Type == "org"):
 		entity = "org"
-		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1;`
+		query = `UPDATE orgs SET uuid = '' WHERE uuid = $1 AND org_id = $2;`
 	default:
 		return fmt.Errorf("image type %s doesn't exist: %w", entity, err)
 	}
-	res, err := tx.ExecContext(ctx, query, meta.URL)
+	res, err := tx.ExecContext(ctx, query, meta.URL, meta.DomenID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete %s's urls: %w", entity, err)
@@ -200,7 +200,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 	`
 	var org orgmodel.Organization
 	if err = tx.GetContext(ctx, &org, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org by id: %w", err)
@@ -211,7 +211,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		WHERE org_id = $1;
 	`
 	if err = tx.SelectContext(ctx, &org.Timetable, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
@@ -223,7 +223,7 @@ func (p *PostgresRepo) OrgByID(ctx context.Context, id int) (*orgmodel.Organizat
 		WHERE org_id = $1;
 	`
 	if err = tx.SelectContext(ctx, &org.ShowcasesURL, query, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgNotFound
 		}
 		return nil, fmt.Errorf("failed to get org timetable by id: %w", err)
@@ -278,7 +278,7 @@ func (p *PostgresRepo) OrgsInArea(ctx context.Context, area *orgmodel.AreaParams
 		area.Left.Long,  // Левая граница долготы
 		area.Right.Long, // Правая граница долготы
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
 		return nil, fmt.Errorf("failed to get orgs in area with schedule: %w", err)
@@ -312,10 +312,10 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, params.Name, params.Type).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed to count orgs: %w", err)
 	}
 	query = `SELECT 
 			o.org_id,
@@ -337,28 +337,25 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		AND ($2 = '' OR type ILIKE '%' || $2 || '%')
 
 	`
-	sort := "ORDER BY o.rating DESC, o.name ASC"
+	var sort string
 	boundaires := " LIMIT $3 OFFSET $4;"
 	stmt := strings.Builder{}
 	stmt.Grow(len(query) + len(sort) + len(boundaires))
-	switch {
-	case params.IsRateSort && params.IsNameSort:
-	case params.IsRateSort:
+	switch params.SortBy {
+	case scope.NAMESORT:
 		sort = "ORDER BY o.rating DESC"
-	case params.IsNameSort:
+	case scope.RATESORT:
 		sort = "ORDER BY o.name ASC"
-	default:
-		sort = ""
 	}
 	stmt.WriteString(query)
 	stmt.WriteString(sort)
 	stmt.WriteString(boundaires)
 	orgList := make([]*orgmodel.OrgsBySearch, 0, 3)
 	if err = tx.SelectContext(ctx, &orgList, stmt.String(), params.Name, params.Type, params.Limit, params.Offset); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, fmt.Errorf("failed orgs searching: %w", err)
+		return nil, fmt.Errorf("failed to search orgs: %w", err)
 	}
 	query = `
 		SELECT city
@@ -370,10 +367,10 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		Data:  orgList,
 	}
 	if err := tx.QueryRowxContext(ctx, query, params.UserID).Scan(&resp.UserCity); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrgsNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user's city: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"time"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/entity/dto/general"
@@ -33,7 +34,7 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 
 	actOrg, err := suite.db.OrgByID(ctx, orgID)
 	suite.NoError(err)
-	suite.NotNil(actOrg)
+	suite.Require().NotNil(actOrg)
 	suite.Equal(orgID, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).OrgID)
 	suite.Equal(&expOrg, orgmap.OrganizationToDTO(actOrg, time.Now().Location()).Info)
 
@@ -48,16 +49,16 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	suite.Require().NoError(suite.db.OrgUpdate(ctx, orgmap.OrgUpdateToModel(updateInfo)))
 
 	params := &general.SearchReq{
-		Page:       1,
-		Limit:      5,
-		Name:       expOrg.Name,
-		IsRateSort: true,
+		Page:   1,
+		Limit:  5,
+		Name:   expOrg.Name,
+		UserID: 1,
 	}
 	foundOrgs, err := suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "without sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 	for i := range foundOrgs.Data {
 		org := orgmap.OrgsBySearchToDTO(foundOrgs.Data[i], time.Now().Location())
 		if org.OrgID == orgID {
@@ -65,28 +66,19 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 			suite.Equal(expOrg.Type, org.Type)
 		}
 	}
-	params.IsRateSort = true
+	params.SortBy = scope.RATESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "rate sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 
-	params.IsRateSort = false
-	params.IsNameSort = true
+	params.SortBy = scope.NAMESORT
 	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
 	suite.NoError(err, "name sort")
+	suite.Require().NotNil(foundOrgs)
 	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
-	suite.NotNil(foundOrgs.Data)
-
-	params.IsRateSort = true
-	params.IsNameSort = true
-	foundOrgs, err = suite.db.OrgsBySearch(ctx, orgmap.SearchToModel(params))
-	suite.NoError(err, "rate & name sort")
-	suite.Greater(foundOrgs.Found, 0)
-	suite.NotNil(foundOrgs)
-	suite.NotNil(foundOrgs.Data)
+	suite.Require().NotNil(foundOrgs.Data)
 
 	expOrg.Name = "WELL KNOWN COMPANY"
 	expOrg.Type = "Mega Corporation"
@@ -103,7 +95,7 @@ func (suite *PostgresTestSuite) TestOrganizationQueries() {
 	}
 	areaOrgs, err := suite.db.OrgsInArea(ctx, orgmap.AreaToModel(areaParams))
 	suite.NoError(err)
-	suite.NotNil(areaOrgs)
+	suite.Require().NotNil(areaOrgs)
 
 	resp := &general.OrgAreaResp{
 		Found: len(areaOrgs),

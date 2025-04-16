@@ -2,13 +2,17 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
-	ErrWrongClaims = errors.New("invalid token claims")
+	ErrWrongClaimsID   = errors.New("invalid token claims: id")
+	ErrWrongClaimsOrg  = errors.New("invalid token claims: is_org")
+	ErrWrongClaimsType = errors.New("invalid token claims: type")
+	ErrNotAccessType   = errors.New("token type is not access")
 )
 
 func IsCodeExpired(createdAt time.Time) bool {
@@ -23,16 +27,29 @@ func IsAccountExpired(createdAt time.Time) bool {
 	return currentDate.Sub(createdDate) > day
 }
 
+func IsTokenValid(token *jwt.Token) (err error) {
+	if !token.Valid {
+		return fmt.Errorf("token.Valid : %v", token.Valid)
+	}
+	if err = ValidateTokenClaims(token.Claims); err != nil {
+		return fmt.Errorf("ValidateTokenClaims: %w", err)
+	}
+	if token.Claims.(jwt.MapClaims)["type"].(string) != "access" {
+		return fmt.Errorf("%s: type=%q", ErrNotAccessType.Error(), token.Claims.(jwt.MapClaims)["type"].(string))
+	}
+	return nil
+}
+
 // Проверяем наличие полей и верного ли они типа
 func ValidateTokenClaims(c jwt.Claims) error {
 	if _, ok := c.(jwt.MapClaims)["id"].(float64); !ok {
-		return ErrWrongClaims
+		return ErrWrongClaimsID
 	}
 	if _, ok := c.(jwt.MapClaims)["is_org"].(bool); !ok {
-		return ErrWrongClaims
+		return ErrWrongClaimsOrg
 	}
 	if _, ok := c.(jwt.MapClaims)["type"].(string); !ok {
-		return ErrWrongClaims
+		return ErrWrongClaimsType
 	}
 	return nil
 }

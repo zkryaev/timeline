@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/usermodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -68,7 +67,7 @@ func (p *PostgresRepo) UserByID(ctx context.Context, userID int) (*usermodel.Use
 	`
 	var user usermodel.UserInfo
 	if err = tx.GetContext(ctx, &user, query, userID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by id: %w", err)
@@ -240,7 +239,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 	`
 	var uuid string
 	if err = tx.QueryRowContext(ctx, query, userID).Scan(&uuid); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrUserNotFound
 		}
 		return "", fmt.Errorf("failed to get user uuid by id: %w", err)
@@ -282,7 +281,7 @@ func (p *PostgresRepo) UserSetUUID(ctx context.Context, userID int, newUUID stri
 	return nil
 }
 
-func (p *PostgresRepo) UserDeleteURL(ctx context.Context, url string) error {
+func (p *PostgresRepo) UserDeleteURL(ctx context.Context, userID int, url string) error {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to start tx: %w", err)
@@ -292,8 +291,8 @@ func (p *PostgresRepo) UserDeleteURL(ctx context.Context, url string) error {
 			tx.Rollback()
 		}
 	}()
-	query := `UPDATE users SET uuid = '' WHERE uuid = $1;`
-	res, err := tx.ExecContext(ctx, query, url)
+	query := `UPDATE users SET uuid = '' WHERE uuid = $1 AND user_id = $2;`
+	res, err := tx.ExecContext(ctx, query, url, userID)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to delete user's url: %w", err)

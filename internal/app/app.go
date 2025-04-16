@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 	"timeline/internal/config"
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
@@ -11,7 +13,9 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/metrics"
 	s3ctrl "timeline/internal/controller/s3"
+	"timeline/internal/controller/scope"
 	validation "timeline/internal/controller/validation"
 	"timeline/internal/infrastructure"
 	"timeline/internal/sugar/secret"
@@ -26,32 +30,55 @@ import (
 )
 
 type App struct {
-	httpServer http.Server
+	server     *http.Server
 	log        *zap.Logger
+	appcfg     config.Application
+	serverOnce sync.Once
+	wg         sync.WaitGroup
 }
 
 func New(cfgApp config.Application, logger *zap.Logger) *App {
-	app := &App{
-		httpServer: http.Server{
-			Addr:         cfgApp.Host + ":" + cfgApp.Port,
-			ReadTimeout:  cfgApp.Timeout,
-			WriteTimeout: cfgApp.Timeout,
-			IdleTimeout:  cfgApp.IdleTimeout,
+	return &App{
+		appcfg: cfgApp,
+		server: &http.Server{
+			Addr:         cfgApp.Server.Host + ":" + cfgApp.Server.Port,
+			ReadTimeout:  cfgApp.Server.Timeout,
+			WriteTimeout: cfgApp.Server.Timeout,
+			IdleTimeout:  cfgApp.Server.IdleTimeout,
 		},
 		log: logger,
 	}
-	return app
 }
 
-func (a *App) Run() error {
-	if err := a.httpServer.ListenAndServe(); err != nil {
-		return fmt.Errorf("failed to run server, %w", err)
+func (a *App) Run(errch chan error) {
+	a.serverOnce.Do(func() {
+		a.wg.Add(1)
+		go func() {
+			defer a.wg.Done()
+			if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errch <- fmt.Errorf("prometheus server error: %w", err)
+			}
+		}()
+	})
+}
+
+func (a *App) Shutdown(cancelCtx context.Context, timeout time.Duration) {
+	timeoutCtx, cancel := context.WithTimeout(cancelCtx, timeout)
+	defer cancel()
+	if err := a.server.Shutdown(timeoutCtx); err != nil {
+		a.log.Error("failed to shutdown HTTP server", zap.Error(err))
 	}
-	return nil
-}
-
-func (a *App) Stop(ctx context.Context) {
-	a.httpServer.Shutdown(ctx)
+	done := make(chan struct{})
+	go func() {
+		a.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		a.log.Info("HTTP server is closed successfully")
+	case <-timeoutCtx.Done():
+		a.log.Error("timeout while closing HTTP server", zap.Error(timeoutCtx.Err()))
+	}
 }
 
 func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3) error {
@@ -65,15 +92,11 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		return err
 	}
 
-	s3API := s3ctrl.New(
-		s3usecase.New(
-			storage,
-			storage,
-			s3Service,
-		),
-		a.log,
-	)
-	middleware := middleware.New(privateKey, a.log)
+	settings := scope.NewDefaultSettings(a.appcfg)
+	routes := scope.NewDefaultRoutes(settings)
+	metricslist := metrics.NewDefaultMetrics()
+	middleware := middleware.New(privateKey, a.log, routes, metricslist)
+
 	authAPI := authctrl.New(
 		auth.New(
 			privateKey,
@@ -82,10 +105,24 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			mailService,
 			tokenCfg,
+			settings,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
+	var s3API *s3ctrl.S3Ctrl
+	if settings.EnableRepoS3 {
+		s3API = s3ctrl.New(
+			s3usecase.New(
+				storage,
+				storage,
+				s3Service,
+			),
+			a.log,
+			settings,
+		)
+	}
 
 	userAPI := users.New(
 		usercase.New(
@@ -93,10 +130,12 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			storage,
 			backdata,
+			settings,
 		),
 		a.log,
 		validator,
 		middleware,
+		settings,
 	)
 
 	orgAPI := orgs.New(
@@ -107,6 +146,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
 
 	recordAPI := records.New(
@@ -116,9 +156,11 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			storage,
 			mailService,
+			settings,
 		),
 		middleware,
 		a.log,
+		settings,
 	)
 
 	controllerSet := &controller.Controllers{
@@ -129,6 +171,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		S3:     s3API,
 	}
 
-	a.httpServer.Handler = controller.InitRouter(controllerSet)
+	a.server.Handler = controller.InitRouter(controllerSet, routes, settings)
 	return nil
 }

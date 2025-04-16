@@ -1,6 +1,9 @@
 package s3dto
 
-import "io"
+import (
+	"io"
+	"timeline/internal/entity"
+)
 
 type FileURL struct {
 	URL  string `json:"url"`
@@ -23,4 +26,11 @@ type File struct {
 type DomenInfo struct {
 	Entity   string `json:"entity"`
 	EntityID int    `json:"entity_id"`
+	TData    entity.TokenData
+}
+
+type DeleteReq struct {
+	Url    string
+	Entity string
+	TData  entity.TokenData
 }

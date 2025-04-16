@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"timeline/internal/config"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/infrastructure"
@@ -40,9 +41,11 @@ type AuthUseCase struct {
 	code     infrastructure.CodeRepository
 	mail     infrastructure.Mail
 	TokenCfg config.Token
+	settings *scope.Settings
 }
 
-func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository, codeRepo infrastructure.CodeRepository, mailSrv infrastructure.Mail, cfg config.Token) *AuthUseCase {
+func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo infrastructure.OrgRepository,
+	codeRepo infrastructure.CodeRepository, mailSrv infrastructure.Mail, cfg config.Token, settings *scope.Settings) *AuthUseCase {
 	return &AuthUseCase{
 		secret:   key,
 		user:     userRepo,
@@ -50,6 +53,7 @@ func New(key *rsa.PrivateKey, userRepo infrastructure.UserRepository, orgRepo in
 		code:     codeRepo,
 		mail:     mailSrv,
 		TokenCfg: cfg,
+		settings: settings,
 	}
 }
 
@@ -86,7 +90,7 @@ func (a *AuthUseCase) Login(ctx context.Context, logger *zap.Logger, req *authdt
 	return tokens, nil
 }
 
-func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req *authdto.UserRegisterReq) (*authdto.RegisterResp, error) {
+func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req *authdto.UserRegisterReq) (*authdto.TokenPair, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		return nil, err
@@ -112,16 +116,30 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req 
 		return nil, err
 	}
 	logger.Info("Code has been saved to DB")
-	a.mail.SendMsg(&models.Message{
-		Email: req.Email,
-		Type:  mail.VerificationType,
-		Value: code,
-	})
-	logger.Info("Verification code has been sent to user's email")
-	return &authdto.RegisterResp{ID: userID}, nil
+	if a.settings.EnableRepoMail {
+		a.mail.SendMsg(&models.Message{
+			Email: req.User.Email,
+			Type:  mail.VerificationType,
+			Value: code,
+		})
+		logger.Info("Verification code has been sent to user's email")
+	}
+	tokens, err := jwtlib.NewTokenPair(
+		a.secret,
+		a.TokenCfg,
+		&entity.TokenData{
+			ID:    info.ID,
+			IsOrg: info.IsOrg,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("Token pair have been generated")
+	return tokens, nil
 }
 
-func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *authdto.OrgRegisterReq) (*authdto.RegisterResp, error) {
+func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *authdto.OrgRegisterReq) (*authdto.TokenPair, error) {
 	hash, err := passwd.GetHash(req.Password)
 	if err != nil {
 		return nil, err
@@ -149,13 +167,27 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 		return nil, err
 	}
 	logger.Info("Code has been saved to DB")
-	a.mail.SendMsg(&models.Message{
-		Email: req.Email,
-		Type:  mail.VerificationType,
-		Value: code,
-	})
-	logger.Info("Verification code has been sent to user's email")
-	return &authdto.RegisterResp{ID: orgID}, nil
+	if a.settings.EnableRepoMail {
+		a.mail.SendMsg(&models.Message{
+			Email: req.Email,
+			Type:  mail.VerificationType,
+			Value: code,
+		})
+		logger.Info("Verification code has been sent to user's email")
+	}
+	tokens, err := jwtlib.NewTokenPair(
+		a.secret,
+		a.TokenCfg,
+		&entity.TokenData{
+			ID:    info.ID,
+			IsOrg: info.IsOrg,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("Token pair have been generated")
+	return tokens, nil
 }
 
 func (a *AuthUseCase) SendCodeRetry(ctx context.Context, logger *zap.Logger, req *authdto.SendCodeReq) error {
@@ -173,45 +205,35 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, logger *zap.Logger, req
 		return err
 	}
 	logger.Info("Code has been saved to DB")
-	a.mail.SendMsg(&models.Message{
-		Email: req.Email,
-		Type:  mail.VerificationType,
-		Value: code,
-	})
+	if a.settings.EnableRepoMail {
+		a.mail.SendMsg(&models.Message{
+			Email: req.Email,
+			Type:  mail.VerificationType,
+			Value: code,
+		})
+	}
 	logger.Info("Verification code has been sent to user's email")
 	return nil
 }
 
-func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) (*authdto.TokenPair, error) {
+func (a *AuthUseCase) VerifyCode(ctx context.Context, logger *zap.Logger, req *authdto.VerifyCodeReq) error {
 	exp, err := a.code.VerifyCode(ctx, codemap.ToModel(req))
 	if err != nil {
 		if errors.Is(err, postgres.ErrCodeNotFound) {
-			return nil, common.ErrNotFound
+			return common.ErrNotFound
 		}
-		return nil, err
+		return err
 	}
 	logger.Info("Code was found")
 	if ok := validation.IsCodeExpired(exp); ok {
-		return nil, ErrCodeExpired
+		return ErrCodeExpired
 	}
 	logger.Info("Code is fresh")
 	if err = a.code.ActivateAccount(ctx, req.ID, req.IsOrg); err != nil {
-		return nil, err
+		return err
 	}
 	logger.Info("Account is activated")
-	tokens, err := jwtlib.NewTokenPair(
-		a.secret,
-		a.TokenCfg,
-		&entity.TokenData{
-			ID:    req.ID,
-			IsOrg: req.IsOrg,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("Token pair have been generated")
-	return tokens, nil
+	return nil
 }
 
 func (a *AuthUseCase) UpdateAccessToken(_ context.Context, logger *zap.Logger, req *jwt.Token) (*authdto.AccessToken, error) {

@@ -1,5 +1,7 @@
 package orgdto
 
+import "timeline/internal/entity"
+
 type Slot struct {
 	WorkerScheduleID int    `json:"worker_schedule_id,omitempty"`
 	WorkerID         int    `json:"worker_id,omitempty"`
@@ -10,21 +12,12 @@ type Slot struct {
 }
 
 type SlotReq struct {
-	SlotID           int `json:"slot_id"`
-	WorkerID         int `json:"worker_id" validate:"required"`
-	OrgID            int `json:"org_id" validate:"required"`
-	UserID           int `json:"user_id" validate:"required"`
-	WorkerScheduleID int `json:"worker_schedule_id"`
+	WorkerID int
+	OrgID    int
+	TData    entity.TokenData
 }
 
 type SlotResp struct {
 	SlotID int `json:"slot_id"`
 	Slot
-}
-
-type SlotUpdate struct {
-	SlotID   int `json:"slot_id" validate:"required"`
-	WorkerID int `json:"worker_id" validate:"required"`
-	// WorkerScheduleID int  `json:"worker_schedule_id"`
-	Busy bool `json:"busy" validate:"required"`
 }

@@ -2,14 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 	"timeline/internal/infrastructure/models/orgmodel"
 	"timeline/internal/sugar/custom"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -134,41 +133,8 @@ func (p *PostgresRepo) DeleteExpiredSlots(ctx context.Context) error {
 	return nil
 }
 
-// Занять или освободить слот
-func (p *PostgresRepo) UpdateSlot(ctx context.Context, busy bool, params *orgmodel.SlotsMeta) error {
-	tx, err := p.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("failed to start tx: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-	query := `
-		UPDATE slots
-		SET
-			busy = $1
-		WHERE slot_id = $2
-		AND worker_id = $3;
-	`
-	res, err := tx.ExecContext(ctx, query, busy, params.SlotID, params.WorkerID)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to take a slot: %w", err)
-	default:
-		if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
-			return ErrNoRowsAffected
-		}
-	}
-	if tx.Commit() != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-	return nil
-}
-
 // Получение слотов для указанного работника или его расписания начиная от текущего дня.
-func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([]*orgmodel.Slot, string, error) {
+func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]*orgmodel.Slot, string, error) {
 	tx, err := p.db.Beginx()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to start tx: %w", err)
@@ -186,32 +152,31 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsMeta) ([
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
 	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrSlotsNotFound
 		}
-		return nil, "", fmt.Errorf("selectctx: %w", err)
+		return nil, "", fmt.Errorf("failed to select slots: %w", err)
 	}
-	id := 0
-	switch {
-	case params.UserID != 0:
-		id = params.UserID
+	var entity string
+	switch params.TData.IsOrg {
+	case false:
+		entity = "user's"
 		query = `
 			SELECT city
 			FROM users
 			WHERE user_id = $1;
 		`
-	default:
-		id = params.OrgID
+	case true:
+		entity = "org's"
 		query = `
 			SELECT city
 			FROM orgs
 			WHERE org_id = $1;
 		`
 	}
-	city := ""
-	row := tx.QueryRowContext(ctx, query, id)
-	if err := row.Scan(&city); err != nil {
-		return nil, "", fmt.Errorf("queryrowctx: %w", err)
+	var city string
+	if err := tx.QueryRowContext(ctx, query, params.TData.ID).Scan(&city); err != nil {
+		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}
 	if tx.Commit() != nil {
 		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)

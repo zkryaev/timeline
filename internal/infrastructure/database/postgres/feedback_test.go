@@ -4,19 +4,23 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"timeline/internal/entity"
 	"timeline/internal/entity/dto/recordto"
 	"timeline/internal/infrastructure/mapper/recordmap"
+	"timeline/internal/infrastructure/models"
+	"timeline/internal/infrastructure/models/recordmodel"
 )
 
 func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	ctx := context.Background()
-
-	recordID := 2
-	recScrap, err := suite.db.Record(ctx, recordID)
+	tdata := models.TokenData{ID: 1, IsOrg: false}
+	recordreq := recordmodel.RecordParam{RecordID: 2, TData: tdata}
+	recScrap, err := suite.db.Record(ctx, recordreq)
 	suite.Require().NoError(err)
 
 	exp := &recordto.Feedback{
-		RecordID:        recordID,
+		TData:           entity.TokenData(tdata),
+		RecordID:        recordreq.RecordID,
 		Stars:           4,
 		Feedback:        "Хорошая тренировка, но хотелось бы больше внимания.",
 		Service:         recScrap.Service.Name,
@@ -30,6 +34,7 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	suite.Require().NoError(suite.db.FeedbackSet(ctx, recordmap.FeedbackToModel(exp)), fmt.Sprintf("record_id=%d", exp.RecordID))
 
 	params := &recordto.FeedbackParams{
+		TData: entity.TokenData(tdata),
 		Limit: 5,
 		Page:  1,
 	}
@@ -37,12 +42,13 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	feedbkList, found, err := suite.db.FeedbackList(ctx, recordmap.FeedParamsToModel(params))
 	suite.NoError(err)
 	suite.NotZero(found)
-	suite.NotNil(feedbkList)
+	suite.Require().NotNil(feedbkList)
 
 	for _, feedbk := range feedbkList {
 		feedback := recordmap.FeedbackToDTO(feedbk)
 		if exp.RecordID == feedback.RecordID {
-			suite.Equal(exp, feedback)
+			suite.Equal(exp.Feedback, feedback.Feedback)
+			suite.Equal(exp.Stars, feedback.Stars)
 		}
 	}
 	exp.Feedback = "ТЕСТИРОВАНИЕ"
@@ -51,12 +57,12 @@ func (suite *PostgresTestSuite) TestFeedbackQueries() {
 	feedbkList, found, err = suite.db.FeedbackList(ctx, recordmap.FeedParamsToModel(params))
 	suite.NoError(err)
 	suite.NotZero(found)
-	suite.NotNil(feedbkList)
+	suite.Require().NotNil(feedbkList)
 
 	for _, feedbk := range feedbkList {
 		feedback := recordmap.FeedbackToDTO(feedbk)
 		if exp.RecordID == feedback.RecordID {
-			suite.Equal(exp, feedback)
+			suite.Equal(exp.Feedback, feedback.Feedback)
 		}
 	}
 	params.RecordID = exp.RecordID

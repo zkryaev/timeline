@@ -2,11 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"timeline/internal/infrastructure/models/orgmodel"
-
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -31,12 +30,11 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		FROM workers
 		WHERE is_delete = false 
 		AND ($1 <= 0 OR org_id = $1)
-		AND org_id = $1
 		AND ($2 <= 0 OR worker_id = $2);
 	`
 	var found int
 	if err = tx.QueryRowxContext(ctx, query, metainfo.OrgID, metainfo.WorkerID).Scan(&found); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrScheduleNotFound
 		}
 		return nil, fmt.Errorf("failed to get org's service list: %w", err)
@@ -47,7 +45,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		FROM workers
         WHERE is_delete = false 
 		AND ($1 <= 0 OR worker_id = $1) 
-		AND org_id = $2
+		AND ($2 <= 0 OR org_id = $2)
 		LIMIT $3
 		OFFSET $4;
 	`
@@ -76,7 +74,7 @@ func (p *PostgresRepo) WorkerSchedule(ctx context.Context, metainfo *orgmodel.Sc
 		FROM worker_schedules
         WHERE is_delete = false
 		AND worker_id = $1 
-		AND org_id = $2
+		AND ($2 <= 0 OR org_id = $2)
 		AND ($3 <= 0 OR weekday = $3);
 	`
 	resp := &orgmodel.ScheduleList{

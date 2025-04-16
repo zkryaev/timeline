@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
+	"timeline/internal/controller/scope"
 	"timeline/internal/entity/dto/authdto"
 	"timeline/internal/infrastructure/mapper/codemap"
 	"timeline/internal/infrastructure/models"
@@ -39,6 +40,9 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
+	appCfg := config.Application{}
+	appCfg.Settings.EnableAuthorization = true
+	settings := scope.NewDefaultSettings(appCfg)
 	suite.mockPrivateKey = privateKey
 	suite.logger = zap.NewExample()
 	suite.authUseCase = New(
@@ -48,6 +52,7 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 		suite.mockCodeRepo,
 		suite.mockMailRepo,
 		config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute},
+		settings,
 	)
 }
 
@@ -84,9 +89,9 @@ func (suite *AuthUseCaseTestSuite) TestLoginSuccess() {
 	}
 	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
-	suite.NotNil(tokens)
-	suite.NotNil(tokens.AccessToken)
-	suite.NotNil(tokens.RefreshToken)
+	suite.Require().NotNil(tokens)
+	suite.Require().NotNil(tokens.AccessToken)
+	suite.Require().NotNil(tokens.RefreshToken)
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -175,7 +180,7 @@ func (suite *AuthUseCaseTestSuite) TestLoginVerifiedAccountExpired() {
 
 	tokens, err := suite.authUseCase.Login(ctx, suite.logger, req)
 	suite.NoError(err)
-	suite.NotNil(tokens)
+	suite.Require().NotNil(tokens)
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -191,9 +196,7 @@ func (suite *AuthUseCaseTestSuite) TestVerifyCodeFresh() {
 	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
 	suite.mockCodeRepo.On("ActivateAccount", mock.Anything, req.ID, req.IsOrg).Return(nil)
 
-	tokens, err := suite.authUseCase.VerifyCode(ctx, suite.logger, req)
-	suite.NoError(err)
-	suite.NotNil(tokens)
+	suite.NoError(suite.authUseCase.VerifyCode(ctx, suite.logger, req))
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -208,9 +211,7 @@ func (suite *AuthUseCaseTestSuite) TestVerifyCodeExpired() {
 
 	suite.mockCodeRepo.On("VerifyCode", mock.Anything, codemap.ToModel(req)).Return(notExpired, nil)
 
-	tokens, err := suite.authUseCase.VerifyCode(ctx, suite.logger, req)
-	suite.Equal(ErrCodeExpired, err)
-	suite.Nil(tokens)
+	suite.Equal(ErrCodeExpired, suite.authUseCase.VerifyCode(ctx, suite.logger, req))
 
 	suite.mockCodeRepo.AssertExpectations(suite.T())
 }
@@ -226,7 +227,7 @@ func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenSuccess() {
 
 	tokens, err := suite.authUseCase.UpdateAccessToken(ctx, suite.logger, token)
 	suite.NoError(err)
-	suite.NotNil(tokens)
+	suite.Require().NotNil(tokens)
 }
 
 func (suite *AuthUseCaseTestSuite) TestUpdateAccessTokenBadClaims() {
