@@ -147,9 +147,9 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var (
-		userID  = query.NewParamInt(scope.USER_ID, true)
 		limit   = query.NewParamInt(scope.LIMIT, true)
 		page    = query.NewParamInt(scope.PAGE, true)
+		userID  = query.NewParamInt(scope.USER_ID, false)
 		orgName = query.NewParamString(scope.NAME, false)
 		orgType = query.NewParamString(scope.TYPE, false)
 		sortBy  = query.NewParamString(scope.SORT_BY, false)

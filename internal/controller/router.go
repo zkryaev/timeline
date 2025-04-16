@@ -89,11 +89,10 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	orgmuxProtected.HandleFunc(scope.PathWorkersSchedules, org.DeleteWorkerSchedule).Methods(routes[scope.PathWorkersSchedules].Methods.Get(scope.DELETE)...)
 
 	// records
-	Protected.HandleFunc(scope.PathRecords, rec.RecordAdd).Methods(routes[scope.PathRecords].Methods.Get(scope.POST)...)
-	Protected.HandleFunc(scope.PathRecords, rec.Record).Methods(routes[scope.PathRecords].Methods.Get(scope.GET)...)
-	Protected.HandleFunc(scope.PathRecords, rec.RecordCancel).Methods(routes[scope.PathRecords].Methods.Get(scope.PUT)...)
-
 	recmuxProtected := Protected.NewRoute().PathPrefix(scope.PathRecords).Subrouter()
+	Protected.HandleFunc("", rec.RecordAdd).Methods(routes[scope.PathRecords].Methods.Get(scope.POST)...)
+	Protected.HandleFunc("", rec.Record).Methods(routes[scope.PathRecords].Methods.Get(scope.GET)...)
+	Protected.HandleFunc("", rec.RecordCancel).Methods(routes[scope.PathRecords].Methods.Get(scope.PUT)...)
 	// records/feedbacks
 	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackSet).Methods(routes[scope.PathFeedback].Methods.Get(scope.POST)...)
 	recmuxProtected.HandleFunc(scope.PathFeedback, rec.Feedbacks).Methods(routes[scope.PathFeedback].Methods.Get(scope.GET)...)

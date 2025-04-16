@@ -56,8 +56,10 @@ func validate(p Params, vals url.Values) error {
 
 func parse(p Params, vals url.Values) error {
 	for _, param := range p {
-		if err := param.load(vals.Get(param.getName())); err != nil {
-			return fmt.Errorf("param.Load: %w", err)
+		if vals.Has(param.getName()) {
+			if err := param.load(vals.Get(param.getName())); err != nil {
+				return fmt.Errorf("param.Load: %w", err)
+			}
 		}
 	}
 	return nil

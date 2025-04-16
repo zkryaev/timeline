@@ -92,49 +92,6 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Get service workers
-// @Description Получение работников которые выполняют заданную услугу
-// @Tags orgs/workers/services
-// @Produce json
-// @Param   org_id query int true " "
-// @Param   service_id query int true " "
-// @Success 200 {array} orgdto.WorkerResp
-// @Failure 400
-// @Failure 404
-// @Failure 500
-// @Router /orgs/workers/services [get]
-func (o *OrgCtrl) WorkersServices(w http.ResponseWriter, r *http.Request) {
-	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
-	var (
-		orgID     = query.NewParamInt(scope.ORG_ID, true)
-		serviceID = query.NewParamInt(scope.SERVICE_ID, true)
-	)
-	params := query.NewParams(o.settings, orgID, serviceID)
-	if err := params.Parse(r.URL.Query()); err != nil {
-		logger.Error("param.Parse", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	data, err := o.usecase.WorkersServices(r.Context(), logger, serviceID.Val, orgID.Val)
-	if err != nil {
-		switch {
-		case errors.Is(err, common.ErrNotFound):
-			logger.Info("WorkersServices", zap.Error(err))
-			http.Error(w, "", http.StatusNotFound)
-			return
-		default:
-			logger.Error("WorkersServices", zap.Error(err))
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-	}
-	if err := common.WriteJSON(w, data); err != nil {
-		logger.Error("WriteJSON", zap.Error(err))
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
-}
-
 // @Summary Add service
 // @Description Добавление услуги
 // @Description `Если авторизация отключена: `org_id`  прокинуть в тело запроса!`

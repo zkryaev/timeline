@@ -230,10 +230,53 @@ func (o *OrgCtrl) WorkerDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// @Summary Get service workers
+// @Description Получение работников которые выполняют заданную услугу
+// @Tags orgs/workers/services
+// @Produce json
+// @Param   org_id query int true " "
+// @Param   service_id query int true " "
+// @Success 200 {array} orgdto.WorkerResp
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /orgs/workers/services [get]
+func (o *OrgCtrl) WorkersServices(w http.ResponseWriter, r *http.Request) {
+	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	var (
+		orgID     = query.NewParamInt(scope.ORG_ID, true)
+		serviceID = query.NewParamInt(scope.SERVICE_ID, true)
+	)
+	params := query.NewParams(o.settings, orgID, serviceID)
+	if err := params.Parse(r.URL.Query()); err != nil {
+		logger.Error("param.Parse", zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	data, err := o.usecase.WorkersServices(r.Context(), logger, serviceID.Val, orgID.Val)
+	if err != nil {
+		switch {
+		case errors.Is(err, common.ErrNotFound):
+			logger.Info("WorkersServices", zap.Error(err))
+			http.Error(w, "", http.StatusNotFound)
+			return
+		default:
+			logger.Error("WorkersServices", zap.Error(err))
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := common.WriteJSON(w, data); err != nil {
+		logger.Error("WriteJSON", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+}
+
 // @Summary Assign worker to service
 // @Description Прикрепление заданного работника на выполнение заданной услуги организации
 // @Description `Если авторизация отключена: `org_id` прокинуть в тело запроса!`
-// @Tags orgs/workers
+// @Tags orgs/workers/services
 // @Accept json
 // @Produce json
 // @Param   request body orgdto.AssignWorkerReq true " "
@@ -276,7 +319,7 @@ func (o *OrgCtrl) WorkerAssignService(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Unassign worker from
 // @Description Открепление работника от заданной услуги организации
-// @Tags orgs/workers
+// @Tags orgs/workers/services
 // @Accept json
 // @Produce json
 // @Param   worker_id query int true " "
