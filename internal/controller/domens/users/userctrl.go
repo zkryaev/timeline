@@ -122,10 +122,12 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Organization Searching
-// @Description Get organizations that are satisfiered to search params
+// @Description Получить организацию удовлетворяющую параметрам поиска
+// @Description `Если авторизация отключена: то *user_id* прокидывать в параметрах!`
 // @Tags user
 // @Accept  json
 // @Produce  json
+// @Param user_id query int true " "
 // @Param limit query int true " "
 // @Param page query int true " "
 // @Param name query string false "Name of the organization to search for"
@@ -138,14 +140,21 @@ func (u *UserCtrl) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Router /users/search/orgs [get]
 func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(u.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	var (
+		userID  = query.NewParamInt(scope.USER_ID, true)
 		limit   = query.NewParamInt(scope.LIMIT, true)
 		page    = query.NewParamInt(scope.PAGE, true)
 		orgName = query.NewParamString(scope.NAME, false)
 		orgType = query.NewParamString(scope.TYPE, false)
 		sortBy  = query.NewParamString(scope.SORT_BY, false)
 	)
-	params := query.NewParams(u.settings, limit, page, orgName, orgType, sortBy)
+	params := query.NewParams(u.settings, limit, page, orgName, orgType, sortBy, userID)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
@@ -157,12 +166,6 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 	default:
 		sortBy.Val = ""
 	}
-	tdata, err := middleware.GetTokenDataFromCtx(u.settings, r.Context())
-	if err != nil {
-		logger.Info("GetTokenDataFromCtx", zap.Error(err))
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
 
 	req := &general.SearchReq{
 		Page:   page.Val,
@@ -170,7 +173,10 @@ func (u *UserCtrl) SearchOrganization(w http.ResponseWriter, r *http.Request) {
 		Name:   orgName.Val,
 		Type:   orgType.Val,
 		SortBy: sortBy.Val,
-		UserID: tdata.ID,
+		UserID: userID.Val,
+	}
+	if u.settings.EnableAuthorization {
+		req.UserID = tdata.ID
 	}
 	data, err := u.usecase.SearchOrgs(r.Context(), logger, req)
 	if err != nil {
