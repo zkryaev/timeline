@@ -39,11 +39,13 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.appCfg.Settings.EnableAuthorization = true
 	suite.appCfg.Settings.EnableRepoS3 = false
 	suite.appCfg.Settings.EnableRepoMail = false
+	suite.appCfg.Settings.EnableMetrics = false
 	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
 		zap.NewExample(),
 		scope.NewDefaultRoutes(settings),
+		nil,
 	)
 }
 
