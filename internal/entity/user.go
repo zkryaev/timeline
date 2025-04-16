@@ -8,5 +8,4 @@ type User struct {
 	Telephone string `json:"telephone,omitempty" validate:"e164"`
 	City      string `json:"city,omitempty" validate:"required"`
 	About     string `json:"about,omitempty" validate:"max=500"`
-	Email     string
 }

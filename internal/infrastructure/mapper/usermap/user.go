@@ -12,8 +12,8 @@ func UserRegisterToModel(dto *authdto.UserRegisterReq) *usermodel.UserRegister {
 	return &usermodel.UserRegister{
 		UUID: dto.UUID,
 		HashCreds: models.HashCreds{
-			Email:      dto.User.Email,
-			PasswdHash: dto.Password,
+			Email:      dto.Credentials.Email,
+			PasswdHash: dto.Credentials.Password,
 		},
 		UserInfo: usermodel.UserInfo{
 			FirstName: dto.FirstName,
