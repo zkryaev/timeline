@@ -9,10 +9,7 @@ import (
 )
 
 const (
-	V1 = "/v1"
-)
-
-const (
+	ApiVersionV1 = "/v1"
 	// Utility endpoint
 	PathHealth = "/health" // docker health handler
 
@@ -26,8 +23,8 @@ const (
 
 	// User endpoint
 	PathUsers      = "/users"
-	PathMapOrgs    = PathUsers + "/orgmap"
-	PathSearchOrgs = PathUsers + "/search/orgs"
+	PathMapOrgs    = "/orgmap"
+	PathSearchOrgs = "/search/orgs"
 
 	// Organization endpoint
 	PathOrgs       = "/orgs"
@@ -41,7 +38,7 @@ const (
 
 	// Record endpoint
 	PathRecords  = "/records"
-	PathFeedback = PathRecords + "/feedbacks"
+	PathFeedback = "/feedbacks"
 
 	// S3 endpoint
 	PathMedia = "/media"
@@ -93,7 +90,7 @@ func newMethodsMap(s *Settings, methods ...string) MethodList {
 func (mp MethodList) Get(menthods ...string) []string {
 	list := make([]string, len(menthods))
 	for i := range menthods {
-		list = append(list, mp[menthods[i]])
+		list[i] = mp[menthods[i]]
 	}
 	return list
 }
@@ -122,7 +119,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 		mdata.perms = perms.GrantPermissions(perms.NONE, perms.CREATE)
 	// /auth/token
 	case PathToken:
-		mdata.Methods = newMethodsMap(s, http.MethodPost)
+		mdata.Methods = newMethodsMap(s, http.MethodPut)
 		mdata.perms = perms.GrantPermissions(perms.CREATE+perms.UPDATE, perms.CREATE+perms.UPDATE)
 	// /auth/codes
 	case PathCode:
@@ -158,7 +155,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 		mdata.perms = perms.GrantPermissions(perms.READ, perms.ALL)
 	// /orgs/workers/services
 	case PathWorkersServices:
-		mdata.Methods = newMethodsMap(s, http.MethodPost, http.MethodDelete)
+		mdata.Methods = newMethodsMap(s, http.MethodPost, http.MethodDelete, http.MethodGet)
 		mdata.perms = perms.GrantPermissions(perms.NONE, perms.CREATE+perms.DELETE)
 	// /orgs/workers/schedules
 	case PathWorkersSchedules:
