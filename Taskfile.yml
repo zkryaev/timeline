@@ -32,52 +32,12 @@ vars:
     - SECRET_PATH
 
 tasks:
-  dsn:
-    desc: "show db connection-url"
-    silent: true
+  debug:
+    desc: "run debugger"
+    deps: [check-envs, docker-master_db, migrate-up]
     cmds:
-      - echo {{.MASTER_DSN}}
-      
-  migrate-up:
-    desc: "migrations [applying...]"
-    silent: true
-    cmds:
-      - go run ./cmd/migrator/main.go --dsn={{.MASTER_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=master_db
-      - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance=analytics_db
-  
-  migrate-down:
-    desc: "migrations [reverse...]"
-    silent: true
-    cmds:
-      - migrate -database {{.MASTER_DSN}} -path {{.MIGRATION_MASTER_PATH}} down
-      
-  check-envs:
-    desc: "checks that all required environment variables are set and non-empty"
-    silent: true
-    cmds:
-      - for:
-          var: ENVS
-        cmd: |
-          if [ -z "${{ .ITEM }}" ]; then
-            echo "Error: env {{ .ITEM }} isn't set." >&2
-            exit 1
-          fi
-      - echo "All required environment variables are set."
-
-  docker-all:
-    desc: "deploy all containers in list"
-    cmds:
-      - docker-compose up -d
-
-  docker-rm-all:
-    desc: "delete containers"
-    cmds:
-      - docker-compose down
-
-  swagger:
-    desc: "generate swagger docs"
-    cmds:
-      - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_OUT}}
+      - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
+      - dlv debug --headless --listen=:2345 --api-version=2 ./cmd/timeline
 
   lint:
     desc: "run GolangCI-Lint and save output to file"
@@ -90,7 +50,96 @@ tasks:
       - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
       - mockery --all --dir ./internal/controller/ --output ./mocks/controller
 
-  img-upload:
+  coverage:
+    desc: "run tests and show coverage"
+    cmds:
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
+      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
+      - go test -short -count=1 -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o ./coverage.html
+      - rm coverage.out
+
+  test_db:
+    desc: "deploy db -> apply migrations -> run repo tests -> remove db"
+    silent: true
+    cmds:
+      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
+      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
+      - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
+      - go test -v -count=1 ./internal/infrastructure/database/postgres
+  
+  dsn:
+    desc: "show db's connection-url"
+    silent: true
+    cmds:
+      - echo {{.MASTER_DSN}}
+      - echo {{.ANALYTICS_DSN}}
+
+  migrate_up:
+    desc: "migrations [applying...]"
+    cmds:
+      - task master_migrate_up
+      - task analytic_migrate_up  
+  
+  master_migrate_up:
+    silent: true
+    cmds:
+      - go run ./cmd/migrator/main.go --dsn={{.MASTER_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=master_db
+  
+  analytic_migrate_up:
+    silent: true
+    cmds:
+      - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance=analytics_db
+  
+  migrate_down:
+    desc: "migrations [reverse...]"
+    cmds:
+      - task master_migrate_down
+      - task analytic_migrate_down
+
+  master_migrate_down:
+    desc: "migrations [reverse...]"
+    silent: true
+    cmds:
+      - migrate -database {{.MASTER_DSN}} -path {{.MIGRATION_MASTER_PATH}} down
+      - migrate -database {{.ANALYTICS_DSN}} -path {{.MIGRATION_ANALYTICS_PATH}} down
+  
+  analytic_migrate_down:
+    silent: true
+    cmds:
+      - migrate -database {{.ANALYTICS_DSN}} -path {{.MIGRATION_ANALYTICS_PATH}} down
+
+  docker_master_db:
+    cmds:
+      - docker-compose up -d postgres_master
+
+  docker_all:
+    desc: "deploy all containers in list"
+    cmds:
+      - docker-compose up -d
+
+  docker_rm_all:
+    desc: "delete containers"
+    cmds:
+      - docker-compose down
+      
+  check_envs:
+    desc: "checks that all required environment variables are set and non-empty"
+    silent: true
+    cmds:
+      - for:
+          var: ENVS
+        cmd: |
+          if [ -z "${{ .ITEM }}" ]; then
+            echo "Error: env {{ .ITEM }} isn't set." >&2
+            exit 1
+          fi
+      - echo "All required environment variables are set"
+
+  img_upload:
     desc: "launch script that make requests to upload images to S3"
     silent: true
     vars:
@@ -111,29 +160,11 @@ tasks:
 
           echo "===================================="
         done
-  coverage:
-    desc: "run tests and show coverage"
-    cmds:
-      - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
-      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
-      - go test -short -count=1 -coverprofile=coverage.out ./...
-      - go tool cover -html=coverage.out -o ./coverage.html
-      - rm coverage.out
 
   migrate_test_down:
     cmds:
       - migrate -database {{.TEST_DSN}} -path {{.MIGRATION_MASTER_PATH}} down -all
-  test-db:
-    desc: "deploy db -> apply migrations -> run repo tests -> remove db"
-    silent: true
-    cmds:
-      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
-      - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
-      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
-      - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
-      - go test -v -count=1 ./internal/infrastructure/database/postgres
+
   build:
     silent: true
     cmds:
@@ -146,19 +177,18 @@ tasks:
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
-  debug:
-    desc: "run debugger"
-    #deps: [check-envs, docker-all, migrate-up]
-    cmds:
-      - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
-      - dlv debug --headless --listen=:2345 --api-version=2 ./cmd/timeline
-
-  deploy:
-    desc: "deploy app: [envs -> db -> s3 -> migrations -> build -> run]"
-    deps: [check-envs, docker-all, migrate-up, build]
+  deploy_back:
+    desc: "deploy backend app: [envs -> db -> s3 -> migrations -> build -> run]"
+    deps: [check_envs, docker_master_db, master_migrate_up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
-      #- nohup bash -c 'sleep 5; task img-upload' &> img_upload_logs.out &
+      #- nohup bash -c 'sleep 5; task img_upload' &> img_upload_logs.out &
+
+  deploy_project:
+    desc: "deploy app: [envs -> up containers -> migrations -> build -> run -> img_loading]"
+    deps: [check_envs, docker_all, migrate_up, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
 
   clean:
     desc: "remove generated swagger docs, binary, and \".out\" files"
@@ -174,6 +204,11 @@ tasks:
         find . -name "__*" -delete 2>/dev/null || true
         find "coverage.html" -delete 2>/dev/null || true 
         echo "cleanup!"
+    
+  swagger:
+    desc: "generate swagger docs"
+    cmds:
+      - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_OUT}}
         
   default:
     cmds: 
