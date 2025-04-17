@@ -57,14 +57,15 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 	//		день на след неделе: 10%7 = 3 - (Wednesday) - OK
 	query = `
 		INSERT INTO slots
-		(date, session_begin, session_end, busy, worker_schedule_id, worker_id)
+		(date, session_begin, session_end, busy, worker_schedule_id, worker_id, org_id)
 		VALUES
 		(CURRENT_DATE + ((7 - EXTRACT(ISODOW FROM CURRENT_DATE)) + $1  + ((EXTRACT(ISODOW FROM CURRENT_DATE)-1) * 7) || ' days' )::INTERVAL, 
 		$2, 
 		$3, 
 		$4, 
 		$5, 
-		$6);
+		$6,
+		$7);
 	`
 	busy := false
 	for _, v := range workerSchedules {
@@ -83,7 +84,7 @@ func (p *PostgresRepo) GenerateSlots(ctx context.Context) error {
 			if custom.CompareTime(end, v.BreakStart) > 0 && custom.CompareTime(end, v.BreakEnd) <= 0 {
 				continue
 			}
-			res, err := tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID) //nolint:govet // ...
+			res, err := tx.ExecContext(ctx, query, v.Weekday, begin.UTC(), end.UTC(), busy, v.WorkerScheduleID, v.WorkerID, v.OrgID) //nolint:govet // ...
 			switch {
 			case err != nil:
 				return fmt.Errorf("failed to generate slot: %w", err)
@@ -148,10 +149,11 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]
 		SELECT slot_id, worker_schedule_id, worker_id, date, session_begin, session_end, busy
 		FROM slots
 		WHERE date >= CURRENT_DATE
-		AND ($1 <= 0 OR worker_id = $1);
+		AND ($1 <= 0 OR worker_id = $1)
+		AND ($2 <= 0 OR org_id = $2);
 	`
 	slots := make([]*orgmodel.Slot, 0, 1)
-	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID); err != nil {
+	if err = tx.SelectContext(ctx, &slots, query, params.WorkerID, params.OrgID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrSlotsNotFound
 		}
@@ -175,6 +177,7 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]
 		`
 	}
 	var city string
+	fmt.Println(params.TData.ID)
 	if err := tx.QueryRowContext(ctx, query, params.TData.ID).Scan(&city); err != nil {
 		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}

@@ -41,15 +41,15 @@ func (o *OrgCtrl) Slots(w http.ResponseWriter, r *http.Request) {
 		orgID    = query.NewParamInt(scope.ORG_ID, true)
 		workerID = query.NewParamInt(scope.WORKER_ID, true)
 	)
-	if !o.settings.EnableAuthorization {
-		tdata.ID = orgID.Val
-		tdata.IsOrg = true
-	}
 	params := query.NewParams(o.settings, orgID, workerID)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if !o.settings.EnableAuthorization {
+		tdata.ID = orgID.Val
+		tdata.IsOrg = true
 	}
 	req := &orgdto.SlotReq{OrgID: orgID.Val, WorkerID: workerID.Val, TData: tdata}
 	data, err := o.usecase.Slots(r.Context(), logger, req)
