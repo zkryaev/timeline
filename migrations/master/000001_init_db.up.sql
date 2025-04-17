@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS slots (
     slot_id SERIAL PRIMARY KEY,
     worker_schedule_id INT,
     worker_id INT,
+    org_id INT,
     date DATE,
     session_begin TIMESTAMP,
     session_end TIMESTAMP,
