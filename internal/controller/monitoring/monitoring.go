@@ -37,7 +37,7 @@ func (a *ServerMonitoring) HealthCheck(w http.ResponseWriter, _ *http.Request) {
 // @Tags server monitoring
 // @Success 200 {object} string "list of routes"
 // @Failure 500
-// @Router /health [get]
+// @Router /routes [get]
 func (a *ServerMonitoring) GetRoutes(w http.ResponseWriter, _ *http.Request) {
 	routesjson, err := getAllRoutes(a.Router)
 	if err != nil {

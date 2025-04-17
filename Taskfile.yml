@@ -178,7 +178,7 @@ tasks:
       - ./{{.OUTPUT_BINARY}}
 
   deploy_back:
-    desc: "deploy backend app: [envs -> db -> s3 -> migrations -> build -> run]"
+    desc: "deploy backend app: [envs -> db -> migrations -> build -> run]"
     deps: [check_envs, docker_master_db, master_migrate_up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
