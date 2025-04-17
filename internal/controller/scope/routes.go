@@ -10,8 +10,10 @@ import (
 
 const (
 	ApiVersionV1 = "/v1"
-	// Utility endpoint
-	PathHealth = "/health" // docker health handler
+
+	// Monitoring
+	PathHealth    = "/health" // docker health handler
+	PathGetRoutes = "/routes"
 
 	// Auth endpoint
 	PathAuth              = "/auth"

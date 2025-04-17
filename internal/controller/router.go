@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"timeline/internal/controller/auth"
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/monitoring"
 	"timeline/internal/controller/s3"
 	"timeline/internal/controller/scope"
 
@@ -14,11 +14,12 @@ import (
 )
 
 type Controllers struct {
-	Auth   *auth.AuthCtrl
-	User   *users.UserCtrl
-	Org    *orgs.OrgCtrl
-	Record *records.RecordCtrl
-	S3     *s3.S3Ctrl
+	Monitor *monitoring.ServerMonitoring
+	Auth    *auth.AuthCtrl
+	User    *users.UserCtrl
+	Org     *orgs.OrgCtrl
+	Record  *records.RecordCtrl
+	S3      *s3.S3Ctrl
 }
 
 func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scope.Settings) *mux.Router {
@@ -34,8 +35,8 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	// s := r.Host("www.timeline.com").Subrouter() // TODO future
 
 	r.Use(auth.Middleware.HandlerLogs)
-
-	r.HandleFunc(scope.PathHealth, HealthCheck).Methods(http.MethodGet)
+	r.HandleFunc(scope.PathHealth, controllersSet.Monitor.HealthCheck).Methods(http.MethodGet)
+	r.HandleFunc(scope.PathGetRoutes, controllersSet.Monitor.GetRoutes).Methods(http.MethodGet)
 
 	v1 := r.PathPrefix(scope.ApiVersionV1).Subrouter()
 
@@ -123,31 +124,5 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 		Protected.HandleFunc(scope.PathMedia, s3.Delete).Methods(routes[scope.PathMedia].Methods.Get(scope.DELETE)...)
 	}
 
-	fmt.Println("=== Router name:", "r")
-	printAllRoutes(r)
-
 	return r
-}
-
-func printAllRoutes(router *mux.Router) {
-	err := router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		pathTemplate, err := route.GetPathTemplate()
-		if err != nil {
-			return nil
-		}
-
-		methods, err := route.GetMethods()
-		if err != nil {
-			// Если нет методов (например, подроутер), просто печатаем путь
-			fmt.Printf("Path: %-40s (subrouter)\n", pathTemplate)
-			return nil
-		}
-
-		fmt.Printf("Path: %-40s Methods: %v\n", pathTemplate, methods)
-		return nil
-	})
-
-	if err != nil {
-		fmt.Printf("Error walking routes: %v\n", err)
-	}
 }

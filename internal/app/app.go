@@ -11,6 +11,7 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/monitoring"
 	s3ctrl "timeline/internal/controller/s3"
 	"timeline/internal/controller/scope"
 	validation "timeline/internal/controller/validation"
@@ -70,6 +71,8 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 	settings := scope.NewDefaultSettings(a.appcfg)
 	routes := scope.NewDefaultRoutes(settings)
 	middleware := middleware.New(privateKey, a.log, routes)
+
+	monitorAPI := monitoring.New(a.log, settings)
 
 	authAPI := authctrl.New(
 		auth.New(
@@ -138,13 +141,14 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 	)
 
 	controllerSet := &controller.Controllers{
-		Auth:   authAPI,
-		User:   userAPI,
-		Org:    orgAPI,
-		Record: recordAPI,
-		S3:     s3API,
+		Monitor: monitorAPI,
+		Auth:    authAPI,
+		User:    userAPI,
+		Org:     orgAPI,
+		Record:  recordAPI,
+		S3:      s3API,
 	}
-
-	a.httpServer.Handler = controller.InitRouter(controllerSet, routes, settings)
+	monitorAPI.Router = controller.InitRouter(controllerSet, routes, settings)
+	a.httpServer.Handler = monitorAPI.Router
 	return nil
 }
