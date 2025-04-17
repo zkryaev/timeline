@@ -27,7 +27,7 @@ import (
 )
 
 type App struct {
-	httpServer http.Server
+	httpServer *http.Server
 	log        *zap.Logger
 	appcfg     config.Application
 }
@@ -35,7 +35,7 @@ type App struct {
 func New(cfgApp config.Application, logger *zap.Logger) *App {
 	return &App{
 		appcfg: cfgApp,
-		httpServer: http.Server{
+		httpServer: &http.Server{
 			Addr:         cfgApp.Host + ":" + cfgApp.Port,
 			ReadTimeout:  cfgApp.Timeout,
 			WriteTimeout: cfgApp.Timeout,

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ErrParamNotProvided = "required param \"%s\" not provided"
+	ErrParamNotProvided = "required param <%s> not provided"
 )
 
 type Params []Param
