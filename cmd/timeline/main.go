@@ -106,7 +106,7 @@ func main() {
 	}
 
 	var s3repo *s3.Minio
-	if cfg.App.Settings.EnableRepoMail {
+	if cfg.App.Settings.EnableRepoS3 {
 		// Подключение к S3
 		s3repo = s3.New(cfg.S3)
 		if err = s3repo.Connect(); err != nil {
