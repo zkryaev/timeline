@@ -47,12 +47,7 @@ func main() {
 	// Инициализация логгера
 	logger := logger.New(cfg.App.Env)
 	logger.Info("Application started")
-	logger.Info("Application settings:")
-	logger.Info("", zap.String("environment", cfg.App.Env))
-	logger.Info("", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
-	logger.Info("", zap.Bool("enable_authorization", cfg.App.Settings.EnableAuthorization))
-	logger.Info("", zap.Bool("enable_repo_s3", cfg.App.Settings.EnableRepoS3))
-	logger.Info("", zap.Bool("enable_repo_mail", cfg.App.Settings.EnableRepoMail))
+	PrintConfiguration(logger, cfg)
 	defer logger.Sync()
 	db, err := infrastructure.GetDB(os.Getenv("DB"), &cfg.DB)
 	if err != nil {
@@ -66,24 +61,18 @@ func main() {
 		)
 	}
 	logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("DB")))
-	logger.Info(
-		"DB",
-		zap.String("database server", cfg.DB.Host+":"+cfg.DB.Port),
-		zap.String("ssl", cfg.DB.SSLmode),
-	)
 	defer db.Close()
 
 	backdata := &loader.BackData{}
 	if cfg.App.Settings.UseLocalBackData {
-		logger.Info("Loading from local storage", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
-		logger.Info("Start loading from DB")
+		logger.Info("Loading from local storage (DB)")
 		backdata.Cities, err = db.PreLoadCities(context.Background())
 		if err != nil {
 			logger.Fatal("PreLoadCities", zap.Error(err))
 			return
 		}
 	} else {
-		logger.Info("Loading backdata from provided sources", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
+		logger.Info("Loading backdata from provided sources")
 		if err := loader.LoadData(logger, db, backdata); err != nil {
 			logger.Fatal("failed", zap.Error(err))
 		}
@@ -96,13 +85,7 @@ func main() {
 		post = mail.New(cfg.Mail, logger, 0, 0, 0)
 		post.Start()
 		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("MAIL_HOST")))
-		logger.Info(
-			"MAIL",
-			zap.String("mail server", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)),
-		)
 		defer post.Shutdown()
-	} else {
-		logger.Info("Mail launch skipped")
 	}
 
 	var s3repo *s3.Minio
@@ -113,14 +96,6 @@ func main() {
 			logger.Fatal(fmt.Sprintf("failed to connect to %s", os.Getenv("S3")), zap.Error(err))
 		}
 		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
-		logger.Info(
-			"S3",
-			zap.String("storage", cfg.S3.Host+":"+cfg.S3.DataPort),
-			zap.String("console", cfg.S3.Host+":"+cfg.S3.ConsolePort),
-			zap.Bool("ssl", cfg.S3.SSLmode),
-		)
-	} else {
-		logger.Info("S3 launch skipped")
 	}
 	app := app.New(cfg.App, logger)
 	err = app.SetupControllers(cfg.Token, backdata, db, post, s3repo)
@@ -147,8 +122,7 @@ func main() {
 			}
 		}
 	}()
-	logger.Info("application is running")
-	logger.Info("", zap.String("app server", cfg.App.Host+":"+cfg.App.Port))
+	logger.Info("Application is running")
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
@@ -165,4 +139,45 @@ func main() {
 	}
 	app.Stop(ctx)
 	logger.Info("Application stopped")
+}
+
+func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
+	logger.Info("Settings:")
+	logger.Info("", zap.Bool("use_local_backdata", cfg.App.Settings.UseLocalBackData))
+
+	logger.Info("Features:")
+	logger.Info("", zap.Bool("enable_authorization", cfg.App.Settings.EnableAuthorization))
+	logger.Info("", zap.Bool("enable_media", cfg.App.Settings.EnableRepoS3))
+	logger.Info("", zap.Bool("enable_mail", cfg.App.Settings.EnableRepoMail))
+
+	logger.Info("Token's TTL:")
+	logger.Info("", zap.Duration("access token", cfg.Token.AccessTTL))
+	logger.Info("", zap.Duration("refresh token", cfg.Token.RefreshTTL))
+
+	logger.Info("Server settings:")
+	logger.Info("", zap.String("env-mode", cfg.App.Env))
+	logger.Info("", zap.String("listening on", cfg.App.Host+":"+cfg.App.Port))
+	logger.Info("", zap.String("request-timeout", cfg.App.Timeout.String()))
+	logger.Info("", zap.String("idle-timeout", cfg.App.IdleTimeout.String()))
+
+	// style formatters
+	bold := "\033[1m"
+	line := "\033[4m"
+	reset := "\033[0m"
+
+	logger.Info(fmt.Sprintf("Database: %s%s%s%s settings:", bold, line, cfg.DB.Protocol, reset))
+	logger.Info("", zap.String("listening on", cfg.DB.Host+":"+cfg.DB.Port))
+	logger.Info("", zap.String("ssl", cfg.DB.SSLmode))
+
+	if cfg.App.Settings.EnableRepoMail {
+		logger.Info(fmt.Sprintf("Mail: %s%s%s%s settings:", bold, line, cfg.Mail.Service, reset))
+		logger.Info("", zap.String("listening on", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)))
+		logger.Info("", zap.String("profile", cfg.Mail.User))
+	}
+	if cfg.App.Settings.EnableRepoS3 {
+		logger.Info(fmt.Sprintf("S3: %s%s%s%s settings:", bold, line, cfg.S3.Name, reset))
+		logger.Info("", zap.String("storage listening on", cfg.S3.Host+":"+cfg.S3.DataPort))
+		logger.Info("", zap.String("console listening on", cfg.S3.Host+":"+cfg.S3.ConsolePort))
+		logger.Info("", zap.Bool("ssl", cfg.S3.SSLmode))
+	}
 }

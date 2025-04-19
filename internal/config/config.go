@@ -48,6 +48,7 @@ type Database struct {
 }
 
 type Mail struct {
+	Service  string `env:"MAIL_SERVICE" env-required:"true"`
 	Host     string `env:"MAIL_HOST" env-required:"true"`
 	Port     int    `env:"MAIL_PORT" env-required:"true"`
 	User     string `env:"MAIL_USER" env-required:"true"`
@@ -60,6 +61,7 @@ type Token struct {
 }
 
 type S3 struct {
+	Name          string `env:"S3" env-required:"true"`
 	Host          string `env:"S3_HOST" env-required:"true"`
 	User          string `env:"S3_ROOT_USER" env-required:"true"`
 	Password      string `env:"S3_ROOT_PASSWORD" env-required:"true"`
