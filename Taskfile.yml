@@ -50,7 +50,7 @@ tasks:
       - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
       - mockery --all --dir ./internal/controller/ --output ./mocks/controller
 
-  coverage:
+  test_coverage:
     desc: "run tests and show coverage"
     cmds:
       - docker-compose -f docker-test-postgres-compose.yml up -d
