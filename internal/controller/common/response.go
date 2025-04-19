@@ -19,9 +19,6 @@ func (rw *ResponseWriter) WriteHeader(statusCode int) {
 }
 
 func (rw *ResponseWriter) Write(b []byte) (int, error) {
-	if rw.statusCode == 0 {
-		rw.WriteHeader(http.StatusOK)
-	}
 	return rw.ResponseWriter.Write(b)
 }
 
