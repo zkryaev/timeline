@@ -185,7 +185,7 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 
 const (
 	ErrPathNotFound = "path not found in %s: \"%s\""
-	ErrNoPermission = "%s (org_id=%d) has no authorities to call %s \"%s\""
+	ErrNoPermission = "%s (%s=%d) has no authorities to call <[%s] %s>"
 )
 
 type Routes map[string]endpoint
@@ -204,9 +204,8 @@ func NewDefaultRoutes(settings *Settings) Routes {
 func (r Routes) HasAccess(tdata entity.TokenData, uri, method string) error {
 	ind, isMatched := 0, false
 	for i := range PathList {
-		if strings.Contains(uri, PathList[i]) {
+		if isMatched = strings.Contains(uri, PathList[i]); isMatched {
 			ind = i
-			isMatched = true
 			break
 		}
 	}
@@ -219,9 +218,9 @@ func (r Routes) HasAccess(tdata entity.TokenData, uri, method string) error {
 	}
 	if !handler.perms.HasPermission(tdata.IsOrg, method) {
 		if tdata.IsOrg {
-			return fmt.Errorf(ErrNoPermission, "org", tdata.ID, method, uri)
+			return fmt.Errorf(ErrNoPermission, "org", "org_id", tdata.ID, method, uri)
 		} else {
-			return fmt.Errorf(ErrNoPermission, "user", tdata.ID, method, uri)
+			return fmt.Errorf(ErrNoPermission, "user", "user_id", tdata.ID, method, uri)
 		}
 	}
 	return nil
