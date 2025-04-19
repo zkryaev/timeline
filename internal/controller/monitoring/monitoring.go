@@ -39,13 +39,13 @@ func (a *ServerMonitoring) HealthCheck(w http.ResponseWriter, _ *http.Request) {
 // @Failure 500
 // @Router /routes [get]
 func (a *ServerMonitoring) GetRoutes(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	routesjson, err := getAllRoutes(a.Router)
 	if err != nil {
 		a.Logger.Error("getAllRoutes", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.Write([]byte(routesjson))
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -71,7 +71,7 @@ func (a *ServerMonitoring) GetRoutes(w http.ResponseWriter, _ *http.Request) {
 */
 func getAllRoutes(router *mux.Router) (string, error) {
 	var body strings.Builder
-	body.WriteString("{\"paths\": [")
+	body.WriteString("{\"paths\":[")
 	prevPath := ""
 	pathCnt := 0
 	err := router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
@@ -93,11 +93,11 @@ func getAllRoutes(router *mux.Router) (string, error) {
 			if pathCnt > 0 {
 				body.WriteString("]},")
 			}
-			body.WriteString(fmt.Sprintf("{\"path\": \"%s\"", pathTemplate))
+			body.WriteString(fmt.Sprintf("{\"path\":\"%s\"", pathTemplate))
 			if len(methods) != 0 {
 				body.WriteString(",")
 			}
-			body.WriteString("\"methods\": [")
+			body.WriteString("\"methods\":[")
 			for i := range methods {
 				if i > 0 {
 					body.WriteString(",")
