@@ -14,6 +14,7 @@ const (
 	// Monitoring
 	PathHealth    = "/health" // docker health handler
 	PathGetRoutes = "/routes"
+	PathMetrics   = "/metrics" // prometheus
 
 	// Auth endpoint
 	PathAuth              = "/auth"

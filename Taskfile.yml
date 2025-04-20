@@ -3,13 +3,14 @@ version: '3'
 dotenv: ['.env']
 
 vars:
-  PROJECT_ROOT: /home/${USER}/timeline/
+  MODE: "{{default `` .MODE}}" # debug (only db), debug_metrics (db + metrics), dev (db, minio), dev_metrics (db, minio, metrics), prod (all)
   ENTRYPOINT: cmd/timeline/main.go
-  OUTPUT_BINARY: bin/timeline
+  SWAGGER_SRC: cmd/timeline/main.go
+  PROJECT_ROOT: /home/${USER}/timeline/
   LINTER_OUT: linter.out
   APP_LOGS: logs/logs.txt
-  SWAGGER_SRC: cmd/timeline/main.go
   SWAGGER_OUT: docs/swagger
+  OUTPUT_BINARY: bin/timeline
   MIGRATION_MASTER_PATH: migrations/master
   MIGRATION_ANALYTICS_PATH: migrations/analytics
   # postgres://<user>:<password>@<host>:<port>/<dbname>?<params>
@@ -32,58 +33,61 @@ vars:
     - SECRET_PATH
 
 tasks:
+  deploy:
+    desc: "Smart deploying"
+    cmds:
+      - task: deploy_{{.MODE}}
+      - #- nohup bash -c 'sleep 5; task img_upload' &> img_upload_logs.out &
+  
+  deploy_debug:
+    desc: "mode: debug (only db)"
+    deps: [check_envs, master_db, master_migrate_up, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
+  deploy_debug_metrics:
+    desc: "mode: debug+ (db + metrics)"
+    deps: [check_envs, master_db, master_migrate_up, metrics, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
+  deploy_dev:
+    desc: "mode: debug+ (db, minio)"
+    deps: [check_envs, master_db, minio, master_migrate_up, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
+  deploy_dev_metrics:
+    desc: "mode: debug+ (db, minio, metrics)"
+    deps: [check_envs, master_db, minio, metrics, master_migrate_up, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
+  deploy_prod:
+    desc: "Production deployment (full setup)"
+    deps: [check_envs, docker_all, full_migrate_up, build]
+    cmds:
+      - ./{{.OUTPUT_BINARY}}
+
   debug:
     desc: "run debugger"
-    deps: [check-envs, docker-master_db, migrate-up]
+    deps: [check-envs, master_db, migrate-up]
     cmds:
       - go build -gcflags="all=-N -l" -o bin/timeline ./cmd/timeline/main.go
       - dlv debug --headless --listen=:2345 --api-version=2 ./cmd/timeline
 
-  lint:
-    desc: "run GolangCI-Lint and save output to file"
-    cmds:
-      - golangci-lint run --color=always > {{.LINTER_OUT}}
-  
-  mocks:
-    desc: "generate mocks for every domen"
-    cmds:
-      - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
-      - mockery --all --dir ./internal/controller/ --output ./mocks/controller
-
-  test_coverage:
-    desc: "run tests and show coverage"
-    cmds:
-      - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
-      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
-      - go test -short -count=1 -coverprofile=coverage.out ./...
-      - go tool cover -html=coverage.out -o ./coverage.html
-      - rm coverage.out
-
-  test_db:
-    desc: "deploy db -> apply migrations -> run repo tests -> remove db"
-    silent: true
-    cmds:
-      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
-      - docker-compose -f docker-test-postgres-compose.yml up -d
-      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
-      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
-      - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
-      - go test -v -count=1 ./internal/infrastructure/database/postgres
-  
-  dsn:
-    desc: "show db's connection-url"
-    silent: true
-    cmds:
-      - echo {{.MASTER_DSN}}
-      - echo {{.ANALYTICS_DSN}}
-
-  migrate_up:
+  full_migrate_up:
     desc: "migrations [applying...]"
     cmds:
-      - task master_migrate_up
-      - task analytic_migrate_up  
+      - task: master_migrate_up
+      - task: analytic_migrate_up
   
+  full_migrate_down:
+    desc: "migrations [reverse...]"
+    cmds:
+      - task: master_migrate_down
+      - task: analytic_migrate_down
+
   master_migrate_up:
     silent: true
     cmds:
@@ -93,31 +97,36 @@ tasks:
     silent: true
     cmds:
       - go run ./cmd/migrator/main.go --dsn={{.ANALYTICS_DSN}} --migrations-path={{.MIGRATION_ANALYTICS_PATH}} --instance=analytics_db
-  
-  migrate_down:
-    desc: "migrations [reverse...]"
-    cmds:
-      - task master_migrate_down
-      - task analytic_migrate_down
 
   master_migrate_down:
-    desc: "migrations [reverse...]"
     silent: true
     cmds:
-      - migrate -database {{.MASTER_DSN}} -path {{.MIGRATION_MASTER_PATH}} down
-      - migrate -database {{.ANALYTICS_DSN}} -path {{.MIGRATION_ANALYTICS_PATH}} down
+      - migrate -database {{.MASTER_DSN}} -path {{.MIGRATION_MASTER_PATH}} down -all
   
   analytic_migrate_down:
     silent: true
     cmds:
-      - migrate -database {{.ANALYTICS_DSN}} -path {{.MIGRATION_ANALYTICS_PATH}} down
+      - migrate -database {{.ANALYTICS_DSN}} -path {{.MIGRATION_ANALYTICS_PATH}} down -all
+  
+  migrate_test_down:
+    silent: true
+    cmds:
+      - migrate -database {{.TEST_DSN}} -path {{.MIGRATION_MASTER_PATH}} down -all
 
-  docker_master_db:
+  master_db:
     cmds:
       - docker-compose up -d postgres_master
 
+  minio:
+    cmds:
+      - docker-compose up -d minio
+  
+  metrics:
+    cmds:
+      - docker-compose up -d prometheus grafana
+
   docker_all:
-    desc: "deploy all containers in list"
+    desc: "deploy all containers in .yml"
     cmds:
       - docker-compose up -d
 
@@ -161,10 +170,6 @@ tasks:
           echo "===================================="
         done
 
-  migrate_test_down:
-    cmds:
-      - migrate -database {{.TEST_DSN}} -path {{.MIGRATION_MASTER_PATH}} down -all
-
   build:
     silent: true
     cmds:
@@ -174,19 +179,6 @@ tasks:
   run:
     desc: "run application"
     deps: [build]
-    cmds:
-      - ./{{.OUTPUT_BINARY}}
-
-  deploy_back:
-    desc: "deploy backend app: [envs -> db -> migrations -> build -> run]"
-    deps: [check_envs, docker_master_db, master_migrate_up, build]
-    cmds:
-      - ./{{.OUTPUT_BINARY}}
-      #- nohup bash -c 'sleep 5; task img_upload' &> img_upload_logs.out &
-
-  deploy_project:
-    desc: "deploy app: [envs -> up containers -> migrations -> build -> run -> img_loading]"
-    deps: [check_envs, docker_all, migrate_up, build]
     cmds:
       - ./{{.OUTPUT_BINARY}}
 
@@ -209,6 +201,45 @@ tasks:
     desc: "generate swagger docs"
     cmds:
       - swag init -g {{.SWAGGER_SRC}} -o {{.SWAGGER_OUT}}
+
+  lint:
+    desc: "run GolangCI-Lint and save output to file"
+    cmds:
+      - golangci-lint run --color=always > {{.LINTER_OUT}}
+  
+  mocks:
+    desc: "generate mocks for every domen"
+    cmds:
+      - mockery --all --dir ./internal/infrastructure/ --output ./mocks/infrastructure
+      - mockery --all --dir ./internal/controller/ --output ./mocks/controller
+
+  test_coverage:
+    desc: "run tests and show coverage"
+    cmds:
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
+      - nohup bash -c 'sleep 30; echo "> stopped:" &> coverage_log.out; docker stop test-postgres; echo "> removed:" &>> coverage_log.out; docker rm test-postgres' &>> coverage_log.out &
+      - go test -short -count=1 -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o ./coverage.html
+      - rm coverage.out
+
+  test_db:
+    desc: "deploy db -> apply migrations -> run repo tests -> remove db"
+    silent: true
+    cmds:
+      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
+      - docker-compose -f docker-test-postgres-compose.yml up -d
+      - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
+      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
+      - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
+      - go test -v -count=1 ./internal/infrastructure/database/postgres
+  
+  dsn:
+    desc: "show db's connection-url"
+    silent: true
+    cmds:
+      - echo {{.MASTER_DSN}}
+      - echo {{.ANALYTICS_DSN}}
         
   default:
     cmds: 

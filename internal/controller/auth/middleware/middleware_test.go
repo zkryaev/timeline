@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 	"timeline/internal/config"
+	"timeline/internal/controller/monitoring/metrics"
 	"timeline/internal/controller/scope"
 	"timeline/internal/entity"
 	"timeline/internal/sugar/jwtlib"
@@ -37,13 +38,16 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.mockPrivateKey = privateKey
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
 	suite.appCfg.Settings.EnableAuthorization = true
-	suite.appCfg.Settings.EnableRepoS3 = false
-	suite.appCfg.Settings.EnableRepoMail = false
+	suite.appCfg.Settings.EnableMedia = false
+	suite.appCfg.Settings.EnableMail = false
+	suite.appCfg.Settings.EnableMetrics = false
+	var metricList *metrics.Metrics
 	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
 		zap.NewExample(),
 		scope.NewDefaultRoutes(settings),
+		metricList,
 	)
 }
 

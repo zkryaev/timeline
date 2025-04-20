@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 	"timeline/internal/app"
 	"timeline/internal/config"
+	"timeline/internal/controller/monitoring/metrics"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/s3"
@@ -46,9 +46,11 @@ func main() {
 	successConnection := "Successfuly connected to"
 	// Инициализация логгера
 	logger := logger.New(cfg.App.Env)
+	defer logger.Sync()
+
 	logger.Info("Application started")
 	PrintConfiguration(logger, cfg)
-	defer logger.Sync()
+
 	db, err := infrastructure.GetDB(os.Getenv("DB"), &cfg.DB)
 	if err != nil {
 		logger.Fatal("incorrect db type", zap.Error(err))
@@ -80,7 +82,7 @@ func main() {
 	logger.Info("Loading data is finished")
 
 	var post infrastructure.Mail
-	if cfg.App.Settings.EnableRepoMail {
+	if cfg.App.Settings.EnableMail {
 		// Поднимаем почтовый сервис параметрами по умолчанию
 		post = mail.New(cfg.Mail, logger, 0, 0, 0)
 		post.Start()
@@ -89,7 +91,7 @@ func main() {
 	}
 
 	var s3repo *s3.Minio
-	if cfg.App.Settings.EnableRepoS3 {
+	if cfg.App.Settings.EnableMedia {
 		// Подключение к S3
 		s3repo = s3.New(cfg.S3)
 		if err = s3repo.Connect(); err != nil {
@@ -97,6 +99,17 @@ func main() {
 		}
 		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
 	}
+
+	s := cronjob.InitCronScheduler(db)
+	defer s.Shutdown()
+	s.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer logger.Info("All launched services is closed")
+	timeout := 1 * time.Minute
+	errch := make(chan error, 2)
+
 	app := app.New(cfg.App, logger)
 	err = app.SetupControllers(cfg.Token, backdata, db, post, s3repo)
 	if err != nil {
@@ -105,40 +118,27 @@ func main() {
 			zap.Error(err),
 		)
 	}
+	app.Run(errch)
+	defer app.Shutdown(ctx, timeout)
+	logger.Info("Application server is listening")
 
-	s := cronjob.InitCronScheduler(db)
-	defer s.Shutdown()
-	s.Start()
+	var promHandler *metrics.Prometheus
+	if cfg.App.Settings.EnableMetrics {
+		promHandler = metrics.NewPrometheusHandler(cfg.Prometheus, logger)
+		promHandler.Launch(errch)
+		defer promHandler.Shutdown(ctx, timeout)
+		logger.Info("Prometheus handler is listening")
+	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	quit := make(chan os.Signal, 1)
-	errorChan := make(chan error, 1)
-	go func() {
-		err = app.Run()
-		if err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				logger.Error("failed to run server", zap.Error(err))
-				errorChan <- err
-			}
-		}
-	}()
-	logger.Info("Application is running")
-
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
 	case sig := <-quit:
+		logger.Info("Received signal", zap.String("signal", sig.String()))
+	case err = <-errch:
+		logger.Error("error occurred", zap.Error(err))
 		cancel()
-		logger.Info("Received signal",
-			zap.String("signal", sig.String()),
-		)
-	case err = <-errorChan:
-		cancel()
-		logger.Error("error occurred",
-			zap.Error(err),
-		)
 	}
-	app.Stop(ctx)
-	logger.Info("Application stopped")
 }
 
 func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
@@ -147,8 +147,9 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 
 	logger.Info("Features:")
 	logger.Info("", zap.Bool("enable_authorization", cfg.App.Settings.EnableAuthorization))
-	logger.Info("", zap.Bool("enable_media", cfg.App.Settings.EnableRepoS3))
-	logger.Info("", zap.Bool("enable_mail", cfg.App.Settings.EnableRepoMail))
+	logger.Info("", zap.Bool("enable_media", cfg.App.Settings.EnableMedia))
+	logger.Info("", zap.Bool("enable_mail", cfg.App.Settings.EnableMail))
+	logger.Info("", zap.Bool("enable_metrics", cfg.App.Settings.EnableMetrics))
 
 	logger.Info("Token's TTL:")
 	logger.Info("", zap.Duration("access token", cfg.Token.AccessTTL))
@@ -156,9 +157,9 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 
 	logger.Info("Server settings:")
 	logger.Info("", zap.String("env-mode", cfg.App.Env))
-	logger.Info("", zap.String("listening on", cfg.App.Host+":"+cfg.App.Port))
-	logger.Info("", zap.String("request-timeout", cfg.App.Timeout.String()))
-	logger.Info("", zap.String("idle-timeout", cfg.App.IdleTimeout.String()))
+	logger.Info("", zap.String("listening on", cfg.App.Server.Host+":"+cfg.App.Server.Port))
+	logger.Info("", zap.String("request-timeout", cfg.App.Server.Timeout.String()))
+	logger.Info("", zap.String("idle-timeout", cfg.App.Server.IdleTimeout.String()))
 
 	// style formatters
 	bold := "\033[1m"
@@ -169,15 +170,19 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 	logger.Info("", zap.String("listening on", cfg.DB.Host+":"+cfg.DB.Port))
 	logger.Info("", zap.String("ssl", cfg.DB.SSLmode))
 
-	if cfg.App.Settings.EnableRepoMail {
+	if cfg.App.Settings.EnableMail {
 		logger.Info(fmt.Sprintf("Mail: %s%s%s%s settings:", bold, line, cfg.Mail.Service, reset))
 		logger.Info("", zap.String("listening on", cfg.Mail.Host+":"+strconv.Itoa(cfg.Mail.Port)))
 		logger.Info("", zap.String("profile", cfg.Mail.User))
 	}
-	if cfg.App.Settings.EnableRepoS3 {
+	if cfg.App.Settings.EnableMedia {
 		logger.Info(fmt.Sprintf("S3: %s%s%s%s settings:", bold, line, cfg.S3.Name, reset))
 		logger.Info("", zap.String("storage listening on", cfg.S3.Host+":"+cfg.S3.DataPort))
 		logger.Info("", zap.String("console listening on", cfg.S3.Host+":"+cfg.S3.ConsolePort))
 		logger.Info("", zap.Bool("ssl", cfg.S3.SSLmode))
+	}
+	if cfg.App.Settings.EnableMetrics {
+		logger.Info(fmt.Sprintf("Metrics: %s%s%s%s settings:", bold, line, "prometheus", reset))
+		logger.Info("", zap.String("listening on", cfg.Prometheus.Host+":"+cfg.Prometheus.Port))
 	}
 }

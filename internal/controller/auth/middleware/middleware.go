@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"timeline/internal/controller/common"
+	"timeline/internal/controller/monitoring/metrics"
 	"timeline/internal/controller/scope"
 	"timeline/internal/usecase/auth/validation"
 
@@ -26,41 +28,68 @@ var (
 
 type UUID string
 type TokenData string
+type UnescapedURI string
 
 type Middleware interface {
 	ExtractToken(r *http.Request) (*jwt.Token, error)
-	Authorization(next http.Handler) http.Handler
-	HandlerLogs(next http.Handler) http.Handler
+	RequestAuthorization(next http.Handler) http.Handler
+	RequestLogger(next http.Handler) http.Handler
+	RequestMetrics(next http.Handler) http.Handler
 }
 
 type middleware struct {
-	secret *rsa.PrivateKey
-	logger *zap.Logger
-	routes scope.Routes
+	secret  *rsa.PrivateKey
+	logger  *zap.Logger
+	routes  scope.Routes
+	metrics *metrics.Metrics
 }
 
-func New(key *rsa.PrivateKey, logger *zap.Logger, routes scope.Routes) Middleware {
+func New(key *rsa.PrivateKey, logger *zap.Logger, routes scope.Routes, metrics *metrics.Metrics) Middleware {
 	return &middleware{
-		secret: key,
-		logger: logger,
-		routes: routes,
+		secret:  key,
+		logger:  logger,
+		routes:  routes,
+		metrics: metrics,
 	}
 }
 
-func (m *middleware) HandlerLogs(next http.Handler) http.Handler {
+func (m *middleware) RequestMetrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw := &common.ResponseWriter{
 			ResponseWriter: w,
 		}
-		uuid, err := uuid.NewRandom()
-		if err != nil {
-			m.logger.Error("HandlerLogs", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		uri, err := url.QueryUnescape(r.RequestURI)
 		if err != nil {
 			uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
+		}
+		ctx := context.WithValue(r.Context(), UnescapedURI("uri"), uri)
+		start := time.Now()
+		next.ServeHTTP(rw, r.WithContext(ctx))
+		m.metrics.UpdateRequestMetrics(r.Method, uri, strconv.Itoa(rw.StatusCode()), time.Since(start))
+	})
+}
+
+func (m *middleware) RequestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw, ok := w.(*common.ResponseWriter)
+		if !ok {
+			m.logger.Error("Не конвертится писатель, хуле делать только плакать. неет, мы не baby crying receiver, мы созданим свой писатель!")
+			rw = &common.ResponseWriter{
+				ResponseWriter: w,
+			}
+		}
+		uuid, err := uuid.NewRandom()
+		if err != nil {
+			m.logger.Error("RequestLogger", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		uri, ok := r.Context().Value(UnescapedURI("uri")).(string)
+		if !ok {
+			uri, err = url.QueryUnescape(r.RequestURI)
+			if err != nil {
+				uri = r.RequestURI // Если декодирование не удалось, используем оригинальный URI
+			}
 		}
 		m.logger.Info(r.Method, zap.String("uuid", uuid.String()), zap.String("uri", uri))
 		ctx := context.WithValue(r.Context(), UUID("uuid"), uuid.String()) // nolint:go-staticcheck // keep it simple
@@ -70,7 +99,7 @@ func (m *middleware) HandlerLogs(next http.Handler) http.Handler {
 	})
 }
 
-func (m *middleware) Authorization(next http.Handler) http.Handler {
+func (m *middleware) RequestAuthorization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := m.ExtractToken(r)
 		if err != nil {

@@ -116,7 +116,7 @@ func (a *AuthUseCase) UserRegister(ctx context.Context, logger *zap.Logger, req 
 		return nil, err
 	}
 	logger.Info("Code has been saved to DB")
-	if a.settings.EnableRepoMail {
+	if a.settings.EnableMail {
 		a.mail.SendMsg(&models.Message{
 			Email: req.User.Email,
 			Type:  mail.VerificationType,
@@ -167,7 +167,7 @@ func (a *AuthUseCase) OrgRegister(ctx context.Context, logger *zap.Logger, req *
 		return nil, err
 	}
 	logger.Info("Code has been saved to DB")
-	if a.settings.EnableRepoMail {
+	if a.settings.EnableMail {
 		a.mail.SendMsg(&models.Message{
 			Email: req.Email,
 			Type:  mail.VerificationType,
@@ -205,7 +205,7 @@ func (a *AuthUseCase) SendCodeRetry(ctx context.Context, logger *zap.Logger, req
 		return err
 	}
 	logger.Info("Code has been saved to DB")
-	if a.settings.EnableRepoMail {
+	if a.settings.EnableMail {
 		a.mail.SendMsg(&models.Message{
 			Email: req.Email,
 			Type:  mail.VerificationType,
