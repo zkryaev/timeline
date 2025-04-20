@@ -118,7 +118,7 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	recmuxProtected.HandleFunc(scope.PathFeedback, rec.FeedbackDelete).Methods(routes[scope.PathFeedback].Methods.Get(scope.DELETE)...)
 
 	// media
-	if settings.EnableRepoS3 {
+	if settings.EnableMedia {
 		Protected.HandleFunc(scope.PathMedia, s3.Upload).Methods(routes[scope.PathMedia].Methods.Get(scope.POST)...)
 		Protected.HandleFunc(scope.PathMedia, s3.Download).Methods(routes[scope.PathMedia].Methods.Get(scope.GET)...)
 		Protected.HandleFunc(scope.PathMedia, s3.Delete).Methods(routes[scope.PathMedia].Methods.Get(scope.DELETE)...)

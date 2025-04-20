@@ -118,7 +118,7 @@ func (u *UserUseCase) OrgsInArea(ctx context.Context, logger *zap.Logger, area *
 }
 
 func (u *UserUseCase) UserRecordReminder(ctx context.Context, logger *zap.Logger) error {
-	if !u.settings.EnableRepoMail {
+	if !u.settings.EnableMail {
 		return nil
 	}
 	data, err := u.records.UpcomingRecords(ctx)

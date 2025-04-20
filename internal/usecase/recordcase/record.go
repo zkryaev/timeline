@@ -122,7 +122,7 @@ func (r *RecordUseCase) RecordAdd(ctx context.Context, logger *zap.Logger, rec *
 	}
 
 	logger.Info("Record has been saved")
-	if r.settings.EnableRepoS3 {
+	if r.settings.EnableMedia {
 		r.mail.SendMsg(&models.Message{
 			Email:    record.UserEmail,
 			Type:     mail.CancelationType,
@@ -148,7 +148,7 @@ func (r *RecordUseCase) RecordCancel(ctx context.Context, logger *zap.Logger, re
 	}
 	record := reclist.List[0]
 	logger.Info("Record has been canceled")
-	if r.settings.EnableRepoS3 {
+	if r.settings.EnableMedia {
 		r.mail.SendMsg(&models.Message{
 			Email: record.User.Email,
 			Type:  mail.ReminderType,

@@ -37,8 +37,8 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.mockPrivateKey = privateKey
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
 	suite.appCfg.Settings.EnableAuthorization = true
-	suite.appCfg.Settings.EnableRepoS3 = false
-	suite.appCfg.Settings.EnableRepoMail = false
+	suite.appCfg.Settings.EnableMedia = false
+	suite.appCfg.Settings.EnableMail = false
 	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
