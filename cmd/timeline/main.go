@@ -46,9 +46,11 @@ func main() {
 	successConnection := "Successfuly connected to"
 	// Инициализация логгера
 	logger := logger.New(cfg.App.Env)
+	defer logger.Sync()
+
 	logger.Info("Application started")
 	PrintConfiguration(logger, cfg)
-	defer logger.Sync()
+
 	db, err := infrastructure.GetDB(os.Getenv("DB"), &cfg.DB)
 	if err != nil {
 		logger.Fatal("incorrect db type", zap.Error(err))
@@ -103,6 +105,8 @@ func main() {
 	s.Start()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer logger.Info("All launched services is closed")
 	timeout := 1 * time.Minute
 	errch := make(chan error, 2)
 
@@ -130,8 +134,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
 	case sig := <-quit:
-		defer cancel()
-		defer logger.Info("All launched services is closed")
 		logger.Info("Received signal", zap.String("signal", sig.String()))
 	case err = <-errch:
 		logger.Error("error occurred", zap.Error(err))
@@ -147,6 +149,7 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 	logger.Info("", zap.Bool("enable_authorization", cfg.App.Settings.EnableAuthorization))
 	logger.Info("", zap.Bool("enable_media", cfg.App.Settings.EnableMedia))
 	logger.Info("", zap.Bool("enable_mail", cfg.App.Settings.EnableMail))
+	logger.Info("", zap.Bool("enable_metrics", cfg.App.Settings.EnableMetrics))
 
 	logger.Info("Token's TTL:")
 	logger.Info("", zap.Duration("access token", cfg.Token.AccessTTL))
