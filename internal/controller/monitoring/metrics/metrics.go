@@ -59,7 +59,7 @@ func (p *Prometheus) Shutdown(cancelCtx context.Context, timeout time.Duration) 
 	}()
 	select {
 	case <-done:
-		p.log.Info("HTTP server is closed successfully")
+		p.log.Info("Prometheus handler closing complete")
 	case <-timeoutCtx.Done():
 		p.log.Error("timeout while closing HTTP server", zap.Error(timeoutCtx.Err()))
 	}
