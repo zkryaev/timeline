@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 	"timeline/internal/app"
 	"timeline/internal/config"
+	"timeline/internal/controller/monitoring/metrics"
 	"timeline/internal/infrastructure"
 	"timeline/internal/infrastructure/mail"
 	"timeline/internal/infrastructure/s3"
@@ -97,6 +97,15 @@ func main() {
 		}
 		logger.Info(fmt.Sprintf("%s %s", successConnection, os.Getenv("S3")))
 	}
+
+	s := cronjob.InitCronScheduler(db)
+	defer s.Shutdown()
+	s.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	timeout := 1 * time.Minute
+	errch := make(chan error, 2)
+
 	app := app.New(cfg.App, logger)
 	err = app.SetupControllers(cfg.Token, backdata, db, post, s3repo)
 	if err != nil {
@@ -105,40 +114,29 @@ func main() {
 			zap.Error(err),
 		)
 	}
+	app.Run(errch)
+	defer app.Shutdown(ctx, timeout)
+	logger.Info("Application server is listening")
 
-	s := cronjob.InitCronScheduler(db)
-	defer s.Shutdown()
-	s.Start()
+	var promHandler *metrics.Prometheus
+	if cfg.App.Settings.EnableMetrics {
+		promHandler = metrics.NewPrometheusHandler(cfg.Prometheus, logger)
+		promHandler.Launch(errch)
+		defer promHandler.Shutdown(ctx, timeout)
+		logger.Info("Prometheus handler is listening")
+	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	quit := make(chan os.Signal, 1)
-	errorChan := make(chan error, 1)
-	go func() {
-		err = app.Run()
-		if err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				logger.Error("failed to run server", zap.Error(err))
-				errorChan <- err
-			}
-		}
-	}()
-	logger.Info("Application is running")
-
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	select {
 	case sig := <-quit:
+		defer cancel()
+		defer logger.Info("All launched services is closed")
+		logger.Info("Received signal", zap.String("signal", sig.String()))
+	case err = <-errch:
+		logger.Error("error occurred", zap.Error(err))
 		cancel()
-		logger.Info("Received signal",
-			zap.String("signal", sig.String()),
-		)
-	case err = <-errorChan:
-		cancel()
-		logger.Error("error occurred",
-			zap.Error(err),
-		)
 	}
-	app.Shutdown(ctx)
-	logger.Info("Application stopped")
 }
 
 func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
