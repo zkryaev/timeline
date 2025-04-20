@@ -72,8 +72,8 @@ type S3 struct {
 }
 
 type Prometheus struct {
-	Host string `env:"PROMETHEUS_HOST" env-required:"true"`
-	Port string `env:"PROMETHEUS_PORT" env-required:"true"`
+	Host string `env:"APP_HTTP_HOST" env-default:"localhost"`
+	Port string `env:"APP_HTTP_PORT" env-default:"8080"`
 }
 
 func MustLoad() *Config {
