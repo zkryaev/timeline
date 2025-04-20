@@ -20,27 +20,6 @@ services:
         timeout: 5s          
         retries: 5
 
-    # analytics_db:
-    #   image: postgres:17.4
-    #   container_name: analytics_db
-    #   environment:
-    #     POSTGRES_DB: ${ANALYTICS_DB_NAME}
-    #     POSTGRES_USER: ${ANALYTICS_DB_USER}
-    #     POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWD}
-    #   ports:
-    #     - "${ANALYTICS_DB_PORT}:5432"
-    #   #volumes:
-    #   #  - pgdata_analytics:/var/lib/postgresql/data
-    #   #  - ./:/migrations-initdb.d
-    #   networks:
-    #     - default
-    #   healthcheck:
-    #     test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${ANALYTICS_DB_USER} -d ${ANALYTICS_DB_NAME}"]
-    #     start_period: 20s
-    #     interval: 30s        
-    #     timeout: 5s          
-    #     retries: 5
-
     minio:
       image: minio/minio:latest
       container_name: minio
@@ -66,6 +45,30 @@ services:
         interval: 30s        
         timeout: 5s          
         retries: 5
+
+    prometheus:
+      container_name: prometheus
+      image: prom/prometheus:latest
+      ports:
+        - "${PROMETHEUS_PORT}:9090"
+      extra_hosts:
+      - "host.docker.internal:host-gateway"
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+
+    grafana:
+      container_name: grafana
+      image: grafana/grafana:latest
+      ports:
+        - "${GRAFANA_PORT}:3000"
+      volumes:
+        - grafana_data:/var/lib/grafana
+      environment:
+        - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWD}
+      depends_on:
+        - prometheus
 
     # analytics_app:
     #   image: petrgrachev/timeline-analytics:1.0.3
@@ -98,7 +101,30 @@ services:
     #     interval: 30s        
     #     timeout: 5s          
     #     retries: 5
-#volumes:
+
+    # analytics_db:
+    #   image: postgres:17.4
+    #   container_name: analytics_db
+    #   environment:
+    #     POSTGRES_DB: ${ANALYTICS_DB_NAME}
+    #     POSTGRES_USER: ${ANALYTICS_DB_USER}
+    #     POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWD}
+    #   ports:
+    #     - "${ANALYTICS_DB_PORT}:5432"
+    #   #volumes:
+    #   #  - pgdata_analytics:/var/lib/postgresql/data
+    #   #  - ./:/migrations-initdb.d
+    #   networks:
+    #     - default
+    #   healthcheck:
+    #     test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${ANALYTICS_DB_USER} -d ${ANALYTICS_DB_NAME}"]
+    #     start_period: 20s
+    #     interval: 30s        
+    #     timeout: 5s          
+    #     retries: 5
+
+volumes:
+  grafana_data:
 #  pgdata:
 #  minio_data:
 #  minio_config:
