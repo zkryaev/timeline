@@ -14,6 +14,7 @@ import (
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
 	"timeline/internal/controller/monitoring"
+	"timeline/internal/controller/monitoring/metrics"
 	s3ctrl "timeline/internal/controller/s3"
 	"timeline/internal/controller/scope"
 	validation "timeline/internal/controller/validation"
@@ -98,7 +99,11 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 
 	settings := scope.NewDefaultSettings(a.appcfg)
 	routes := scope.NewDefaultRoutes(settings)
-	middleware := middleware.New(privateKey, a.log, routes)
+	var metricList *metrics.Metrics
+	if settings.EnableMetrics {
+		metricList = metrics.NewDefaultMetrics()
+	}
+	middleware := middleware.New(privateKey, a.log, routes, metricList)
 
 	monitorAPI := monitoring.New(a.log, settings)
 

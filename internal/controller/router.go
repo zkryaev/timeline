@@ -34,7 +34,10 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 
 	// s := r.Host("www.timeline.com").Subrouter() // TODO future
 
-	r.Use(auth.Middleware.HandlerLogs)
+	if settings.EnableMetrics {
+		r.Use(auth.Middleware.RequestMetrics)
+	}
+	r.Use(auth.Middleware.RequestLogger)
 	r.HandleFunc(scope.PathHealth, controllersSet.Monitor.HealthCheck).Methods(http.MethodGet)
 	r.HandleFunc(scope.PathGetRoutes, controllersSet.Monitor.GetRoutes).Methods(http.MethodGet)
 
@@ -49,7 +52,7 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 
 	Protected := v1.NewRoute().Subrouter()
 	if settings.EnableAuthorization {
-		Protected.Use(auth.Middleware.Authorization)
+		Protected.Use(auth.Middleware.RequestAuthorization)
 	}
 
 	// v1/auth/codes
