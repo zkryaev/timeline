@@ -22,10 +22,10 @@ type Prometheus struct {
 	log        *zap.Logger
 }
 
-func NewPrometheusExporter(cfg config.Prometheus, logger *zap.Logger) Prometheus {
+func NewPrometheusHandler(cfg config.Prometheus, logger *zap.Logger) *Prometheus {
 	metricsmux := http.NewServeMux()
 	metricsmux.Handle(scope.PathMetrics, promhttp.Handler())
-	return Prometheus{
+	return &Prometheus{
 		server: &http.Server{
 			Addr:    cfg.Host + ":" + cfg.Port,
 			Handler: metricsmux,
