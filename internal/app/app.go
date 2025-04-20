@@ -80,7 +80,7 @@ func (a *App) Shutdown(cancelCtx context.Context, timeout time.Duration) {
 	}()
 	select {
 	case <-done:
-		a.log.Info("HTTP server is closed successfully")
+		a.log.Info("Backend server closing complete")
 	case <-timeoutCtx.Done():
 		a.log.Error("timeout while closing HTTP server", zap.Error(timeoutCtx.Err()))
 	}
