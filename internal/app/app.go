@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 	"timeline/internal/config"
 	"timeline/internal/controller"
 	authctrl "timeline/internal/controller/auth"
@@ -28,33 +30,59 @@ import (
 )
 
 type App struct {
-	httpServer *http.Server
+	server     *http.Server
 	log        *zap.Logger
 	appcfg     config.Application
+	serverOnce sync.Once
+	wg         sync.WaitGroup
 }
 
 func New(cfgApp config.Application, logger *zap.Logger) *App {
 	return &App{
 		appcfg: cfgApp,
-		httpServer: &http.Server{
-			Addr:         cfgApp.Host + ":" + cfgApp.Port,
-			ReadTimeout:  cfgApp.Timeout,
-			WriteTimeout: cfgApp.Timeout,
-			IdleTimeout:  cfgApp.IdleTimeout,
+		server: &http.Server{
+			Addr:         cfgApp.Server.Host + ":" + cfgApp.Server.Port,
+			ReadTimeout:  cfgApp.Server.Timeout,
+			WriteTimeout: cfgApp.Server.Timeout,
+			IdleTimeout:  cfgApp.Server.IdleTimeout,
 		},
 		log: logger,
 	}
 }
 
-func (a *App) Run() error {
-	if err := a.httpServer.ListenAndServe(); err != nil {
-		return fmt.Errorf("failed to run server, %w", err)
-	}
-	return nil
+func (a *App) SetHandler(handler http.Handler) {
+	a.server.Handler = handler
 }
 
-func (a *App) Stop(ctx context.Context) {
-	a.httpServer.Shutdown(ctx)
+func (a *App) Run(errch chan error) {
+	a.serverOnce.Do(func() {
+		a.wg.Add(1)
+		go func() {
+			defer a.wg.Done()
+			if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errch <- fmt.Errorf("backend server error: %w", err)
+			}
+		}()
+	})
+}
+
+func (a *App) Shutdown(cancelCtx context.Context, timeout time.Duration) {
+	timeoutCtx, cancel := context.WithTimeout(cancelCtx, timeout)
+	defer cancel()
+	if err := a.server.Shutdown(timeoutCtx); err != nil {
+		a.log.Error("failed to shutdown HTTP server", zap.Error(err))
+	}
+	done := make(chan struct{})
+	go func() {
+		a.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		a.log.Info("HTTP server is closed successfully")
+	case <-timeoutCtx.Done():
+		a.log.Error("timeout while closing HTTP server", zap.Error(timeoutCtx.Err()))
+	}
 }
 
 func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3) error {
@@ -149,6 +177,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		S3:      s3API,
 	}
 	monitorAPI.Router = controller.InitRouter(controllerSet, routes, settings)
-	a.httpServer.Handler = monitorAPI.Router
+	a.SetHandler(monitorAPI.Router)
 	return nil
 }

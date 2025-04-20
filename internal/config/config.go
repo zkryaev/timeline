@@ -10,11 +10,12 @@ import (
 )
 
 type Config struct {
-	App   Application `yaml:"app"`
-	DB    Database
-	Mail  Mail
-	Token Token `yaml:"token"`
-	S3    S3
+	App        Application `yaml:"app"`
+	DB         Database
+	Mail       Mail
+	Token      Token `yaml:"token"`
+	S3         S3
+	Prometheus Prometheus
 }
 
 type Settings struct {
@@ -26,16 +27,16 @@ type Settings struct {
 }
 
 type Application struct {
-	Env        string   `yaml:"env" env-required:"true"`
-	Settings   Settings `yaml:"settings"`
-	HTTPServer `yaml:"http_server"`
+	Server   HTTPServer
+	Settings Settings `yaml:"settings"`
+	Env      string   `yaml:"env" env-required:"true"`
 }
 
 type HTTPServer struct {
-	Host        string        `yaml:"host" env-default:"localhost"`
-	Port        string        `yaml:"port" env-default:"8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"5m"`
+	Host        string        `env:"APP_HTTP_PORT" env-default:"localhost"`
+	Port        string        `env:"APP_HTTP_PORT" env-default:"8100"`
+	Timeout     time.Duration `env:"APP_HTTP_TIMEOUT" env-default:"4s"`
+	IdleTimeout time.Duration `env:"APP_HTTP_IDLE_TIMEOUT" env-default:"5m"`
 }
 
 type Database struct {
