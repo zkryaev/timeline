@@ -36,15 +36,17 @@ type Settings struct {
 	SupportedMethodsMap map[string]struct{}
 	SupportedParams     SupportedParams
 	EnableAuthorization bool
-	EnableRepoS3        bool
-	EnableRepoMail      bool
+	EnableMedia         bool
+	EnableMail          bool
+	EnableMetrics       bool
 }
 
 func NewDefaultSettings(appCfg config.Application) *Settings {
 	return &Settings{
 		EnableAuthorization: appCfg.Settings.EnableAuthorization,
-		EnableRepoS3:        appCfg.Settings.EnableRepoS3,
-		EnableRepoMail:      appCfg.Settings.EnableRepoMail,
+		EnableMedia:         appCfg.Settings.EnableMedia,
+		EnableMail:          appCfg.Settings.EnableMail,
+		EnableMetrics:       appCfg.Settings.EnableMetrics,
 		SupportedMethodsMap: defaultSupportedMethodsHTTP(),
 		SupportedParams:     defaultSupportedParams(),
 	}

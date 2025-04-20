@@ -18,10 +18,11 @@ type Config struct {
 }
 
 type Settings struct {
-	UseLocalBackData    bool `yaml:"use_local_back_data"`
-	EnableAuthorization bool `yaml:"enable_authorization"`
-	EnableRepoS3        bool `yaml:"enable_repo_s3"`
-	EnableRepoMail      bool `yaml:"enable_repo_mail"`
+	UseLocalBackData    bool `yaml:"use_local_back_data" env-default:"true"`
+	EnableAuthorization bool `yaml:"enable_authorization" env-default:"true"`
+	EnableMedia         bool `yaml:"enable_media" env-default:"false"`
+	EnableMail          bool `yaml:"enable_mail" env-default:"false"`
+	EnableMetrics       bool `yaml:"enable_metrics" env-default:"false"`
 }
 
 type Application struct {
@@ -69,6 +70,11 @@ type S3 struct {
 	DataPort      string `env:"S3_DATA_PORT" env-default:"9000"`
 	ConsolePort   string `env:"S3_CONSOLE_PORT" env-default:"9001"`
 	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
+}
+
+type Prometheus struct {
+	Host string `env:"PROMETHEUS_PRODUCER_HOST" env-required:"true"`
+	Port string `env:"PROMETHEUS_PRODUCER_PORT" env-required:"true"`
 }
 
 func MustLoad() *Config {

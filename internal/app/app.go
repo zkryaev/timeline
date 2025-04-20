@@ -89,7 +89,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		settings,
 	)
 	var s3API *s3ctrl.S3Ctrl
-	if settings.EnableRepoS3 {
+	if settings.EnableMedia {
 		s3API = s3ctrl.New(
 			s3usecase.New(
 				storage,

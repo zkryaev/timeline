@@ -3,10 +3,10 @@ app:
   env: DEV
   settings:
     use_local_back_data: true
-    enable_authorization: true
-    enable_repo_s3: true
-    enable_repo_mail: true
-
+    enable_authorization: false
+    enable_media: false
+    enable_mail: false
+    enable_metrics: false
 token: 
   access_ttl: 1m
   refresh_ttl: 5m
