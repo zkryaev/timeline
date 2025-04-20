@@ -33,7 +33,7 @@ type Application struct {
 }
 
 type HTTPServer struct {
-	Host        string        `env:"APP_HTTP_PORT" env-default:"localhost"`
+	Host        string        `env:"APP_HTTP_HOST" env-default:"localhost"`
 	Port        string        `env:"APP_HTTP_PORT" env-default:"8100"`
 	Timeout     time.Duration `env:"APP_HTTP_TIMEOUT" env-default:"4s"`
 	IdleTimeout time.Duration `env:"APP_HTTP_IDLE_TIMEOUT" env-default:"5m"`
