@@ -19,11 +19,11 @@ type Config struct {
 }
 
 type Settings struct {
-	UseLocalBackData    bool `yaml:"use_local_back_data" yaml-required:"true"`
-	EnableAuthorization bool `yaml:"enable_authorization" yaml-required:"true"`
-	EnableMedia         bool `yaml:"enable_media" yaml-required:"true"`
-	EnableMail          bool `yaml:"enable_mail" yaml-required:"true"`
-	EnableMetrics       bool `yaml:"enable_metrics" yaml-required:"true"`
+	UseLocalBackData    bool `yaml:"use_local_back_data"`
+	EnableAuthorization bool `yaml:"enable_authorization"`
+	EnableMedia         bool `yaml:"enable_media"`
+	EnableMail          bool `yaml:"enable_mail"`
+	EnableMetrics       bool `yaml:"enable_metrics"`
 }
 
 type Application struct {
