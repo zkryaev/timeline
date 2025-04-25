@@ -6,8 +6,7 @@ import (
 )
 
 type IntParam struct {
-	Name string
-	// Type     string
+	Name     string
 	Val      int
 	Required bool
 }
@@ -33,29 +32,8 @@ func (p IntParam) getName() string {
 	return p.Name
 }
 
-// func (p IntParam) getType() string {
-// 	return p.Type
-// }
-
-// func (p IntParam) getInt() int {
-// 	return p.Val
-// }
-
-// func (p IntParam) getBool() bool {
-// 	return p.Val != 0
-// }
-
-// func (p IntParam) getString() string {
-// 	return strconv.Itoa(p.Val)
-// }
-
-// func (p IntParam) getFloat32() float32 {
-// 	return float32(p.Val)
-// }
-
 type BoolParam struct {
 	Name string
-	//Type     string
 	Val      bool
 	Required bool
 }
@@ -81,33 +59,8 @@ func (p BoolParam) getName() string {
 	return p.Name
 }
 
-// func (p BoolParam) getType() string {
-// 	return p.Type
-// }
-
-// func (p BoolParam) getInt() int {
-// 	if p.Val {
-// 		return 1
-// 	} else {
-// 		return 0
-// 	}
-// }
-
-// func (p BoolParam) getBool() bool {
-// 	return p.Val
-// }
-
-// func (p BoolParam) getString() string {
-// 	return strconv.FormatBool(p.Val)
-// }
-
-// func (p BoolParam) getFloat32() float32 {
-// 	return float32(p.getInt())
-// }
-
 type StringParam struct {
 	Name string
-	//Type     string
 	Val      string
 	Required bool
 }
@@ -129,30 +82,8 @@ func (p StringParam) isRequired() bool {
 	return p.Required
 }
 
-// func (p StringParam) getType() string {
-// 	return p.Type
-// }
-// func (p StringParam) getInt() int {
-// 	return 0
-// }
-// func (p StringParam) getBool() bool {
-// 	if strings.Contains(p.Val, "true") {
-// 		return true
-// 	} else {
-// 		return false
-// 	}
-// }
-
-// func (p StringParam) getString() string {
-// 	return p.Val
-// }
-// func (p StringParam) getFloat32() float32 {
-// 	return 0
-// }
-
 type Float32Param struct {
 	Name string
-	//Type     string
 	Val      float32
 	Required bool
 }
@@ -177,22 +108,3 @@ func (p Float32Param) getName() string {
 func (p Float32Param) isRequired() bool {
 	return p.Required
 }
-
-// func (p Float32Param) getType() string {
-// 	return p.Type
-// }
-// func (p Float32Param) getInt() int {
-// 	return int(p.Val)
-// }
-
-// func (p Float32Param) getBool() bool {
-// 	return p.Val != 0
-// }
-
-// func (p Float32Param) getString() string {
-// 	return strconv.FormatFloat(float64(p.Val), 'f', 4, 32)
-// }
-
-// func (p Float32Param) getFloat32() float32 {
-// 	return p.Val
-// }
