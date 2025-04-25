@@ -51,14 +51,23 @@ func New(usecase User, logger *zap.Logger, validator *validator.Validate, middle
 // @Router /users [get]
 func (u *UserCtrl) GetUser(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(u.settings, u.Logger, r.Context())
-	var (
-		userID = query.NewParamInt(scope.USER_ID, true)
-	)
-	params := query.NewParams(u.settings, userID)
-	if err := params.Parse(r.URL.Query()); err != nil {
-		logger.Error("param.Parse", zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
+	tdata, err := middleware.GetTokenDataFromCtx(u.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
 		return
+	}
+	userID := &query.IntParam{}
+	if tdata.IsOrg {
+		userID = query.NewParamInt(scope.USER_ID, true)
+		params := query.NewParams(u.settings, userID)
+		if err := params.Parse(r.URL.Query()); err != nil {
+			logger.Error("param.Parse", zap.Error(err))
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
+	} else {
+		userID.Val = tdata.ID
 	}
 	data, err := u.usecase.User(r.Context(), logger, userID.Val)
 	if err != nil {
