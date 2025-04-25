@@ -19,22 +19,22 @@ type Config struct {
 }
 
 type Settings struct {
-	UseLocalBackData    bool `yaml:"use_local_back_data" env-default:"true"`
-	EnableAuthorization bool `yaml:"enable_authorization" env-default:"true"`
-	EnableMedia         bool `yaml:"enable_media" env-default:"false"`
-	EnableMail          bool `yaml:"enable_mail" env-default:"false"`
-	EnableMetrics       bool `yaml:"enable_metrics" env-default:"false"`
+	UseLocalBackData    bool `yaml:"use_local_back_data" yaml-required:"true"`
+	EnableAuthorization bool `yaml:"enable_authorization" yaml-required:"true"`
+	EnableMedia         bool `yaml:"enable_media" yaml-required:"true"`
+	EnableMail          bool `yaml:"enable_mail" yaml-required:"true"`
+	EnableMetrics       bool `yaml:"enable_metrics" yaml-required:"true"`
 }
 
 type Application struct {
 	Server   HTTPServer
-	Settings Settings `yaml:"settings"`
-	Env      string   `yaml:"env" env-required:"true"`
+	Settings Settings `yaml:"settings" env-required:"true"`
+	Env      string   `yaml:"env"`
 }
 
 type HTTPServer struct {
 	Host        string        `env:"APP_HTTP_HOST" env-default:"localhost"`
-	Port        string        `env:"APP_HTTP_PORT" env-default:"8100"`
+	Port        string        `env:"APP_HTTP_PORT" env-required:"true"`
 	Timeout     time.Duration `env:"APP_HTTP_TIMEOUT" env-default:"4s"`
 	IdleTimeout time.Duration `env:"APP_HTTP_IDLE_TIMEOUT" env-default:"5m"`
 }
@@ -83,10 +83,9 @@ func MustLoad() *Config {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatal("the cfg file doesn't exist at the path: ", configPath)
 	}
-
 	cfg := &Config{}
 	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
-		log.Fatal("failed with reading config: ", err.Error())
+		log.Fatal("failed read config: ", err.Error())
 	}
 	return cfg
 }

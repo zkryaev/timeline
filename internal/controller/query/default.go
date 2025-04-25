@@ -33,7 +33,7 @@ func (p IntParam) getName() string {
 }
 
 type BoolParam struct {
-	Name string
+	Name     string
 	Val      bool
 	Required bool
 }
@@ -60,7 +60,7 @@ func (p BoolParam) getName() string {
 }
 
 type StringParam struct {
-	Name string
+	Name     string
 	Val      string
 	Required bool
 }
@@ -83,7 +83,7 @@ func (p StringParam) isRequired() bool {
 }
 
 type Float32Param struct {
-	Name string
+	Name     string
 	Val      float32
 	Required bool
 }
