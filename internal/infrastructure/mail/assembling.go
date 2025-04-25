@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 	"timeline/internal/infrastructure/models"
+	"timeline/internal/usecase/common"
 
 	ics "github.com/arran4/golang-ical"
 	"gopkg.in/gomail.v2"
@@ -107,7 +108,7 @@ func letterAssembly(data *models.Message) (*gomail.Message, error) {
 		body = fmt.Sprintf(reminderTemplate,
 			fields.Organization,
 			fields.Service,
-			fields.SessionDate.Format(time.DateOnly)+" : "+fields.SessionStart.Format(time.TimeOnly)+"-"+fields.SessionEnd.Format(time.TimeOnly),
+			fields.SessionDate.Format(time.DateOnly)+" : "+fields.SessionStart.Format(common.MinutesOnly)+"-"+fields.SessionEnd.Format(common.MinutesOnly),
 		)
 		if data.IsAttach {
 			icsContent = icsCreate(fields)

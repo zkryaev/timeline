@@ -5,6 +5,7 @@ import (
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/models"
 	"timeline/internal/infrastructure/models/orgmodel"
+	"timeline/internal/usecase/common"
 )
 
 func SlotToDTO(model *orgmodel.Slot, loc *time.Location) *orgdto.SlotResp {
@@ -27,8 +28,8 @@ func SlotInfoToDTO(model *orgmodel.Slot, loc *time.Location) *orgdto.Slot {
 		WorkerScheduleID: model.WorkerScheduleID,
 		WorkerID:         model.WorkerID,
 		Date:             model.Date.Format(time.DateOnly),
-		Begin:            model.Begin.In(loc).Format(time.TimeOnly),
-		End:              model.End.In(loc).Format(time.TimeOnly),
+		Begin:            model.Begin.In(loc).Format(common.MinutesOnly),
+		End:              model.End.In(loc).Format(common.MinutesOnly),
 		Busy:             model.Busy,
 	}
 }

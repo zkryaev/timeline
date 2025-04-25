@@ -4,6 +4,7 @@ import (
 	"time"
 	"timeline/internal/entity/dto/orgdto"
 	"timeline/internal/infrastructure/models/orgmodel"
+	"timeline/internal/usecase/common"
 )
 
 func WorkerScheduleToModel(dto *orgdto.WorkerSchedule) *orgmodel.WorkerSchedule {
@@ -54,8 +55,8 @@ func ScheduleParamsToModel(dto *orgdto.ScheduleParams) *orgmodel.ScheduleParams 
 }
 
 func scheduleToModel(dto *orgdto.Schedule) *orgmodel.Schedule {
-	start, _ := time.Parse(time.TimeOnly, dto.Start)
-	over, _ := time.Parse(time.TimeOnly, dto.Over)
+	start, _ := time.Parse(common.MinutesOnly, dto.Start)
+	over, _ := time.Parse(common.MinutesOnly, dto.Over)
 	return &orgmodel.Schedule{
 		WorkerScheduleID: dto.WorkerScheduleID,
 		Weekday:          dto.Weekday,
@@ -68,7 +69,7 @@ func scheduleToDTO(model *orgmodel.Schedule) *orgdto.Schedule {
 	return &orgdto.Schedule{
 		WorkerScheduleID: model.WorkerScheduleID,
 		Weekday:          model.Weekday,
-		Start:            model.Start.Format(time.TimeOnly),
-		Over:             model.Over.Format(time.TimeOnly),
+		Start:            model.Start.Format(common.MinutesOnly),
+		Over:             model.Over.Format(common.MinutesOnly),
 	}
 }
