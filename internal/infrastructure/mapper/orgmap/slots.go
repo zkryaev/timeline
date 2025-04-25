@@ -26,9 +26,9 @@ func SlotInfoToDTO(model *orgmodel.Slot, loc *time.Location) *orgdto.Slot {
 	return &orgdto.Slot{
 		WorkerScheduleID: model.WorkerScheduleID,
 		WorkerID:         model.WorkerID,
-		Date:             model.Date.Format(dateFormat),
-		Begin:            model.Begin.In(loc).Format(timeFormat),
-		End:              model.End.In(loc).Format(timeFormat),
+		Date:             model.Date.Format(time.DateOnly),
+		Begin:            model.Begin.In(loc).Format(time.TimeOnly),
+		End:              model.End.In(loc).Format(time.TimeOnly),
 		Busy:             model.Busy,
 	}
 }

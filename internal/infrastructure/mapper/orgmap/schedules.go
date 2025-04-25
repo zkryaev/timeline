@@ -54,8 +54,8 @@ func ScheduleParamsToModel(dto *orgdto.ScheduleParams) *orgmodel.ScheduleParams 
 }
 
 func scheduleToModel(dto *orgdto.Schedule) *orgmodel.Schedule {
-	start, _ := time.Parse(timeFormat, dto.Start)
-	over, _ := time.Parse(timeFormat, dto.Over)
+	start, _ := time.Parse(time.TimeOnly, dto.Start)
+	over, _ := time.Parse(time.TimeOnly, dto.Over)
 	return &orgmodel.Schedule{
 		WorkerScheduleID: dto.WorkerScheduleID,
 		Weekday:          dto.Weekday,
@@ -68,7 +68,7 @@ func scheduleToDTO(model *orgmodel.Schedule) *orgdto.Schedule {
 	return &orgdto.Schedule{
 		WorkerScheduleID: model.WorkerScheduleID,
 		Weekday:          model.Weekday,
-		Start:            model.Start.Format(timeFormat),
-		Over:             model.Over.Format(timeFormat),
+		Start:            model.Start.Format(time.TimeOnly),
+		Over:             model.Over.Format(time.TimeOnly),
 	}
 }

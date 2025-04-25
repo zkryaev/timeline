@@ -7,16 +7,11 @@ import (
 	"timeline/internal/infrastructure/models/orgmodel"
 )
 
-const (
-	dateFormat = "01-01-2001"
-	timeFormat = "15:04"
-)
-
 func OpenHoursToModel(day *entity.OpenHours) *orgmodel.OpenHours {
-	openTime, _ := time.Parse(timeFormat, day.Open)
-	closeTime, _ := time.Parse(timeFormat, day.Close)
-	breakstart, _ := time.Parse(timeFormat, day.BreakStart)
-	breakend, _ := time.Parse(timeFormat, day.BreakEnd)
+	openTime, _ := time.Parse(time.TimeOnly, day.Open)
+	closeTime, _ := time.Parse(time.TimeOnly, day.Close)
+	breakstart, _ := time.Parse(time.TimeOnly, day.BreakStart)
+	breakend, _ := time.Parse(time.TimeOnly, day.BreakEnd)
 
 	return &orgmodel.OpenHours{
 		Weekday:    sql.NullInt32{Int32: int32(day.Weekday), Valid: true},
@@ -33,9 +28,9 @@ func OpenHoursToDTO(day *orgmodel.OpenHours, loc *time.Location) *entity.OpenHou
 	}
 	return &entity.OpenHours{
 		Weekday:    int(day.Weekday.Int32),
-		Open:       day.Open.Time.In(loc).Format(timeFormat),
-		Close:      day.Close.Time.In(loc).Format(timeFormat),
-		BreakStart: day.BreakStart.Time.In(loc).Format(timeFormat),
-		BreakEnd:   day.BreakEnd.Time.In(loc).Format(timeFormat),
+		Open:       day.Open.Time.In(loc).Format(time.TimeOnly),
+		Close:      day.Close.Time.In(loc).Format(time.TimeOnly),
+		BreakStart: day.BreakStart.Time.In(loc).Format(time.TimeOnly),
+		BreakEnd:   day.BreakEnd.Time.In(loc).Format(time.TimeOnly),
 	}
 }
