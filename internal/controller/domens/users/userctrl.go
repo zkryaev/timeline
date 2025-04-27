@@ -41,6 +41,8 @@ func New(usecase User, logger *zap.Logger, validator *validator.Validate, middle
 
 // @Summary Get user
 // @Description
+// @Description If user made call THEN org_id - mustbe
+// @Description If org made call THEN org_id = token ID
 // @Tags user
 // @Accept  json
 // @Produce  json
@@ -58,7 +60,7 @@ func (u *UserCtrl) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := &query.IntParam{}
-	if tdata.IsOrg {
+	if tdata.IsOrg || !u.settings.EnableAuthorization {
 		userID = query.NewParamInt(scope.USER_ID, true)
 		params := query.NewParams(u.settings, userID)
 		if err := params.Parse(r.URL.Query()); err != nil {
