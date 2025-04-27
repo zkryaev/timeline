@@ -50,6 +50,10 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	authmux.HandleFunc(scope.PathOrgsRegistration, auth.OrganizationRegister).Methods(routes[scope.PathOrgsRegistration].Methods.Get(scope.POST)...)
 	authmux.HandleFunc(scope.PathToken, auth.PutAccessToken).Methods(routes[scope.PathToken].Methods.Get(scope.PUT)...)
 
+	if settings.EnableMedia {
+		v1.HandleFunc(scope.PathMedia, s3.Download).Methods(routes[scope.PathMedia].Methods.Get(scope.GET)...)
+	}
+
 	Protected := v1.NewRoute().Subrouter()
 	if settings.EnableAuthorization {
 		Protected.Use(auth.Middleware.RequestAuthorization)
@@ -123,7 +127,6 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	// media
 	if settings.EnableMedia {
 		Protected.HandleFunc(scope.PathMedia, s3.Upload).Methods(routes[scope.PathMedia].Methods.Get(scope.POST)...)
-		Protected.HandleFunc(scope.PathMedia, s3.Download).Methods(routes[scope.PathMedia].Methods.Get(scope.GET)...)
 		Protected.HandleFunc(scope.PathMedia, s3.Delete).Methods(routes[scope.PathMedia].Methods.Get(scope.DELETE)...)
 	}
 
