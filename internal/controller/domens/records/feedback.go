@@ -22,6 +22,8 @@ type Feedback interface {
 
 // @Summary Feedback info
 // @Description Get feedback for specified record
+// @Description If org made call and orgID not provided THEN it used token ID
+// @Description If user made call and userID, orgID not provided THEN it used tokenID
 // @Tags records/feedbacks
 // @Param limit query int true " "
 // @Param page query int true " "
@@ -35,6 +37,12 @@ type Feedback interface {
 // @Router /records/feedbacks [get]
 func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(rec.settings, rec.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(rec.settings, r.Context())
+	if err != nil {
+		logger.Info("GetTokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 	var (
 		limit    = query.NewParamInt(scope.LIMIT, true)
 		page     = query.NewParamInt(scope.PAGE, true)
@@ -47,6 +55,18 @@ func (rec *RecordCtrl) Feedbacks(w http.ResponseWriter, r *http.Request) {
 		logger.Error("param.Parse", zap.Error(err))
 		http.Error(w, "", http.StatusBadRequest)
 		return
+	}
+	if rec.settings.EnableAuthorization {
+		switch {
+		case tdata.IsOrg:
+			if orgID.EmptyValue() {
+				orgID.Val = tdata.ID
+			}
+		default:
+			if orgID.EmptyValue() && userID.EmptyValue() {
+				userID.Val = tdata.ID
+			}
+		}
 	}
 	req := &recordto.FeedbackParams{
 		RecordID: recordID.Val,

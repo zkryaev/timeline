@@ -22,6 +22,9 @@ type Schedule interface {
 
 // @Summary Get worker schedule
 // @Description Get specified worker schedule for specified org with weekday filter. If no weekday then all week will be returned
+// @Description
+// @Description If user made call THEN org_id - mustbe
+// @Description If org made call THEN org_id = token ID
 // @Tags orgs/workers/schedule
 // @Produce json
 // @Param orgID query int true " "
@@ -36,8 +39,25 @@ type Schedule interface {
 // @Router /orgs/workers/schedules [get]
 func (o *OrgCtrl) WorkersSchedule(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Error("TokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	orgID := &query.IntParam{}
+	if !tdata.IsOrg && !o.settings.EnableAuthorization {
+		orgID = query.NewParamInt(scope.ORG_ID, true)
+		params := query.NewParams(o.settings, orgID)
+		if err := params.Parse(r.URL.Query()); err != nil {
+			logger.Error("param.Parse", zap.Error(err))
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
+	} else {
+		orgID.Val = tdata.ID
+	}
 	var (
-		orgID    = query.NewParamInt(scope.ORG_ID, true)
 		workerID = query.NewParamInt(scope.WORKER_ID, true)
 		weekday  = query.NewParamInt(scope.WEEKDAY, false)
 		limit    = query.NewParamInt(scope.LIMIT, true)

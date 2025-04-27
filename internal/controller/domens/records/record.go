@@ -43,6 +43,9 @@ func New(usecase Record, middleware middleware.Middleware, logger *zap.Logger, s
 // @Description Типы Required параметров
 // @Description `as_list=false` - (ОБЯЗАТЕЛЕН: record_id) возвращает данные одной записи.
 // @Description  `as_list=true` - (ОБЯЗАТЕЛЕН: limit, page) возвращает список записей с пагинацией
+// @Description
+// @Description If org made call and orgID not provided THEN it used token ID
+// @Description If user made call and userID, orgID not provided THEN it used tokenID
 // @Tags records
 // @Param record_id query int false " "
 // @Param limit query int false " "
@@ -75,7 +78,18 @@ func (rec *RecordCtrl) Record(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	if !rec.settings.EnableAuthorization {
+	if rec.settings.EnableAuthorization {
+		switch {
+		case tdata.IsOrg:
+			if orgID.EmptyValue() {
+				orgID.Val = tdata.ID
+			}
+		default:
+			if orgID.EmptyValue() && userID.EmptyValue() {
+				userID.Val = tdata.ID
+			}
+		}
+	} else {
 		if orgID.Val != 0 {
 			tdata.ID = orgID.Val
 			tdata.IsOrg = true

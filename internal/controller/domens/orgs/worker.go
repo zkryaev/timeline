@@ -29,6 +29,9 @@ type Workers interface {
 // @Description `org_id` - всегда обязателен
 // @Description Если `as_list=false` - (ОБЯЗАТЕЛЕН:  worker_id) возвращает данные одного работника.
 // @Description Если `as_list=true` -  (ОБЯЗАТЕЛЕН: limit, page) возвращает список работников с пагинацией
+// @Description
+// @Description If user made call THEN org_id - mustbe
+// @Description If org made call THEN org_id = token ID
 // @Tags orgs/workers
 // @Produce json
 // @Param org_id query int true " "
@@ -43,10 +46,25 @@ type Workers interface {
 // @Router /orgs/workers [get]
 func (o *OrgCtrl) Workers(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(o.settings, o.Logger, r.Context())
-	var (
-		orgID  = query.NewParamInt(scope.ORG_ID, true)
-		asList = query.NewParamBool(scope.AS_LIST, false)
-	)
+	tdata, err := middleware.GetTokenDataFromCtx(o.settings, r.Context())
+	if err != nil {
+		logger.Error("TokenDataFromCtx", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	orgID := &query.IntParam{}
+	if !tdata.IsOrg || !o.settings.EnableAuthorization {
+		orgID = query.NewParamInt(scope.ORG_ID, true)
+		params := query.NewParams(o.settings, orgID)
+		if err := params.Parse(r.URL.Query()); err != nil {
+			logger.Error("param.Parse", zap.Error(err))
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
+	} else {
+		orgID.Val = tdata.ID
+	}
+	asList := query.NewParamBool(scope.AS_LIST, false)
 	params := query.NewParams(o.settings, orgID, asList)
 	if err := params.Parse(r.URL.Query()); err != nil {
 		logger.Error("param.Parse", zap.Error(err))
@@ -54,7 +72,6 @@ func (o *OrgCtrl) Workers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var data *orgdto.WorkerList
-	var err error
 	switch asList.Val {
 	case scope.LIST:
 		limit := query.NewParamInt(scope.LIMIT, true)
