@@ -9,6 +9,7 @@ type IntParam struct {
 	Name     string
 	Val      int
 	Required bool
+	loaded   bool
 }
 
 func NewParamInt(name string, required bool) *IntParam {
@@ -21,8 +22,10 @@ func (p *IntParam) load(val string) error {
 		return fmt.Errorf("strconv.Atoi: %w", err)
 	}
 	p.Val = valInt
+	p.loaded = true
 	return nil
 }
+
 
 func (p IntParam) isRequired() bool {
 	return p.Required
@@ -32,10 +35,15 @@ func (p IntParam) getName() string {
 	return p.Name
 }
 
+func (p *IntParam) EmptyValue() bool {
+	return !p.loaded
+}
+
 type BoolParam struct {
 	Name     string
 	Val      bool
 	Required bool
+	loaded   bool
 }
 
 func NewParamBool(name string, required bool) *BoolParam {
@@ -48,6 +56,7 @@ func (p *BoolParam) load(val string) error {
 		return fmt.Errorf("strconv.Atoi: %w", err)
 	}
 	p.Val = valBool
+	p.loaded = true
 	return nil
 }
 
@@ -59,10 +68,15 @@ func (p BoolParam) getName() string {
 	return p.Name
 }
 
+func (p BoolParam) EmptyValue() bool {
+	return !p.loaded
+}
+
 type StringParam struct {
 	Name     string
 	Val      string
 	Required bool
+	loaded   bool
 }
 
 func NewParamString(name string, required bool) *StringParam {
@@ -71,6 +85,7 @@ func NewParamString(name string, required bool) *StringParam {
 
 func (p *StringParam) load(val string) error {
 	p.Val = val
+	p.loaded = true
 	return nil
 }
 
@@ -82,10 +97,15 @@ func (p StringParam) isRequired() bool {
 	return p.Required
 }
 
+func (p StringParam) EmptyValue() bool {
+	return !p.loaded
+}
+
 type Float32Param struct {
 	Name     string
 	Val      float32
 	Required bool
+	loaded   bool
 }
 
 func NewParamFloat32(name string, required bool) *Float32Param {
@@ -98,6 +118,7 @@ func (p *Float32Param) load(val string) error {
 		return fmt.Errorf("strconv.Atoi: %w", err)
 	}
 	p.Val = float32(valFloat)
+	p.loaded = true
 	return nil
 }
 
@@ -107,4 +128,8 @@ func (p Float32Param) getName() string {
 
 func (p Float32Param) isRequired() bool {
 	return p.Required
+}
+
+func (p Float32Param) EmptyValue() bool {
+	return !p.loaded
 }
