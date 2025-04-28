@@ -55,23 +55,23 @@ func (s *S3UseCase) Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.C
 	LogSaved := fmt.Sprintf("New %s uuid has been saved", dto.Entity)
 	switch {
 	case dto.Entity == scope.ORG:
-		prevURL, err = s.org.OrgUUID(ctx, dto.EntityID)
+		prevURL, err = s.org.OrgUUID(ctx, dto.TData.ID)
 		if err != nil {
-			return fmt.Errorf("%w: %w", ErrGetUUID, err)
+			return fmt.Errorf("%w (entity=%s entity_id=%d | token_id=%d | is_org=%t): %w", ErrGetUUID, dto.Entity, dto.EntityID, dto.TData.ID, dto.TData.IsOrg, err)
 		}
 		logger.Info(LogFetched)
-		if err = s.org.OrgSetUUID(ctx, dto.EntityID, url); err != nil {
-			return fmt.Errorf("%w: %w", ErrSetUUID, err)
+		if err = s.org.OrgSetUUID(ctx, dto.TData.ID, url); err != nil {
+			return fmt.Errorf("%w (entity=%s entity_id=%d | token_id=%d | is_org=%t): %w", ErrGetUUID, dto.Entity, dto.EntityID, dto.TData.ID, dto.TData.IsOrg, err)
 		}
 		logger.Info(LogSaved)
 	case dto.Entity == scope.USER:
-		prevURL, err = s.user.UserUUID(ctx, dto.EntityID)
+		prevURL, err = s.user.UserUUID(ctx, dto.TData.ID)
 		if err != nil {
 			return fmt.Errorf("%w: %w", ErrGetUUID, err)
 		}
 		logger.Info(LogFetched)
-		if err = s.user.UserSetUUID(ctx, dto.EntityID, url); err != nil {
-			return fmt.Errorf("%w: %w", ErrSetUUID, err)
+		if err = s.user.UserSetUUID(ctx, dto.TData.ID, url); err != nil {
+			return fmt.Errorf("%w (entity=%s entity_id=%d | token_id=%d | is_org=%t): %w", ErrGetUUID, dto.Entity, dto.EntityID, dto.TData.ID, dto.TData.IsOrg, err)
 		}
 		logger.Info(LogSaved)
 	case dto.Entity == scope.WORKER:
@@ -80,8 +80,9 @@ func (s *S3UseCase) Upload(ctx context.Context, logger *zap.Logger, dto *s3dto.C
 			return fmt.Errorf("%w: %w", ErrGetUUID, err)
 		}
 		logger.Info(LogFetched)
-		if err = s.org.WorkerSetUUID(ctx, dto.EntityID, dto.TData.ID, url); err != nil {
-			return fmt.Errorf("%w: %w", ErrSetUUID, err)
+		fmt.Println(dto)
+		if err = s.org.WorkerSetUUID(ctx, dto.TData.ID, dto.EntityID, url); err != nil {
+			return fmt.Errorf("%w (entity=%s entity_id=%d | token_id=%d | is_org=%t): %w", ErrGetUUID, dto.Entity, dto.EntityID, dto.TData.ID, dto.TData.IsOrg, err)
 		}
 		logger.Info(LogSaved)
 	case (dto.Entity == scope.GALLERY) || (dto.Entity == scope.BANNER):
