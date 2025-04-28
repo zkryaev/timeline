@@ -97,7 +97,7 @@ func (p *PostgresRepo) OrgUUID(ctx context.Context, orgID int) (string, error) {
 		}
 	}()
 	query := `
-		SELECT uuid
+		SELECT COALESCE(uuid, '') AS uuid
 		FROM orgs
 		WHERE org_id = $1;
 	`

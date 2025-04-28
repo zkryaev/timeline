@@ -358,7 +358,7 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (str
 		}
 	}()
 	query := `
-		SELECT uuid
+		SELECT COALESCE(uuid, '') AS uuid
 		FROM workers
 		WHERE worker_id = $1
 		AND (org_id = $2 OR org_id <= 0);

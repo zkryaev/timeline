@@ -233,7 +233,7 @@ func (p *PostgresRepo) UserUUID(ctx context.Context, userID int) (string, error)
 		}
 	}()
 	query := `
-		SELECT uuid
+		SELECT COALESCE(uuid, '') AS uuid
 		FROM users
 		WHERE user_id = $1;
 	`
