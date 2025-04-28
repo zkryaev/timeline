@@ -67,18 +67,8 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	entityID, err := strconv.Atoi(r.FormValue("entityID"))
+	var entityID int
 	entity := r.FormValue("entity")
-	switch {
-	case err != nil || entityID <= 0:
-		logger.Error("entity invalid", zap.Int("entity_id", entityID), zap.Error(err))
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	case entity == "":
-		logger.Error("entity is empty")
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
 	if s3.settings.EnableAuthorization {
 		switch {
 		case (entity == scope.BANNER || entity == scope.GALLERY || entity == scope.ORG || entity == scope.WORKER) && tdata.IsOrg:
@@ -99,8 +89,19 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		entityID, err = strconv.Atoi(r.FormValue("entityID"))
 		tdata.ID = scope.DEAD_ORG_ID
 		tdata.IsOrg = false
+	}
+	switch {
+	case err != nil || entityID <= 0:
+		logger.Error("entity invalid", zap.Int("entity_id", entityID), zap.Error(err))
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	case entity == "":
+		logger.Error("entity is empty")
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 	file, meta, err := r.FormFile("file")
 	switch {
