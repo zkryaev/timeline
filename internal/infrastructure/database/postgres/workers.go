@@ -364,7 +364,7 @@ func (p *PostgresRepo) WorkerUUID(ctx context.Context, orgID, workerID int) (str
 		AND (org_id = $2 OR org_id <= 0);
 	`
 	var uuid string
-	if err = tx.QueryRowContext(ctx, query, workerID).Scan(&uuid); err != nil {
+	if err = tx.QueryRowContext(ctx, query, workerID, orgID).Scan(&uuid); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrWorkerNotFound
 		}
