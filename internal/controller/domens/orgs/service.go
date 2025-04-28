@@ -50,7 +50,7 @@ func (o *OrgCtrl) Service(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orgID := &query.IntParam{}
-	if !tdata.IsOrg && !o.settings.EnableAuthorization {
+	if !tdata.IsOrg || !o.settings.EnableAuthorization {
 		orgID = query.NewParamInt(scope.ORG_ID, true)
 		params := query.NewParams(o.settings, orgID)
 		if err := params.Parse(r.URL.Query()); err != nil {
