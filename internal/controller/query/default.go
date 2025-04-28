@@ -26,7 +26,6 @@ func (p *IntParam) load(val string) error {
 	return nil
 }
 
-
 func (p IntParam) isRequired() bool {
 	return p.Required
 }

@@ -21,7 +21,7 @@ type Schedule interface {
 }
 
 // @Summary Get worker schedule
-// @Description Get specified worker schedule for specified org with weekday filter. If no weekday then all week will be returned
+// @Description Get specified org worker's schedule with weekday filter (also may provide worker_id to narrow result). If no weekday then all week will be returned
 // @Description
 // @Description If user made call THEN org_id - mustbe
 // @Description If org made call THEN org_id = token ID
@@ -58,7 +58,7 @@ func (o *OrgCtrl) WorkersSchedule(w http.ResponseWriter, r *http.Request) {
 		orgID.Val = tdata.ID
 	}
 	var (
-		workerID = query.NewParamInt(scope.WORKER_ID, true)
+		workerID = query.NewParamInt(scope.WORKER_ID, false)
 		weekday  = query.NewParamInt(scope.WEEKDAY, false)
 		limit    = query.NewParamInt(scope.LIMIT, true)
 		page     = query.NewParamInt(scope.PAGE, true)

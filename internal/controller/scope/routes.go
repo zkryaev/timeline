@@ -47,7 +47,15 @@ const (
 	PathMedia = "/media"
 )
 
-var PathList = []string{
+const (
+	authFind  = 5
+	usersFind = 8
+	orgsFind  = 15
+	recsFind  = 17
+	mediaFind = 18
+)
+
+var HandlersList = []string{
 
 	PathAuth,
 	PathLogin,
@@ -192,8 +200,8 @@ const (
 type Routes map[string]endpoint
 
 func NewDefaultRoutes(settings *Settings) Routes {
-	r := make(Routes, len(PathList))
-	for _, path := range PathList {
+	r := make(Routes, len(HandlersList))
+	for _, path := range HandlersList {
 		r[path] = NewEndpointFromPath(settings, path)
 	}
 	return r
@@ -203,17 +211,36 @@ func NewDefaultRoutes(settings *Settings) Routes {
 //
 // Checks provided method and uri with endpoint's restrictions
 func (r Routes) HasAccess(tdata entity.TokenData, uri, method string) error {
+	find, prevfind := 0, 0
+	switch {
+	case strings.Contains(uri, PathAuth):
+		find = authFind
+	case strings.Contains(uri, PathUsers):
+		prevfind = authFind
+		find = usersFind
+	case strings.Contains(uri, PathOrgs):
+		prevfind = usersFind
+		find = orgsFind
+	case strings.Contains(uri, PathRecords):
+		prevfind = orgsFind
+		find = recsFind
+	case strings.Contains(uri, PathMedia):
+		prevfind = recsFind
+		find = mediaFind
+	default:
+		return fmt.Errorf(ErrPathNotFound, "check prefix", uri)
+	}
 	ind, isMatched := 0, false
-	for i := range PathList {
-		if isMatched = strings.Contains(uri, PathList[i]); isMatched {
+	for i := find; prevfind < i && i <= find; i-- {
+		if isMatched = strings.Contains(uri, HandlersList[i]); isMatched {
 			ind = i
 			break
 		}
 	}
 	if !isMatched {
-		return fmt.Errorf(ErrPathNotFound, "pathlist", uri)
+		return fmt.Errorf(ErrPathNotFound, "handlers list", uri)
 	}
-	handler, ok := r[PathList[ind]]
+	handler, ok := r[HandlersList[ind]]
 	if !ok {
 		return fmt.Errorf(ErrPathNotFound, "routes", uri)
 	}
