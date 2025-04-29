@@ -78,27 +78,29 @@ func NewDefaultMetrics() *Metrics {
 				Help:    "Время обработки HTTP-запроса в секундах",
 				Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5}, // Корзины для гистограммы
 			},
-			[]string{"method", "path", "status"}, // Метки: метод, путь, статус-код
+			[]string{"method", "endpoint", "path", "status"}, // Метки: метод, путь, статус-код
 		),
 		RequestCounter: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "backend_http_requests_total",
 				Help: "Общее количество HTTP-запросов",
 			},
-			[]string{"method", "path", "status"}, // Метки: метод, путь, статус-код
+			[]string{"method", "endpoint", "path", "status"}, // Метки: метод, путь, статус-код
 		),
 	}
 }
 
-func (m *Metrics) UpdateRequestMetrics(method, urlpath, status string, duration time.Duration) {
+func (m *Metrics) UpdateRequestMetrics(method, endpoint, path, status string, duration time.Duration) {
 	m.RequestDuration.WithLabelValues(
 		method,
-		urlpath,
+		endpoint,
+		path,
 		status,
 	).Observe(duration.Seconds())
 	m.RequestCounter.WithLabelValues(
 		method,
-		urlpath,
+		endpoint,
+		path,
 		status,
 	).Inc()
 }

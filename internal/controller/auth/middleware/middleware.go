@@ -65,7 +65,8 @@ func (m *middleware) RequestMetrics(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UnescapedURI("uri"), uri)
 		start := time.Now()
 		next.ServeHTTP(rw, r.WithContext(ctx))
-		m.metrics.UpdateRequestMetrics(r.Method, uri, strconv.Itoa(rw.StatusCode()), time.Since(start))
+		endpoint := strings.Split(uri, "?")[0]
+		m.metrics.UpdateRequestMetrics(r.Method, endpoint, uri, strconv.Itoa(rw.StatusCode()), time.Since(start))
 	})
 }
 
