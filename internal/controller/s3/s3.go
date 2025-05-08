@@ -74,6 +74,8 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 		case (entity == scope.BANNER || entity == scope.GALLERY || entity == scope.ORG || entity == scope.WORKER) && tdata.IsOrg:
 			if !(entity == scope.WORKER) {
 				entityID = tdata.ID
+			}else{
+				entityID, err = strconv.Atoi(r.FormValue("entity_id"))
 			}
 		case entity == scope.USER && !tdata.IsOrg:
 			entityID = tdata.ID
