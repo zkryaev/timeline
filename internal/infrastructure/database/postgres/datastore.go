@@ -86,3 +86,26 @@ func (p *PostgresRepo) PreLoadCities(ctx context.Context) (objects.Cities, error
 	}
 	return data, nil
 }
+
+func (p *PostgresRepo) IsCitiesLoad(ctx context.Context) (bool, error) {
+	tx, err := p.db.Beginx()
+	if err != nil {
+		return false, fmt.Errorf("failed to start tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+	query := `
+		SELECT COUNT(name) FROM cities;
+	`
+	numCities := 0
+	if err := tx.QueryRowxContext(ctx, query).Scan(&numCities); err != nil {
+		return false, err
+	}
+	if err = tx.Commit(); err != nil {
+		return false, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	return numCities > 0, nil
+}
