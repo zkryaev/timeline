@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"timeline/internal/infrastructure/database/postgres"
 	"timeline/internal/utils/loader"
 
@@ -27,6 +29,13 @@ func main() {
 		logger.Fatal(fmt.Sprintf("instance: %s: failed to connect to db", instanceName))
 	}
 	defer db.Close()
-	backdata := &loader.BackData{}
-	loader.LoadData(logger, db, backdata)
+	if ok, err := db.IsCitiesLoad(context.Background()); !ok {
+		if err != nil {
+			logger.Warn("IsCitiesLoad", zap.Error(err))
+		}
+		if err = loader.LoadData(logger, db, &loader.BackData{}); err != nil {
+			logger.Fatal(fmt.Sprintf("instance: %s: failed to load cities: %s", instanceName, err.Error()))
+			os.Exit(1)
+		}
+	}
 }

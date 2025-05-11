@@ -93,9 +93,13 @@ func loadDataFromSource(store *BackData, logger *zap.Logger, src *source) error 
 func saveToDB(db infrastructure.BackgroundDataStore, logger *zap.Logger, storage *BackData) error {
 	ctx := context.Background()
 	if storage.Cities.Arr != nil {
-		err := db.SaveCities(ctx, logger, storage.Cities)
-		if err != nil {
-			return err
+		if ok, err := db.IsCitiesLoad(context.Background()); !ok {
+			if err != nil {
+				logger.Warn("IsCitiesLoad", zap.Error(err))
+			}
+			if err = db.SaveCities(ctx, logger, storage.Cities); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

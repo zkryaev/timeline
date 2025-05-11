@@ -134,6 +134,7 @@ type FeedbackRepository interface {
 type BackgroundDataStore interface {
 	SaveCities(ctx context.Context, logger *zap.Logger, cities objects.Cities) error
 	PreLoadCities(ctx context.Context) (objects.Cities, error)
+	IsCitiesLoad(ctx context.Context) (bool, error)
 }
 
 // Паттерн фабричный метод, чтобы не завязываться на конкретной БД
