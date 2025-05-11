@@ -21,6 +21,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type AuthTestSuite struct {
@@ -45,7 +46,7 @@ func (suite *AuthTestSuite) SetupTest() {
 	suite.appcfg.Settings.EnableMail = false
 	suite.appcfg.Settings.EnableMedia = false
 	suite.tokenCfg = config.Token{AccessTTL: 10 * time.Minute, RefreshTTL: 10 * time.Minute}
-	suite.Auth = New(suite.mockAuthUseCase, suite.mockMiddleware, zap.NewExample(), scope.NewDefaultSettings(suite.appcfg))
+	suite.Auth = New(suite.mockAuthUseCase, suite.mockMiddleware, zap.New(zapcore.NewNopCore()), scope.NewDefaultSettings(suite.appcfg))
 }
 
 func TestAuthTestSuite(t *testing.T) {

@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type AuthUseCaseTestSuite struct {
@@ -44,7 +45,7 @@ func (suite *AuthUseCaseTestSuite) SetupTest() {
 	appCfg.Settings.EnableAuthorization = true
 	settings := scope.NewDefaultSettings(appCfg)
 	suite.mockPrivateKey = privateKey
-	suite.logger = zap.NewExample()
+	suite.logger = zap.New(zapcore.NewNopCore())
 	suite.authUseCase = New(
 		suite.mockPrivateKey,
 		suite.mockUserRepo,

@@ -20,6 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type MiddlewareTestSuite struct {
@@ -45,7 +46,7 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	settings := scope.NewDefaultSettings(suite.appCfg)
 	suite.Middeware = New(
 		suite.mockPrivateKey,
-		zap.NewExample(),
+		zap.New(zapcore.NewNopCore()),
 		scope.NewDefaultRoutes(settings),
 		metricList,
 	)
