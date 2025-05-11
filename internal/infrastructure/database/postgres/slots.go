@@ -177,7 +177,6 @@ func (p *PostgresRepo) Slots(ctx context.Context, params *orgmodel.SlotsReq) ([]
 		`
 	}
 	var city string
-	fmt.Println(params.TData.ID)
 	if err := tx.QueryRowContext(ctx, query, params.TData.ID).Scan(&city); err != nil {
 		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}

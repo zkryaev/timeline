@@ -1,3 +1,5 @@
+//go:build integration
+
 package postgres
 
 import (
@@ -19,6 +21,7 @@ func (suite *PostgresTestSuite) TestUserQueries() {
 		LastName:  "testovich",
 		Telephone: "+79876543210",
 		City:      "Moscow",
+		Email:     "test@test.ru",
 	}
 	registerInfo := &authdto.UserRegisterReq{
 		UUID:        expUser.UUID,

@@ -1,3 +1,5 @@
+//go:build integration
+
 package postgres
 
 import (
@@ -54,7 +56,6 @@ func (suite *PostgresTestSuite) TestRecordQueries() {
 	suite.Require().NoError(err)
 	suite.Require().Greater(found, 0)
 	suite.Require().NotNil(dbServices)
-
 	addReq := &recordto.Record{
 		OrgID:     org.OrgID,
 		SlotID:    dbSlots[freeSlot].SlotID,
