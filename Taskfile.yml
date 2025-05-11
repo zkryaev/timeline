@@ -227,12 +227,23 @@ tasks:
     desc: "deploy db -> apply migrations -> run repo tests -> remove db"
     silent: true
     cmds:
-      #- nohup bash -c 'sleep 4; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
+      - nohup bash -c 'sleep 80; echo "> stopped:" &> test_db_docker.out; docker stop test-postgres; echo "> removed:" &>> test_db_docker.out; docker rm test-postgres' &>> test_db_docker.out &
       - docker-compose -f docker-test-postgres-compose.yml up -d
       - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
-      #- go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
+      - go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
       - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
-      - go test -v -count=1 ./internal/infrastructure/database/postgres
+      - find ./internal/infrastructure -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -tags=integration -count=1 -v
+  test_module:
+    silent: true
+    cmds:
+      - find . -path "./internal/infrastructure" -prune -o -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -count=1
+
+  test:
+    desc: launch all tests
+    silent: true
+    cmds:
+      - task: test_module
+      - task: test_db
   
   dsn:
     desc: "show db's connection-url"
