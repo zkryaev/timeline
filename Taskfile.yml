@@ -232,11 +232,12 @@ tasks:
       - go run ./cmd/migrator/main.go --dsn={{.TEST_DSN}} --migrations-path={{.MIGRATION_MASTER_PATH}} --instance=test_master
       - go build -o ./bin/loader ./cmd/loader && ./bin/loader --dsn={{.TEST_DSN}} --instance=test_master
       - nohup bash -c 'sleep 60; echo "> cleaning...:" &> test_db_docker.out; task migrate_test_down' &>> test_db_docker.out &
-      - find ./internal/infrastructure -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -tags=integration -count=1 -v
+      - find ./internal/infrastructure -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -tags=integration -count=1 -v | grep -v '^=== RUN'
+
   test_module:
     silent: true
     cmds:
-      - find . -path "./internal/infrastructure" -prune -o -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -count=1
+      - find . -path "./internal/infrastructure" -prune -o -name "*_test.go" -exec dirname {} \; | sort -u | xargs go test -count=1 -v | grep -v '^=== RUN'
 
   test:
     desc: launch all tests
