@@ -74,7 +74,6 @@ func (m *middleware) RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw, ok := w.(*common.ResponseWriter)
 		if !ok {
-			m.logger.Error("Не конвертится писатель, хуле делать только плакать. неет, мы не baby crying receiver, мы созданим свой писатель!")
 			rw = &common.ResponseWriter{
 				ResponseWriter: w,
 			}
