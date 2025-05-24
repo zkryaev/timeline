@@ -24,18 +24,16 @@ type User interface {
 }
 
 type UserCtrl struct {
-	usecase    User
-	Logger     *zap.Logger
-	middleware middleware.Middleware
-	settings   *scope.Settings
+	usecase  User
+	Logger   *zap.Logger
+	settings *scope.Settings
 }
 
-func New(usecase User, logger *zap.Logger, validator *validator.Validate, middleware middleware.Middleware, settings *scope.Settings) *UserCtrl {
+func New(usecase User, logger *zap.Logger, validator *validator.Validate, settings *scope.Settings) *UserCtrl {
 	return &UserCtrl{
-		usecase:    usecase,
-		Logger:     logger,
-		middleware: middleware,
-		settings:   settings,
+		usecase:  usecase,
+		Logger:   logger,
+		settings: settings,
 	}
 }
 

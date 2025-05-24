@@ -24,18 +24,16 @@ type Org interface {
 }
 
 type OrgCtrl struct {
-	usecase    Org
-	Logger     *zap.Logger
-	middleware middleware.Middleware
-	settings   *scope.Settings
+	usecase  Org
+	Logger   *zap.Logger
+	settings *scope.Settings
 }
 
-func New(usecase Org, middleware middleware.Middleware, logger *zap.Logger, settings *scope.Settings) *OrgCtrl {
+func New(usecase Org, logger *zap.Logger, settings *scope.Settings) *OrgCtrl {
 	return &OrgCtrl{
-		usecase:    usecase,
-		Logger:     logger,
-		middleware: middleware,
-		settings:   settings,
+		usecase:  usecase,
+		Logger:   logger,
+		settings: settings,
 	}
 }
 

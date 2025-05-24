@@ -39,6 +39,7 @@ type Settings struct {
 	EnableMedia         bool
 	EnableMail          bool
 	EnableMetrics       bool
+	EnableAnalytics     bool
 }
 
 func NewDefaultSettings(appCfg config.Application) *Settings {
@@ -47,6 +48,7 @@ func NewDefaultSettings(appCfg config.Application) *Settings {
 		EnableMedia:         appCfg.Settings.EnableMedia,
 		EnableMail:          appCfg.Settings.EnableMail,
 		EnableMetrics:       appCfg.Settings.EnableMetrics,
+		EnableAnalytics:     appCfg.Settings.EnableAnalytics,
 		SupportedMethodsMap: defaultSupportedMethodsHTTP(),
 		SupportedParams:     defaultSupportedParams(),
 	}

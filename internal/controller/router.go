@@ -6,6 +6,7 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/external"
 	"timeline/internal/controller/monitoring"
 	"timeline/internal/controller/s3"
 	"timeline/internal/controller/scope"
@@ -14,12 +15,13 @@ import (
 )
 
 type Controllers struct {
-	Monitor *monitoring.ServerMonitoring
-	Auth    *auth.AuthCtrl
-	User    *users.UserCtrl
-	Org     *orgs.OrgCtrl
-	Record  *records.RecordCtrl
-	S3      *s3.S3Ctrl
+	Monitor   *monitoring.ServerMonitoring
+	Auth      *auth.AuthCtrl
+	User      *users.UserCtrl
+	Org       *orgs.OrgCtrl
+	Record    *records.RecordCtrl
+	S3        *s3.S3Ctrl
+	Analitycs *external.AnalitycsClient
 }
 
 func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scope.Settings) *mux.Router {
@@ -31,6 +33,7 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 	org := controllersSet.Org
 	rec := controllersSet.Record
 	s3 := controllersSet.S3
+	analytics := controllersSet.Analitycs
 
 	// s := r.Host("www.timeline.com").Subrouter() // TODO future
 
@@ -130,5 +133,9 @@ func InitRouter(controllersSet *Controllers, routes scope.Routes, settings *scop
 		Protected.HandleFunc(scope.PathMedia, s3.Delete).Methods(routes[scope.PathMedia].Methods.Get(scope.DELETE)...)
 	}
 
+	// analytics
+	if settings.EnableAnalytics {
+		Protected.HandleFunc(scope.PathAnalytics, analytics.Retranslate).Methods(routes[scope.PathAnalytics].Methods.Get(scope.GET)...)
+	}
 	return r
 }

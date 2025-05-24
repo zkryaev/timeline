@@ -52,13 +52,18 @@ const (
 	DEAD_USER_ID = 0
 )
 
+// Analytics
+const (
+	ANALYTICS_URI = "report"
+)
+
 type SupportedParams map[string]map[string]struct{}
 
 func defaultSupportedParams() SupportedParams {
 	return SupportedParams{
 		INT:     {USER_ID: {}, ORG_ID: {}, WORKER_ID: {}, SERVICE_ID: {}, RECORD_ID: {}, LIMIT: {}, PAGE: {}, WEEKDAY: {}},
 		BOOL:    {AS_LIST: {}, FRESH: {}},
-		STRING:  {URL: {}, ENTITY: {}, NAME: {}, TYPE: {}, SORT_BY: {}},
+		STRING:  {URL: {}, ENTITY: {}, NAME: {}, TYPE: {}, SORT_BY: {}, ANALYTICS_URI: {}},
 		FLOAT32: {MIN_LAT: {}, MIN_LON: {}, MAX_LAT: {}, MAX_LON: {}},
 	}
 }

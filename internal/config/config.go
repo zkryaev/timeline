@@ -16,6 +16,7 @@ type Config struct {
 	Token      Token `yaml:"token"`
 	S3         S3
 	Prometheus Prometheus
+	Analytics  AnalyticsService
 }
 
 type Settings struct {
@@ -24,6 +25,7 @@ type Settings struct {
 	EnableMedia         bool `yaml:"enable_media"`
 	EnableMail          bool `yaml:"enable_mail"`
 	EnableMetrics       bool `yaml:"enable_metrics"`
+	EnableAnalytics     bool `yaml:"enable_analytics"`
 }
 
 type Application struct {
@@ -71,6 +73,11 @@ type S3 struct {
 	DataPort      string `env:"S3_DATA_PORT" env-default:"9000"`
 	ConsolePort   string `env:"S3_CONSOLE_PORT" env-default:"9001"`
 	SSLmode       bool   `env:"S3_SSLMODE" env-default:"false"`
+}
+
+type AnalyticsService struct {
+	Host string `env:"ANALYTICS_HOST" env-default:"localhost"`
+	Port string `env:"ANALYTICS_PORT" env-required:"true"`
 }
 
 type Prometheus struct {

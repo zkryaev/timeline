@@ -13,6 +13,7 @@ import (
 	"timeline/internal/controller/domens/orgs"
 	"timeline/internal/controller/domens/records"
 	"timeline/internal/controller/domens/users"
+	"timeline/internal/controller/external"
 	"timeline/internal/controller/monitoring"
 	"timeline/internal/controller/monitoring/metrics"
 	s3ctrl "timeline/internal/controller/s3"
@@ -86,7 +87,7 @@ func (a *App) Shutdown(cancelCtx context.Context, timeout time.Duration) {
 	}
 }
 
-func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3) error {
+func (a *App) SetupControllers(cfg *config.Config, backdata *loader.BackData, storage infrastructure.Database, mailService infrastructure.Mail, s3Service infrastructure.S3) error {
 	privateKey, err := secret.LoadPrivateKey()
 	if err != nil {
 		return err
@@ -114,7 +115,7 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			storage,
 			mailService,
-			tokenCfg,
+			cfg.Token,
 			settings,
 		),
 		middleware,
@@ -144,7 +145,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 		),
 		a.log,
 		validator,
-		middleware,
 		settings,
 	)
 
@@ -154,7 +154,6 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			storage,
 			backdata,
 		),
-		middleware,
 		a.log,
 		settings,
 	)
@@ -168,18 +167,20 @@ func (a *App) SetupControllers(tokenCfg config.Token, backdata *loader.BackData,
 			mailService,
 			settings,
 		),
-		middleware,
 		a.log,
 		settings,
 	)
 
+	analyticsRedirector := external.NewAnalyticsClient(cfg.Analytics, a.log, settings)
+
 	controllerSet := &controller.Controllers{
-		Monitor: monitorAPI,
-		Auth:    authAPI,
-		User:    userAPI,
-		Org:     orgAPI,
-		Record:  recordAPI,
-		S3:      s3API,
+		Monitor:   monitorAPI,
+		Auth:      authAPI,
+		User:      userAPI,
+		Org:       orgAPI,
+		Record:    recordAPI,
+		S3:        s3API,
+		Analitycs: analyticsRedirector,
 	}
 	monitorAPI.Router = controller.InitRouter(controllerSet, routes, settings)
 	a.SetHandler(monitorAPI.Router)

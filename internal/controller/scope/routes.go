@@ -45,14 +45,18 @@ const (
 
 	// S3 endpoint
 	PathMedia = "/media"
+
+	// Analytics service
+	PathAnalytics = "/analytics"
 )
 
 const (
-	authFind  = 5
-	usersFind = 8
-	orgsFind  = 15
-	recsFind  = 17
-	mediaFind = 18
+	authFind      = 5
+	usersFind     = 8
+	orgsFind      = 15
+	recsFind      = 17
+	mediaFind     = 18
+	analyticsFind = 19
 )
 
 var HandlersList = []string{
@@ -81,6 +85,8 @@ var HandlersList = []string{
 	PathFeedback,
 
 	PathMedia,
+
+	PathAnalytics,
 }
 
 type MethodList map[string]string
@@ -188,6 +194,9 @@ func NewEndpointFromPath(s *Settings, path string) endpoint {
 	case PathMedia:
 		mdata.Methods = newMethodsMap(s, http.MethodGet, http.MethodPost, http.MethodDelete)
 		mdata.perms = perms.GrantPermissions(perms.CREATE+perms.READ+perms.DELETE, perms.CREATE+perms.READ+perms.DELETE)
+	case PathAnalytics:
+		mdata.Methods = newMethodsMap(s, http.MethodGet)
+		mdata.perms = perms.GrantPermissions(perms.NONE, perms.READ)
 	}
 	return mdata
 }
@@ -227,6 +236,9 @@ func (r Routes) HasAccess(tdata entity.TokenData, uri, method string) error {
 	case strings.Contains(uri, PathMedia):
 		prevfind = recsFind
 		find = mediaFind
+	case strings.Contains(uri, PathAnalytics):
+		prevfind = mediaFind
+		find = analyticsFind
 	default:
 		return fmt.Errorf(ErrPathNotFound, "check prefix", uri)
 	}

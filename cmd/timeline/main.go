@@ -36,7 +36,6 @@ import (
 // @externalDocs.description Документация
 // @externalDocs.url https://github.com/zkryaev/timeline
 func main() {
-	// Подгружаем все переменные окружения
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(".env not found!")
 	}
@@ -111,7 +110,7 @@ func main() {
 	errch := make(chan error, 2)
 
 	app := app.New(cfg.App, logger)
-	err = app.SetupControllers(cfg.Token, backdata, db, post, s3repo)
+	err = app.SetupControllers(cfg, backdata, db, post, s3repo)
 	if err != nil {
 		logger.Fatal(
 			"failed setup controllers",
@@ -184,5 +183,9 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 	if cfg.App.Settings.EnableMetrics {
 		logger.Info(fmt.Sprintf("Metrics: %s%s%s%s settings:", bold, line, "prometheus", reset))
 		logger.Info("", zap.String("listening on", cfg.Prometheus.Host+":"+cfg.Prometheus.Port))
+	}
+	if cfg.App.Settings.EnableAnalytics {
+		logger.Info(fmt.Sprintf("Service: %s%s%s%s settings:", bold, line, "analytics", reset))
+		logger.Info("", zap.String("address", cfg.Analytics.Host+":"+cfg.Analytics.Port))
 	}
 }

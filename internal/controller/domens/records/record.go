@@ -22,18 +22,16 @@ type Record interface {
 }
 
 type RecordCtrl struct {
-	usecase    Record
-	Logger     *zap.Logger
-	middleware middleware.Middleware
-	settings   *scope.Settings
+	usecase  Record
+	Logger   *zap.Logger
+	settings *scope.Settings
 }
 
-func New(usecase Record, middleware middleware.Middleware, logger *zap.Logger, settings *scope.Settings) *RecordCtrl {
+func New(usecase Record, logger *zap.Logger, settings *scope.Settings) *RecordCtrl {
 	return &RecordCtrl{
-		usecase:    usecase,
-		Logger:     logger,
-		middleware: middleware,
-		settings:   settings,
+		usecase:  usecase,
+		Logger:   logger,
+		settings: settings,
 	}
 }
 
