@@ -15,3 +15,11 @@ scrape_configs:
 
     static_configs:
       - targets: ['host.docker.internal:8111']
+
+  - job_name: 'analytic_server'
+
+    scrape_interval: 10s
+    scrape_timeout: 10s
+
+    static_configs:
+      - targets: ['host.docker.internal:10000']
