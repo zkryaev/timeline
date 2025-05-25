@@ -31,7 +31,7 @@ type Settings struct {
 type Application struct {
 	Server   HTTPServer
 	Settings Settings `yaml:"settings" env-required:"true"`
-	Env      string   `yaml:"env"`
+	Stage    string   `yaml:"stage"`
 }
 
 type HTTPServer struct {

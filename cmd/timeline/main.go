@@ -44,7 +44,7 @@ func main() {
 	cfg := config.MustLoad()
 	successConnection := "Successfuly connected to"
 	// Инициализация логгера
-	logger := logger.New(cfg.App.Env)
+	logger := logger.New(cfg.App.Stage)
 	defer logger.Sync()
 
 	logger.Info("Application started")
@@ -155,7 +155,7 @@ func PrintConfiguration(logger *zap.Logger, cfg *config.Config) {
 	logger.Info("", zap.Duration("refresh token", cfg.Token.RefreshTTL))
 
 	logger.Info("Server settings:")
-	logger.Info("", zap.String("env-mode", cfg.App.Env))
+	logger.Info("", zap.String("stage", cfg.App.Stage))
 	logger.Info("", zap.String("listening on", cfg.App.Server.Host+":"+cfg.App.Server.Port))
 	logger.Info("", zap.String("request-timeout", cfg.App.Server.Timeout.String()))
 	logger.Info("", zap.String("idle-timeout", cfg.App.Server.IdleTimeout.String()))
