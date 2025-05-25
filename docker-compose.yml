@@ -71,7 +71,7 @@ services:
         - prometheus
 
     analytics_app:
-      image: petrgrachev/timeline-analytics:1.0.3
+      image: petrgrachev/timeline-analytics:1.0.4
       container_name: analytic_app
       depends_on:
         - postgres_master
