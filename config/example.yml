@@ -1,12 +1,13 @@
 # example
 app:
-  env: DEV
+  stage: DEV
   settings:
-    use_local_back_data: true
+    use_local_back_data: false
     enable_authorization: false
     enable_media: false
     enable_mail: false
     enable_metrics: false
+    enable_analytics: false
 token: 
   access_ttl: 1m
   refresh_ttl: 5m
