@@ -44,7 +44,7 @@ type HTTPServer struct {
 type Database struct {
 	Protocol string `env:"DB" env-required:"true"`
 	Host     string `env:"DB_HOST" env-required:"true"`
-	Port     string `env:"DB_PORT" env-required:"true"`
+	Port     string `env:"PGB_PORT" env-required:"true"`
 	Name     string `env:"DB_NAME" env-required:"true"`
 	User     string `env:"DB_USER" env-required:"true"`
 	Password string `env:"DB_PASSWD" env-required:"true"`
