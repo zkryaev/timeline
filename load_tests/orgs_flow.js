@@ -1,17 +1,17 @@
 import http from 'k6/http';
-import { sleep } from 'k6';
 import { check } from 'k6';
-import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 // Конфигурация теста
 export let options = {
-  vus: 10,
-  duration: '30s',
+  vus: 333, // 999 RPS
+  duration: '1m',
 };
 
 function randomEmail() {
-  return `testuser_${Math.floor(Math.random() * 100000)}@mail.com`;
+  const timestamp = Date.now(); // время в миллисекундах
+  return `testuser_${timestamp}_${Math.floor(Math.random() * 100000)}@mail.com`;
 }
+
 
 function randomString(length) {
   const chars = 'abcdefghijklmnopqrstuvwxyz';
@@ -25,7 +25,7 @@ function randomString(length) {
 export default function () {
   // 1. Регистрация
   let orgReq = {
-    uuid: uuidv4(),
+    uuid: "",
     email: randomEmail(),
     password: "SuperSecurePassword1!",
     name: "Test Organization",
@@ -107,6 +107,4 @@ export default function () {
   check(serviceRes, {
     'service creation status is 200': (r) => r.status === 200,
   });
-
-  sleep(1); // симуляция времени между действиями
 }
