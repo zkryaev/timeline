@@ -10,3 +10,4 @@ config/local.yml
 logs/*
 mocks/*
 data/*
+cert*
