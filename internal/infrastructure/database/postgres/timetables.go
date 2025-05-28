@@ -55,9 +55,8 @@ func (p *PostgresRepo) Timetable(ctx context.Context, orgID int, tdata models.To
 	}
 	if err := tx.QueryRowxContext(ctx, query, tdata.ID).Scan(&city); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, "", ErrTimetableNotFound
+			return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 		}
-		return nil, "", fmt.Errorf("failed to get %s city: %w", entity, err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, "", fmt.Errorf("failed to commit tx: %w", err)

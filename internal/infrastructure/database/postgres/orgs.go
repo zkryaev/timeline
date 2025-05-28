@@ -367,10 +367,9 @@ func (p *PostgresRepo) OrgsBySearch(ctx context.Context, params *orgmodel.Search
 		Data:  orgList,
 	}
 	if err := tx.QueryRowxContext(ctx, query, params.UserID).Scan(&resp.UserCity); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrOrgsNotFound
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("failed to get user's city: %w", err)
 		}
-		return nil, fmt.Errorf("failed to get user's city: %w", err)
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit tx: %w", err)
