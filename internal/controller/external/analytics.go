@@ -29,6 +29,14 @@ func NewAnalyticsClient(cfg config.AnalyticsService, logger *zap.Logger, setting
 	}
 }
 
+// @Summary Redirector
+// @Description org_id REQUIRED if auth off
+// @Tags analytics
+// @Param   report query string false "analytics uri"
+// @Success 200 string json
+// @Failure 400
+// @Failure 500
+// @Router /analytics [get]
 func (a *AnalitycsClient) Retranslate(w http.ResponseWriter, r *http.Request) {
 	logger := common.LoggerWithUUID(a.settings, a.logger, r.Context())
 	tdata, err := middleware.GetTokenDataFromCtx(a.settings, r.Context())

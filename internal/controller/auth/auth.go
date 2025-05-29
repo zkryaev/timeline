@@ -40,7 +40,7 @@ func New(usecase AuthUseCase, middleware middleware.Middleware, logger *zap.Logg
 
 // @Summary Login
 // @Description Authorizes a entity and returns a token pair
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce json
 // @Param   request body authdto.LoginReq true " "
@@ -84,7 +84,7 @@ func (a *AuthCtrl) Login(w http.ResponseWriter, r *http.Request) {
 
 // @Summary User registration
 // @Description
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.UserRegisterReq true " "
@@ -115,7 +115,7 @@ func (a *AuthCtrl) UserRegister(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Organization registration
 // @Description
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.OrgRegisterReq true " "
@@ -146,7 +146,7 @@ func (a *AuthCtrl) OrganizationRegister(w http.ResponseWriter, r *http.Request) 
 
 // @Summary Send code to email
 // @Description
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.SendCodeReq true " "
@@ -172,7 +172,7 @@ func (a *AuthCtrl) CodeSend(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Confirm code
 // @Description Confirm code that has been sent to email
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce  json
 // @Param   request body authdto.VerifyCodeReq true " "
@@ -211,7 +211,7 @@ func (a *AuthCtrl) CodeConfirm(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Refresh access token
 // @Description
-// @Tags Auth
+// @tags auth
 // @Accept  json
 // @Produce  json
 // @Param   refresh_token header string true "Refresh Token"

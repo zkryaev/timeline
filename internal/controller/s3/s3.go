@@ -43,7 +43,7 @@ func New(storage S3UseCase, logger *zap.Logger, settings *scope.Settings) *S3Ctr
 // @Description Для организаций: entity=gallery/banner, entity_id = org_id (исключение: entity=worker entity_id = worker_id)
 // @Description Для пользователей: entity=user, entity_id = user_id
 // @Description [ `Если авторизация отключена: то можно указывать любые entity_id` ]
-// @Tags Media
+// @Tags media
 // @Accept multipart/form-data
 // @Produce json
 // @Param file formData file true "Media file"
@@ -144,7 +144,7 @@ func (s3 *S3Ctrl) Upload(w http.ResponseWriter, r *http.Request) {
 // DownloadFileHandler handles file downloads.
 // @Summary Download a file
 // @Description Download a file by its URL
-// @Tags Media
+// @Tags media
 // @Accept json
 // @Produce application/octet-stream
 // @Param url query string true "url for s3"
@@ -177,7 +177,7 @@ func (s3 *S3Ctrl) Download(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete a file
 // @Description Удаление одного медиа файла по указанному URL
 // @Description [ `Если авторизация отключена: то можно указывать любые url` ]
-// @Tags Media
+// @Tags media
 // @Accept json
 // @Produce json
 // @Param url query string true "url for s3"
