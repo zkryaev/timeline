@@ -25,6 +25,6 @@
 
 ### Как храним изображения в S3
 **Для главных сущностей**
-![image]([https://github.com/user-attachments/assets/7d2a3ef3-902f-412d-8e9b-84c050ba589b](https://github.com/user-attachments/assets/7d2a3ef3-902f-412d-8e9b-84c050ba589b))
+![image]([https://github.com/user-attachments/assets/7d2a3ef3-902f-412d-8e9b-84c050ba589b](https://github.com/user-attachments/assets/7d2a3ef3-902f-412d-8e9b-84c050ba589b)
 **Для суб-сущностей (работники, изображения галереи)**
 ![image](https://github.com/user-attachments/assets/5bf79707-7c77-4f1a-86cb-66a3c4e9abbb)
