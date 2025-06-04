@@ -1,4 +1,5 @@
 # Описание
+[Документация к проекту](https://github.com/zkryaev/timeline/tree/main/architecture)
 
 # Как запустить
 
@@ -27,4 +28,3 @@
 
 ---
 
-[Документация к проекту]()
