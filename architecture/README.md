@@ -1,5 +1,7 @@
 ### Архитектура
-<img src="https://github.com/user-attachments/assets/e447d923-744a-4da1-860a-c2d422631bfc" style="background: white; padding: 10px;" />
+| |
+| :-: |
+| ![image](https://github.com/user-attachments/assets/e447d923-744a-4da1-860a-c2d422631bfc) |
 
 ### Конвертация часовых поясов
 > Предварительно при запуске объект `loader` проходит по указанному URL в .env и получает данные, затем грузит их в память.</br>
